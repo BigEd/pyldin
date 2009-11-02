@@ -1,9 +1,0 @@
-Source: pyldin601
-Section: games
-Priority: optional
-Maintainer: Alexander Chukov <sash@pdaXrom.org>
-
-Package: pyldin601
-Architecture: any
-Depends: ${shlibs:Depends}
-Description: Emulator for old bulgarian 8bit computer (MC6800 based).
