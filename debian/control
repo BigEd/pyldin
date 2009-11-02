@@ -1,0 +1,9 @@
+Source: pyldin
+Section: x11
+Priority: extra
+Maintainer: Alexander Chukov <sash@pdaXrom.org>
+
+Package: pyldin
+Architecture: any
+Depends: ${shlibs:Depends}
+Description: Pyldin601 emulator
