@@ -1,0 +1,5 @@
+pyldin601 (@VERSION@) pyldin601-ubuntu; urgency=low
+
+  * Build package for pyldin601 emulator
+
+ -- Alexander Chukov <sash@pdaXrom.org>  @DATE@
