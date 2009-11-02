@@ -555,8 +555,8 @@ int main(int argc, char *argv[])
     //set_time = 1;
 #endif
 
-    fprintf(stderr, "Portable Pyldin 601 emulator for Linix / Sony PS2&PSP / Win9x/NT\n");
-    fprintf(stderr, "Copyright (c) 1997-2007 Sasha Chukov <sash@pdaXrom.org>, Yura Kuznetsov <yura@petrsu.ru>\n");
+    fprintf(stderr, "Portable Pyldin 601 emulator (http://code.google.com/p/pyldin)\n");
+    fprintf(stderr, "Copyright (c) 1997-2009 Sasha Chukov <sash@pdaXrom.org>, Yura Kuznetsov <yura@petrsu.ru>\n");
 
 #if !defined(_EE) && !defined(_PSP)
     extern char *optarg;
@@ -830,7 +830,7 @@ int main(int argc, char *argv[])
     }
 #endif
 	
-    SDL_Quit();
+//    SDL_Quit();
     return 0;
 }
 

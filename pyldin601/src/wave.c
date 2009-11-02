@@ -95,7 +95,7 @@ void Speaker_Finish(void)
 	SDL_PauseAudio(1);
 	if (buffer) 
 	    free(buffer);
-	SDL_QuitSubSystem(SDL_INIT_AUDIO);
+//	SDL_QuitSubSystem(SDL_INIT_AUDIO);
 	fInited = 0;
     }
 }
