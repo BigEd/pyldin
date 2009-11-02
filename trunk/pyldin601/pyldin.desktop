@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Pyldin601
+Comment=Old bulgarian MC6800 based computer
+Exec=pyldin -t
+Icon=pyldin.png
+Terminal=0
+Type=Application
+Categories=Game
+StartupNotify=False
+SingleInstance=False
