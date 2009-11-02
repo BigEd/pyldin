@@ -5,9 +5,13 @@ DATADIR= $(PREFIX)/share
 
 UNIBIOSONLY=no
 
-VERSION=3.3
-EXTRAVERSION=$(shell LANG=en_US svn info 2>&1 | grep Revision | awk '{print $$2}')
-DATE=$(shell LANG=en_US date -R)
+VERSION=3.2
+EXTRAVERSION	:= $(shell \
+			if [ -d .svn ]; then \
+			    printf 'rev' ; \
+			    unset LC_ALL LANG ; svn info | grep Revision | cut -f2 -d' ' ; \
+			fi \
+		    )
 
 all:	$(TARGET)
 
@@ -16,7 +20,7 @@ CXX := g++
 OPT_FLAGS := -O3 -fomit-frame-pointer
 #OPT_STRIP := -s
 CFLAGS = -Wall $(OPT_FLAGS) -fno-exceptions -Isrc/core -Isrc `sdl-config --cflags` `pkg-config libpng --cflags` $(EXTRA_CFLAGS)
-CFLAGS += -DDATADIR=\"$(DATADIR)/pyldin\" -DVERSION=\"$(VERSION)r$(EXTRAVERSION)\"
+CFLAGS += -DDATADIR=\"$(DATADIR)/pyldin\" -DVERSION=\"$(VERSION)$(EXTRAVERSION)\"
 CXXFLAGS = $(CFLAGS) -fno-rtti
 LDFLAGS = $(OPT_LIBS) `sdl-config --libs` `pkg-config libpng --libs` -lz $(OPT_STRIP)
 
@@ -35,8 +39,6 @@ $(TARGET): $(OBJS)
 clean:
 	rm -f $(OBJS) $(TARGET)
 
-distclean: clean
-
 install:
 	mkdir -p $(DESTDIR)$(DATADIR)/pyldin/Rom
 	mkdir -p $(DESTDIR)$(DATADIR)/pyldin/Floppy
@@ -54,11 +56,3 @@ endif
 	mkdir -p $(DESTDIR)$(DATADIR)/pixmaps
 	install -m 644 pyldin.desktop $(DESTDIR)$(DATADIR)/applications
 	install -m 644 pyldin.png     $(DESTDIR)$(DATADIR)/pixmaps
-
-package:
-	cp debian/changelog.in debian/changelog
-	sed -i -e "s|@VERSION@|${VERSION}.${EXTRAVERSION}|" debian/changelog
-	sed -i -e "s|@DATE@|${DATE}|" debian/changelog
-	dpkg-buildpackage -rfakeroot -b -tc || true
-	rm -f debian/changelog debian/files debian/pyldin601.debhelper.log debian/pyldin601.substvars
-	rm -rf debian/pyldin601
