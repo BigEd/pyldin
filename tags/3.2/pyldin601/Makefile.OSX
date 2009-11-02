@@ -1,0 +1,27 @@
+DESTDIR      := /Applications
+
+all: pyldin
+
+pyldin:
+	make -f Makefile TARGET=Pyldin-601
+
+clean:
+	make -f Makefile clean TARGET=Pyldin-601
+
+install:
+	make -f Makefile BINDIR=MacOS PREFIX=MacOS DESTDIR=$(DESTDIR)/pyldin.app/Contents/ install TARGET=Pyldin-601
+	#mv $(DESTDIR)/pyldin.app/Contents/MacOS/pyldin $(DESTDIR)/pyldin.app/Contents/MacOS/Pyldin-601
+	cp -f addon/MacOSX/pyldin	$(DESTDIR)/pyldin.app/Contents/MacOS
+	cp -f addon/MacOSX/Info.plist	$(DESTDIR)/pyldin.app/Contents
+	chmod 755 $(DESTDIR)/pyldin.app/Contents/MacOS/pyldin
+	echo 'APPLhiti'			> $(DESTDIR)/pyldin.app/Contents/PkgInfo
+	mkdir -p $(DESTDIR)/pyldin.app/Contents/Resources
+	cp -f addon/MacOSX/pyldin.icns	$(DESTDIR)/pyldin.app/Contents/Resources
+	strip $(DESTDIR)/pyldin.app/Contents/MacOS/Pyldin-601
+	echo "Install libraries"
+	mkdir -p $(DESTDIR)/pyldin.app/Contents/MacOS/lib
+	for file in `otool -L Pyldin-601 /opt/local/lib/libSDL_image-1.2.0.dylib | grep '/opt/' | grep -v 'dylib:' | cut -d ' ' -f1`; do \
+	 echo $$file; \
+	 cp -f $$file $(DESTDIR)/pyldin.app/Contents/MacOS/lib; \
+	done
+	#strip $(DESTDIR)/pyldin.app/Contents/MacOS/lib/*.dylib >/dev/null 2>/dev/null ; true

@@ -1,0 +1,19 @@
+DESTDIR := $(shell echo /tmp/ipyl.$$$$/pyldin.app)
+TOPDIR := $(shell pwd)
+
+all: pyldin
+
+pyldin:
+	make -f Makefile CC=arm-apple-darwin-gcc
+
+clean:
+	make -f Makefile clean CC=arm-apple-darwin-gcc
+
+install:
+	make -f Makefile BINDIR= PREFIX= DESTDIR=$(DESTDIR) install CC=arm-apple-darwin-gcc
+	cp -f addon/iphone/pyldin.sh $(DESTDIR)/
+	cp -f addon/iphone/Info.plist $(DESTDIR)/
+	cp -f pyldin.png $(DESTDIR)/icon.png
+	chmod 755 $(DESTDIR)/pyldin.sh
+	cd $(DESTDIR)/.. && zip -r9 $(TOPDIR)/ipyldin.zip *
+	echo "You can remove temporary directory $(DESTDIR)"
