@@ -57,8 +57,48 @@ int	filemenuEnabled = 0;
 int	tick50 = 0;
 int	fRef = 0;
 int	curBlink = 0;
-// 
+
+//
 static Uint32 delaytrash = 0;
+static volatile long long one_takt_delay = 0;
+static volatile long long one_takt_calib = 0;
+static volatile long long one_takt_one_percent = 0;
+
+#if defined(__ppc__)
+
+#define READ_TIMESTAMP(var) ppc_getcounter(&var)
+
+static void
+ppc_getcounter(uint64 *v)
+{
+	register unsigned long tbu, tb, tbu2;
+
+  loop:
+	asm volatile ("mftbu %0" : "=r" (tbu) );
+	asm volatile ("mftb  %0" : "=r" (tb)  );
+	asm volatile ("mftbu %0" : "=r" (tbu2));
+	if (__builtin_expect(tbu != tbu2, 0)) goto loop;
+
+	/* The slightly peculiar way of writing the next lines is
+	   compiled better by GCC than any other way I tried. */
+	((long*)(v))[0] = tbu;
+	((long*)(v))[1] = tb;
+}
+
+#elif defined(__i386__)
+
+#define READ_TIMESTAMP(val) \
+    __asm__ __volatile__("rdtsc" : "=A" (val))
+
+#elif defined(__x86_64__)
+
+#define READ_TIMESTAMP(val) \
+    __asm__ __volatile__("rdtsc" : "=a" (((int*)&val)[0]), "=d" (((int*)&val)[1]));
+
+#else
+#error "Don't know how to implement timestamp counter for this architecture"
+#endif
+//
 
 static char *romName[] = {
     "str$08.roz",
@@ -679,6 +719,25 @@ int main(int argc, char *argv[])
 	return -1; 
     }
 
+#if defined(__i386__) || defined(__x86_64__) || defined(__ppc__)
+    fprintf(stderr, "Detecting host cpu speed... ");
+    {
+	volatile long long a;
+	READ_TIMESTAMP(a);
+	sleep(1);
+	READ_TIMESTAMP(one_takt_delay);
+	one_takt_delay -= a;
+	one_takt_delay /= 1000000;
+	one_takt_calib = one_takt_delay;
+// hack
+	one_takt_delay = one_takt_delay * 70;
+	one_takt_delay = one_takt_delay / 100;
+//
+	fprintf(stderr, "%lld MHz\n", one_takt_calib);
+	one_takt_one_percent = one_takt_delay / 100;
+    }
+#endif
+
     int j = 0;
     int i;
     
@@ -715,7 +774,12 @@ int main(int argc, char *argv[])
     int scounter = 0;		// syncro counter
     int takt;
 
+#if defined(__i386__) || defined(__x86_64__) || defined(__ppc__)
+    volatile long long clock_old;
+    READ_TIMESTAMP(clock_old);
+#else
     Uint32 clock_old = SDL_GetTicks();
+#endif
     Uint32 delay = 0;
     vscr = (unsigned short *) screen->pixels;
 
@@ -749,6 +813,11 @@ int main(int argc, char *argv[])
     }
     
     do {
+#if defined(__i386__) || defined(__x86_64__) || defined(__ppc__)
+	volatile long long ts1;
+	READ_TIMESTAMP(ts1);
+#endif
+
 	takt = mc6800_step();	//
 
 	vcounter += takt;
@@ -765,6 +834,27 @@ int main(int argc, char *argv[])
 		refreshScr();
 	    }
 
+#if defined(__i386__) || defined(__x86_64__) || defined(__ppc__)
+	    volatile long long clock_new;
+	    READ_TIMESTAMP(clock_new);
+	    long long actual_speed = (vcounter * 1000) / ((clock_new - clock_old) / one_takt_calib);
+	
+	    if (show_info) {
+		char buf[64];
+		
+		sprintf(buf, "%1.2fMHz", (float)actual_speed / 1000);
+		//sprintf(buf, "%lldMHz", actual_speed);
+
+		drawString(160, 28, buf, 0xffff, 0);
+
+	    }
+
+//	    if (actual_speed < 1000)
+//		one_takt_delay--;
+//	    else if (actual_speed > 1000)
+//		one_takt_delay++;
+//		//one_takt_one_percent;
+#else
 	    Uint32 clock_new = SDL_GetTicks();
 
 	    int delay_val = (vcounter * 40) / ((clock_new - clock_old) * 1000) - 40;
@@ -779,6 +869,7 @@ int main(int argc, char *argv[])
 		drawString(160, 28, buf, 0xffff, 0);
 
 	    }
+#endif
 #ifdef USE_JOYSTICK
 #ifdef USE_JOYMOUSE
 	    if (joymouse_enabled && (vkbdEnabled || (joymouse_y >= 216))) {
@@ -801,14 +892,18 @@ int main(int argc, char *argv[])
 	    resetRequested = 0;
 	}
 
-
+#if defined(__i386__) || defined(__x86_64__) || defined(__ppc__)
+	volatile long long ts2;
+	do {
+	    READ_TIMESTAMP(ts2);
+	} while ((ts2 - ts1) < (one_takt_delay * takt));
+#else
 	int tempd;
 
 	for (tempd = delay; tempd > 0; tempd--) {
 	    delaytrash++;
 	}
-
-//	ChecKeyboard();
+#endif
     } while( exitRequested == 0);	//
 
     freeFloppy();
