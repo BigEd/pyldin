@@ -1,10 +1,11 @@
 #!/usr/bin/make -f
 
 build: build-stamp
-
 build-stamp:
 	dh_testdir
-	$(MAKE) -C pyldin601
+	$(MAKE) -C $(CURDIR) MAKEARGS=-j4
+	$(MAKE) -C $(CURDIR)/../as6800 MAKEARGS=-j4
+	$(MAKE) -C $(CURDIR)/../dis6800 MAKEARGS=-j4
 
 	touch build-stamp
 
@@ -12,14 +13,18 @@ clean:
 	dh_testdir
 	dh_testroot
 	rm -f build-stamp
-	$(MAKE) clean -C pyldin601
+	$(MAKE) -C $(CURDIR) distclean MAKEARGS=-j4
+	$(MAKE) -C $(CURDIR)/../as6800 clean
+	$(MAKE) -C $(CURDIR)/../dis6800 clean
 
 install: build
 	dh_testdir
 	dh_testroot
 	dh_clean -k
 	dh_install
-	$(MAKE) install DESTDIR=$(CURDIR)/debian/tmp -C pyldin601
+	$(MAKE) -C $(CURDIR) install DESTDIR=$(CURDIR)/debian/pyldin601 MAKEARGS=-j4
+	$(MAKE) -C $(CURDIR)/../as6800 install DESTDIR=$(CURDIR)/debian/pyldin601 MAKEARGS=-j4
+	$(MAKE) -C $(CURDIR)/../dis6800 install DESTDIR=$(CURDIR)/debian/pyldin601 MAKEARGS=-j4
 
 binary-indep: build install
 	dh_testdir
