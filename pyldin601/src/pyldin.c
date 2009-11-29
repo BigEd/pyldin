@@ -28,6 +28,10 @@
 
 #include "kbdfix.h"
 
+#ifndef VERSION
+#define VERSION "unknown"
+#endif
+
 #ifdef USE_JOYSTICK
 #include "joyfix.h"
 #ifdef USE_JOYMOUSE
@@ -562,7 +566,7 @@ int main(int argc, char *argv[])
 #endif
     SDL_Thread *video_thread;
 
-    fprintf(stderr, "Portable Pyldin 601 emulator (http://code.google.com/p/pyldin)\n");
+    fprintf(stderr, "Portable Pyldin-601 emulator version " VERSION " (http://code.google.com/p/pyldin)\n");
     fprintf(stderr, "Copyright (c) 1997-2009 Sasha Chukov <sash@pdaXrom.org>, Yura Kuznetsov <yura@petrsu.ru>\n");
 
     extern char *optarg;
