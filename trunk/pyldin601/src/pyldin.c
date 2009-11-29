@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <sys/types.h>
 #include <dirent.h>
 #include <zlib.h>
@@ -54,25 +55,23 @@ static volatile uint64_t one_takt_delay = 0;
 static volatile uint64_t one_takt_calib = 0;
 static volatile uint64_t one_takt_one_percent = 0;
 
-#if defined(__ppc__)
+#if defined(__PPC__)
+#warning "PPC32 code"
 
-#define READ_TIMESTAMP(var) ppc_getcounter(&var)
+#define TIMEBASE 79800000
 
-static void
-ppc_getcounter(uint64_t *v)
-{
-	register uint64_t tbu, tb, tbu2;
-
-  loop:
-	asm volatile ("mftbu %0" : "=r" (tbu) );
-	asm volatile ("mftb  %0" : "=r" (tb)  );
-	asm volatile ("mftbu %0" : "=r" (tbu2));
-	if (__builtin_expect(tbu != tbu2, 0)) goto loop;
-
-	/* The slightly peculiar way of writing the next lines is
-	   compiled better by GCC than any other way I tried. */
-	((long*)(v))[0] = tbu;
-	((long*)(v))[1] = tb;
+#define READ_TIMESTAMP(val) \
+{				\
+    unsigned int tmp;		\
+    do {			\
+	__asm__ __volatile__ (	\
+	"mftbu %0 \n\t"		\
+	"mftb  %1 \n\t"		\
+	"mftbu %2 \n\t"		\
+	: "=r"(((long*)&val)[0]), "=r"(((long*)&val)[1]), "=r"(tmp)	\
+	:			\
+	);			\
+    } while (tmp != (((long*)&val)[0]));	\
 }
 
 #elif defined(__i386__)
@@ -682,15 +681,18 @@ int main(int argc, char *argv[])
 	READ_TIMESTAMP(a);
 	sleep(1);
 	READ_TIMESTAMP(one_takt_delay);
+#ifdef __PPC__
+#warning "PPC PS3 calculation, fixme"
+	one_takt_delay -= a;
+	fprintf(stderr, "%lld MHz\n", one_takt_delay * 4 / 100000);
+	one_takt_delay /= 1000000;
+	one_takt_calib = one_takt_delay;
+#else
 	one_takt_delay -= a;
 	one_takt_delay /= 1000000;
 	one_takt_calib = one_takt_delay;
-// hack
-//	one_takt_delay = one_takt_delay * 70;
-//	one_takt_delay = one_takt_delay / 100;
-//
 	fprintf(stderr, "%lld MHz\n", one_takt_calib);
-	one_takt_one_percent = one_takt_delay / 100;
+#endif
     }
 
     int j = 0;
@@ -809,7 +811,7 @@ int main(int argc, char *argv[])
 #endif
 	}
 
-#if 1
+#if defined(__i386__) || defined(__x86_64__)
 	    ChecKeyboard();
 #endif
 
