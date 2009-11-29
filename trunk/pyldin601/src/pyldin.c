@@ -612,7 +612,7 @@ int main(int argc, char *argv[])
     sys_flags |= SDL_INIT_JOYSTICK;
 #endif
 
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_EVENTTHREAD | sys_flags) < 0) {
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | sys_flags) < 0) {
 	fprintf(stderr, "Couldn't load SDL: %s\n", SDL_GetError());
 	exit(1);
     }
