@@ -27,7 +27,15 @@ LDFLAGS += -lSDL_image -ljpeg -lpng
 ##########################
 
 OBJS  = src/core/floppy.o src/core/virtkbd.o src/core/mc6800.o 
-OBJS += src/wave.o src/screen.o src/discs.o src/sshot.o src/printer.o src/floppymanager.o src/pyldin.o
+OBJS += src/screen.o src/discs.o src/sshot.o src/printer.o src/floppymanager.o src/pyldin.o
+
+ifeq (alsa, $(SOUND))
+OBJS += src/wave-alsa.o
+CFLAGS += -DUSE_ALSA=1
+CXXFLAGS += -DUSE_ALSA=1
+else
+OBJS += src/wave.o
+endif
 
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $(OBJS) $(LDFLAGS) $(CXXFLAGS)
