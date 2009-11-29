@@ -16,7 +16,7 @@ CXX := g++
 OPT_FLAGS := -O3 -fomit-frame-pointer
 #OPT_STRIP := -s
 CFLAGS = -Wall $(OPT_FLAGS) -fno-exceptions -Isrc/core -Isrc `sdl-config --cflags` `pkg-config libpng --cflags` $(EXTRA_CFLAGS)
-CFLAGS += -DDATADIR=\"$(DATADIR)/pyldin\" -DVERSION=\"$(VERSION)r$(EXTRAVERSION)\"
+CFLAGS += -DDATADIR=\"$(DATADIR)/pyldin\" -DVERSION=\"$(VERSION)-$(EXTRAVERSION)\"
 CXXFLAGS = $(CFLAGS) -fno-rtti
 LDFLAGS = $(OPT_LIBS) `sdl-config --libs` `pkg-config libpng --libs` -lz $(OPT_STRIP)
 
