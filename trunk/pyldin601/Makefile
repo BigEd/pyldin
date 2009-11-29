@@ -33,6 +33,7 @@ ifeq (alsa, $(SOUND))
 OBJS += src/wave-alsa.o
 CFLAGS += -DUSE_ALSA=1
 CXXFLAGS += -DUSE_ALSA=1
+LDFLAGS += -lasound
 else
 OBJS += src/wave.o
 endif
