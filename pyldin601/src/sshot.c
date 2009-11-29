@@ -1,10 +1,6 @@
 #include <png.h>
 #include <time.h>
 
-#ifdef _EE
-static int count_pic = 0;
-#endif
-
 int savepng(unsigned short *data, int width, int height)
 {
     int i;
@@ -13,24 +9,15 @@ int savepng(unsigned short *data, int width, int height)
     png_structp png_ptr;
     png_infop info_ptr;
 
-#ifdef _EE
-    sprintf(fname, "sshot-%d.png", count_pic);
-    count_pic++;
-#else
     struct tm *dt;
 
     time_t t = time(NULL);
     
     dt = localtime(&t);
 
-#ifdef _PSP
-    strftime(fname, 1023, "ms0:/PICTURE/pyldin601-%d%m%y%H%M%S.png", dt);
-#else
     strftime(fname, 1023, "sshot-%d%m%y%H%M%S.png", dt);
-#endif
-#endif
-    /* Open the actual file */
 
+    /* Open the actual file */
     FILE * fp = fopen(fname, "wb");
 
     if (!fp) 
@@ -66,20 +53,13 @@ int savepng(unsigned short *data, int width, int height)
     
     png_write_info(png_ptr, info_ptr);
 
-#ifdef _PSP
-    data += (((480 - 320) / 2) + ((272 - 240) / 2) * 512);
-#endif
-
     for (i=0;i<height;i++) {
 	void *rowPointer;
 	void *srcLine;
 	int x;
 
-#ifdef _PSP
-	srcLine = &data[ i * 512 ];
-#else
 	srcLine = &data[ i * width ];
-#endif
+
 	for (x=0; x < width; x++) {
 	    unsigned int pixel = ((unsigned short *)srcLine)[x];
 	    bufferRow[x*3+0] = (((pixel & 0x001f) * 0x21) >>  2);
