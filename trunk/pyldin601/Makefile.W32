@@ -1,5 +1,5 @@
 DESTDIR	:= /tmp/pyldin-win32/pyldin601
-CC 	:= i386-mingw32-gcc
+CC 	:= i686-mingw32-gcc
 TOPDIR	:= $(shell pwd)
 
 all: pyldin.exe
