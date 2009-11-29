@@ -13,18 +13,10 @@
 #include "keyboard.h"
 #include "timer.h"
 
-#ifdef _PSP
-#define SCREEN_WIDTH	512
-#define SCREEN_HEIGHT	272
-#define SCREEN_DEPTH	2
-#define SCREEN_WIDTH_OFS (((480 - 320) / 2) + ((272 - 240) / 2) * 512)
-#else
 #define SCREEN_WIDTH	320
 #define SCREEN_HEIGHT	240
 #define SCREEN_DEPTH	2
 #define SCREEN_WIDTH_OFS 0
-#endif
-
 
 #define PIXEL_ON		(0x3f<<5) //0xffff
 #define PIXEL_OFF		0x0
@@ -45,11 +37,7 @@ extern byte *vMem;
 byte m601a = 0;
 short txt260 = -1;
 short grf260 = -1;
-#if !defined(_EE) && !defined(_PSP)
 int vScale = 2;
-#else
-int vScale = 1;
-#endif
 
 static byte resolution, vMode = 0, old_vMode = 0;
 

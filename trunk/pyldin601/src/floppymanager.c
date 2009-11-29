@@ -12,10 +12,6 @@
 #include "screen.h"
 #include "floppy.h"
 
-#ifdef _EE
-#include "ps2func.h"
-#endif
-
 //floppy
 static char	*filename[4];
 static char	*datadir;
@@ -24,7 +20,7 @@ static int 	namecount = 0;
 static int 	wantDisk = 0;
 static int	name_selected = 2;
 
-#if defined(_WIN32) || defined(_PSP)
+#if defined(_WIN32)
 static int getdir(char *path, struct dirent ***namelist)
 {
     int 		count = 0;
@@ -61,69 +57,6 @@ static int getdir(char *path, struct dirent ***namelist)
 
     closedir(dip);
 
-    return count;
-}
-#elif defined(_EE)
-static int getdir(char *path, struct dirent ***namelist)
-{
-    struct dirent   **names = NULL;
-    int 		count = 0;
-
-    if (!strncmp(path, "cdfs", 4)) {
-	struct TocEntry myTocEntries[128];
-	char pathname[1024];
-	int i;
-	
-	strcpy(pathname, path + 5);
-
-	CDVD_Init();
-
-	count = CDVD_GetDir(pathname, NULL, CDVD_GET_FILES_ONLY, myTocEntries, 128, pathname);
-
-	names = (struct dirent **) malloc((count + 2) * sizeof(struct dirent *));
-
-	names[0] = NULL;
-	names[1] = NULL;
-
-	for (i = 0; i < count; i++) {
-	    names[i + 2] = (struct dirent *) malloc (sizeof(struct dirent));
-	    strncpy(names[i + 2]->d_name, myTocEntries[i].filename, 256);
-	}
-
-	count += 2;
-
-	CDVD_Stop();	
-    } else {
-	fio_dirent_t 	dir;
-	int 		ret;
-	int 		fd = fioDopen(path);
-
-	while( (ret=fioDread( fd, &dir ))>0 ) {
-	    struct dirent **tmp;
-	
-	    tmp = (struct dirent **) malloc((count + 1) * sizeof(struct dirent *));
-	
-	    memcpy(tmp, names, count * sizeof(struct dirent *));
-	
-	    tmp[count] = (struct dirent *) malloc (sizeof(struct dirent));
-	
-	    strncpy(tmp[count]->d_name, dir.name, 256);
-	
-	    if (names)
-		free(names);
-	
-	    names = tmp;
-
-    	    //printf( "%s | %d | %d\n",dir.name, dir.stat.mode, dir.stat.size );
-	
-    	    count++;
-	}
-    
-	fioDclose(fd);
-    }
-
-    *namelist = names;
-    
     return count;
 }
 #endif
@@ -171,22 +104,12 @@ void insertFloppy(int disk, char *path)
 
     fprintf(stderr, "Insert floppy: %s ... ", filename[disk]);
 
-#ifdef _EE
-    if (!strncmp(path, "cdfs", 4))
-	CDVD_Init();
-#endif
-
     if (loadDiskImage(filename[disk], disk) < 0) {
 	free(filename[disk]);
 	filename[disk] = NULL;
 	fprintf(stderr, "Failed\n");
     } else 
 	fprintf(stderr, "Ok\n");
-
-#ifdef _EE
-    if (!strncmp(path, "cdfs", 4))
-	CDVD_Stop();
-#endif
 }
 
 void FloppyManagerOn(int disk, char *dir)
@@ -199,7 +122,7 @@ void FloppyManagerOn(int disk, char *dir)
 
     sprintf(dirn, "%s/Floppy", datadir);
 
-#if defined(_WIN32) || defined(_EE) || defined(_PSP)
+#if defined(_WIN32)
     namecount = getdir(dirn, &namelist);
 #else
     namecount = scandir(dirn, &namelist, 0, alphasort);
