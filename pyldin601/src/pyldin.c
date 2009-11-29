@@ -50,18 +50,18 @@ int	fRef = 0;
 int	curBlink = 0;
 
 //
-static volatile long long one_takt_delay = 0;
-static volatile long long one_takt_calib = 0;
-static volatile long long one_takt_one_percent = 0;
+static volatile uint64_t one_takt_delay = 0;
+static volatile uint64_t one_takt_calib = 0;
+static volatile uint64_t one_takt_one_percent = 0;
 
 #if defined(__ppc__)
 
 #define READ_TIMESTAMP(var) ppc_getcounter(&var)
 
 static void
-ppc_getcounter(uint64 *v)
+ppc_getcounter(uint64_t *v)
 {
-	register unsigned long tbu, tb, tbu2;
+	register uint64_t tbu, tb, tbu2;
 
   loop:
 	asm volatile ("mftbu %0" : "=r" (tbu) );
@@ -86,9 +86,17 @@ ppc_getcounter(uint64 *v)
     __asm__ __volatile__("rdtsc" : "=a" (((int*)&val)[0]), "=d" (((int*)&val)[1]));
 
 #else
-#error "Don't know how to implement timestamp counter for this architecture"
+
+#define READ_TIMESTAMP(var) readTSC(&var)
+
+static void readTSC(volatile uint64_t *v)
+{
+    struct timespec tp;
+    clock_gettime (CLOCK_REALTIME, &tp);
+    *v = (uint64_t)(tp.tv_sec * (uint64_t)1000000000) + (uint64_t)tp.tv_nsec;
+}
+
 #endif
-//
 
 static char *romName[] = {
     "str$08.roz",
@@ -670,7 +678,7 @@ int main(int argc, char *argv[])
 
     fprintf(stderr, "Detecting host cpu speed... ");
     {
-	volatile long long a;
+	volatile uint64_t a;
 	READ_TIMESTAMP(a);
 	sleep(1);
 	READ_TIMESTAMP(one_takt_delay);
@@ -718,7 +726,7 @@ int main(int argc, char *argv[])
     int scounter = 0;		// syncro counter
     int takt;
 
-    volatile long long clock_old;
+    volatile uint64_t clock_old;
     READ_TIMESTAMP(clock_old);
 
     vscr = (unsigned short *) screen->pixels;
@@ -737,7 +745,7 @@ int main(int argc, char *argv[])
     }
 
     do {
-	volatile long long ts1;
+	volatile uint64_t ts1;
 	READ_TIMESTAMP(ts1);
 
 	takt = mc6800_step();	//
@@ -752,15 +760,17 @@ int main(int argc, char *argv[])
 
 #if 0
 	    SDL_Flip( screen );
+#endif
 
+#if 0
 	    if ( ! filemenuEnabled ) {
 		refreshScr();
 	    }
 #endif
 
-	    volatile long long clock_new;
+	    volatile uint64_t clock_new;
 	    READ_TIMESTAMP(clock_new);
-	    long long actual_speed = (vcounter * 1000) / ((clock_new - clock_old) / one_takt_calib);
+	    uint64_t actual_speed = (vcounter * 1000) / ((clock_new - clock_old) / one_takt_calib);
 	
 	    if (show_info) {
 		char buf[64];
@@ -778,9 +788,11 @@ int main(int argc, char *argv[])
 //		one_takt_delay++;
 //		//one_takt_one_percent;
 
-#if 1
 #ifdef USE_JOYSTICK
 #ifdef USE_JOYMOUSE
+	    /*
+	     * Draw cursor cross
+	     */
 	    if (joymouse_enabled && (vkbdEnabled || (joymouse_y >= 216))) {
 		drawChar(joymouse_x, joymouse_y, '+', 0xff00, 0);
 		if (joymouse_y >= 216) 
@@ -788,22 +800,25 @@ int main(int argc, char *argv[])
 	    }
 #endif
 #endif
-#endif
 	    clock_old = clock_new;
 
 	    vcounter = 0;
 
-#if 1
+#if 0
 	    ChecKeyboard();
 #endif
 	}
+
+#if 1
+	    ChecKeyboard();
+#endif
 
 	if (resetRequested == 1) {
 	    mc6800_reset();
 	    resetRequested = 0;
 	}
 
-	volatile long long ts2;
+	volatile uint64_t ts2;
 	do {
 	    READ_TIMESTAMP(ts2);
 	} while ((ts2 - ts1) < (one_takt_delay * takt));
