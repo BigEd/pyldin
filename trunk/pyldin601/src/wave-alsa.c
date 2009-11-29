@@ -14,7 +14,7 @@
 
 #include "wave.h"
 
-#define FREQ	48000
+#define FREQ	44100
 
 static short *buffer;
 static int buffer_size;
@@ -24,7 +24,6 @@ static int old_ticks;
 static int old_val;
 
 static int fInited = 0;
-static int fEnabled = 0;
 
 static snd_pcm_t *handle;
 
@@ -36,8 +35,10 @@ int Speaker_Init(void)
     int dir;
     snd_pcm_uframes_t frames;
 
+    char *audiodev = getenv("AUDIODEV");
+
     /* Open PCM device for playback. */
-    rc = snd_pcm_open(&handle, "front", SND_PCM_STREAM_PLAYBACK, 0);
+    rc = snd_pcm_open(&handle, audiodev?audiodev:"default", SND_PCM_STREAM_PLAYBACK, 0);
     if (rc < 0) {
 	fprintf(stderr, "unable to open pcm device: %s\n", snd_strerror(rc));
 	return -1;
@@ -121,7 +122,7 @@ void Covox_Set(int val, int ticks)
 		int rc = snd_pcm_writei(handle, buffer, buffer_pos >> 1);
 		if (rc == -EPIPE) {
 		    /* EPIPE means underrun */
-		    fprintf(stderr, "underrun occurred\n");
+		    //fprintf(stderr, "underrun occurred\n");
 		    snd_pcm_prepare(handle);
 		} else if (rc < 0) {
 		    fprintf(stderr, "error from writei: %s\n", snd_strerror(rc));
