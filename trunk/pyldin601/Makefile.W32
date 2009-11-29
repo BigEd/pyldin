@@ -19,4 +19,4 @@ clean:
 
 install: pyldin.exe
 	make -f Makefile TARGET=pyldin.exe DESTDIR=$(DESTDIR)/ PREFIX=./ BINDIR=./ DATADIR=./ CC=$(CC) install
-	cd `dirname $(DESTDIR)` && zip -r9 $(TOPDIR)/`basename $(DESTDIR)`-win32-$(VERSION)$(EXTRAVERSION).zip `basename $(DESTDIR)`
+	cd `dirname $(DESTDIR)` && zip -r9 $(TOPDIR)/`basename $(DESTDIR)`-win32-$(VERSION)-$(EXTRAVERSION).zip `basename $(DESTDIR)`
