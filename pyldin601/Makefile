@@ -57,7 +57,7 @@ endif
 
 package:
 	cp debian/changelog.in debian/changelog
-	sed -i -e "s|@VERSION@|${VERSION}.${EXTRAVERSION}|" debian/changelog
+	sed -i -e "s|@VERSION@|${VERSION}-${EXTRAVERSION}|" debian/changelog
 	sed -i -e "s|@DATE@|${DATE}|" debian/changelog
 	dpkg-buildpackage -rfakeroot -b -tc || true
 	rm -f debian/changelog debian/files debian/pyldin601.debhelper.log debian/pyldin601.substvars
