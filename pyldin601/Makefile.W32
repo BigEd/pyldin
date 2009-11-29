@@ -4,13 +4,8 @@ TOPDIR	:= $(shell pwd)
 
 all: pyldin.exe
 
-VERSION=3.2
-EXTRAVERSION	:= $(shell \
-			if [ -d .svn ]; then \
-			    printf 'rev' ; \
-			    unset LC_ALL LANG ; svn info | grep Revision | cut -f2 -d' ' ; \
-			fi \
-		    )
+VERSION=3.3
+EXTRAVERSION=$(shell LANG=en_US svn info 2>&1 | grep Revision | awk '{print $$2}')
 
 pyldin.exe:
 	make -f Makefile TARGET=pyldin.exe PREFIX=./ BINDIR=./ DATADIR=./ CC=$(CC)
