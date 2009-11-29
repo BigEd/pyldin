@@ -55,8 +55,13 @@ int Speaker_Init(void)
     /* Interleaved mode */
     snd_pcm_hw_params_set_access(handle, params, SND_PCM_ACCESS_RW_INTERLEAVED);
 
+#if defined(__PPC__)
+    /* Signed 16-bit big-endian format */
+    snd_pcm_hw_params_set_format(handle, params, SND_PCM_FORMAT_S16_BE);
+#else
     /* Signed 16-bit little-endian format */
     snd_pcm_hw_params_set_format(handle, params, SND_PCM_FORMAT_S16_LE);
+#endif
 
     /* Two channels (stereo) */
     snd_pcm_hw_params_set_channels(handle, params, 2);
