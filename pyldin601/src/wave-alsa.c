@@ -38,7 +38,7 @@ int Speaker_Init(void)
     char *audiodev = getenv("AUDIODEV");
 
     /* Open PCM device for playback. */
-    rc = snd_pcm_open(&handle, audiodev?audiodev:"default", SND_PCM_STREAM_PLAYBACK, 0);
+    rc = snd_pcm_open(&handle, audiodev?audiodev:"default", SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK);
     if (rc < 0) {
 	fprintf(stderr, "unable to open pcm device: %s\n", snd_strerror(rc));
 	return -1;
