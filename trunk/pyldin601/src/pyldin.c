@@ -15,10 +15,6 @@
 
 #include <SDL.h>
 
-#ifdef _PSP
-#include <psprtc.h>
-#endif
-
 #include "pyldin.h"
 #include "mc6800.h"
 #include "screen.h"
@@ -40,11 +36,6 @@ static int joymouse_y = 110;
 #endif
 #endif
 
-#ifdef _EE
-#include "ps2func.h"
-#define sleep(a)
-#endif
-
 char *datadir = DATADIR;
 
 #define MAX_LOADSTRING 100
@@ -59,7 +50,6 @@ int	fRef = 0;
 int	curBlink = 0;
 
 //
-static Uint32 delaytrash = 0;
 static volatile long long one_takt_delay = 0;
 static volatile long long one_takt_calib = 0;
 static volatile long long one_takt_one_percent = 0;
@@ -445,6 +435,29 @@ static void ChecKeyboard(void)
     }
 }
 
+int SDLCALL HandleVideo(void *unused)
+{
+    while (!exitRequested) {
+	SDL_Flip( screen );
+
+	if ( ! filemenuEnabled ) {
+	    refreshScr();
+	}
+	usleep(1000000 / 50);
+#ifdef USE_JOYSTICK
+#ifdef USE_JOYMOUSE
+	if (joymouse_enabled && (vkbdEnabled || (joymouse_y >= 216))) {
+	    drawChar(joymouse_x, joymouse_y, '+', 0xff00, 0);
+	    if (joymouse_y >= 216) 
+		redrawVMenu = 1;
+	}
+#endif
+#endif
+	ChecKeyboard();
+    }
+    return 0;
+}
+
 #ifdef PYLDIN_LOGO
 #include "logo.h"
 #include <SDL_image.h>
@@ -529,42 +542,6 @@ void usage(char *app)
     exit(0);
 }
 
-#ifdef _EE
-void preved(int f)
-{
-	int i,k;
-        Uint16 color;
-        Uint8  gradient;
-	Uint16 *buffer16;
-	Uint8  *buffer=(Uint8 *)screen->pixels;
-	if (screen->format->BytesPerPixel!=2) {
-        	for ( i=0; i<screen->h; ++i ) {
-        		memset(buffer,(i*255)/screen->h, screen->pitch);
-        		buffer += screen->pitch;
-        	}
-        }
-        else
-        {
-		for ( i=0; i<screen->h; ++i ) {
-			gradient=((i*255)/screen->h);
-			if (f)
-                    	    color = SDL_MapRGB(screen->format, gradient, 0, 0);
-			else
-                    	    color = SDL_MapRGB(screen->format, gradient, gradient, gradient);
-                        buffer16=(Uint16*)buffer;
-                        for (k=0; k<screen->w; k++)
-                        {
-                            *(buffer16+k)=color;
-                        }
-			buffer += screen->pitch;
-		}
-        }
-	
-	SDL_Flip(screen);
-	exit(0);
-}
-#endif
-
 int main(int argc, char *argv[])
 {
     int set_time = 0;
@@ -576,29 +553,11 @@ int main(int argc, char *argv[])
 #ifdef USE_JOYSTICK
     SDL_Joystick *joystick;
 #endif
-
-#ifdef _EE
-    systemInit();
-
-    if (!strncmp(argv[0], "host", 4))
-	datadir = "host:/pyldin";
-
-    if (!strncmp(argv[0], "cdrom", 5))
-	datadir = "cdfs:/pyldin";
-
-    if (!strncmp(argv[0], "mass", 4))
-	datadir = "mass:/pyldin";
-#endif
-
-#ifdef _PSP
-    datadir = ".";
-    //set_time = 1;
-#endif
+    SDL_Thread *video_thread;
 
     fprintf(stderr, "Portable Pyldin 601 emulator (http://code.google.com/p/pyldin)\n");
     fprintf(stderr, "Copyright (c) 1997-2009 Sasha Chukov <sash@pdaXrom.org>, Yura Kuznetsov <yura@petrsu.ru>\n");
 
-#if !defined(_EE) && !defined(_PSP)
     extern char *optarg;
     extern int optind, optopt, opterr;
     int c;
@@ -639,14 +598,13 @@ int main(int argc, char *argv[])
 
     for ( ; optind < argc; optind++)
 	bootFloppy = argv[optind];
-#endif
 
     sys_flags = 0;
 #ifdef USE_JOYSTICK
     sys_flags |= SDL_INIT_JOYSTICK;
 #endif
 
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | sys_flags) < 0) {
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_EVENTTHREAD | sys_flags) < 0) {
 	fprintf(stderr, "Couldn't load SDL: %s\n", SDL_GetError());
 	exit(1);
     }
@@ -667,11 +625,9 @@ int main(int argc, char *argv[])
     SDL_WM_SetCaption("PYLDIN-601 Emulator v" VERSION, "pyldin");
 
     vid_flags = SDL_HWSURFACE;
-#ifndef _PSP
     vid_flags |= SDL_DOUBLEBUF;
-#endif
 
-    screen=SDL_SetVideoMode(320 * vScale, 240 * vScale, 16, vid_flags);
+    screen = SDL_SetVideoMode(320 * vScale, 240 * vScale, 16, vid_flags);
 
     char ftemp[256];
 
@@ -686,13 +642,6 @@ int main(int argc, char *argv[])
 #endif
 
     mc6800_init();
-
-#ifdef _EE
-    usbDriveInit();
-    
-    if (!strncmp(datadir, "cdfs", 4))
-	CDVD_Init();
-#endif
 
     fprintf(stderr, "Loading main rom... ");
     sprintf(ftemp, "%s/Bios/bios.roz", datadir);
@@ -719,7 +668,6 @@ int main(int argc, char *argv[])
 	return -1; 
     }
 
-#if defined(__i386__) || defined(__x86_64__) || defined(__ppc__)
     fprintf(stderr, "Detecting host cpu speed... ");
     {
 	volatile long long a;
@@ -730,13 +678,12 @@ int main(int argc, char *argv[])
 	one_takt_delay /= 1000000;
 	one_takt_calib = one_takt_delay;
 // hack
-	one_takt_delay = one_takt_delay * 70;
-	one_takt_delay = one_takt_delay / 100;
+//	one_takt_delay = one_takt_delay * 70;
+//	one_takt_delay = one_takt_delay / 100;
 //
 	fprintf(stderr, "%lld MHz\n", one_takt_calib);
 	one_takt_one_percent = one_takt_delay / 100;
     }
-#endif
 
     int j = 0;
     int i;
@@ -747,11 +694,6 @@ int main(int argc, char *argv[])
     for (i = 0; i < 5; i++)
 	LoadRomDisk(romDiskName[i], i);
 
-#ifdef _EE
-    if (!strncmp(datadir, "cdfs", 4))
-	CDVD_Stop();
-#endif
-
     initFloppy();
 
     if (bootFloppy)
@@ -761,6 +703,8 @@ int main(int argc, char *argv[])
     
     // sound initialization
     Speaker_Init();
+
+    video_thread = SDL_CreateThread(HandleVideo, NULL);
 
     mc6800_reset();
 
@@ -774,34 +718,15 @@ int main(int argc, char *argv[])
     int scounter = 0;		// syncro counter
     int takt;
 
-#if defined(__i386__) || defined(__x86_64__) || defined(__ppc__)
     volatile long long clock_old;
     READ_TIMESTAMP(clock_old);
-#else
-    Uint32 clock_old = SDL_GetTicks();
-#endif
-    Uint32 delay = 0;
+
     vscr = (unsigned short *) screen->pixels;
 
     if (set_time) {
-#if defined(_PSP)
-	pspTime time;
-	if (!sceRtcGetCurrentClock(&time, 0)) {
-	    mc6800_setDATETIME( time.year, 
-				time.month,
-				time.day,
-				time.hour,
-				time.minutes,
-				time.seconds
-				);
-	}
-#elif !defined(_EE)
 	struct tm *dt;
-
 	time_t t = time(NULL);
-    
 	dt = localtime(&t);
-    
 	mc6800_setDATETIME( dt->tm_year,
 			    dt->tm_mon,
 			    dt->tm_mday,
@@ -809,14 +734,11 @@ int main(int argc, char *argv[])
 			    dt->tm_min,
 			    dt->tm_sec
 			    );
-#endif
     }
-    
+
     do {
-#if defined(__i386__) || defined(__x86_64__) || defined(__ppc__)
 	volatile long long ts1;
 	READ_TIMESTAMP(ts1);
-#endif
 
 	takt = mc6800_step();	//
 
@@ -828,13 +750,14 @@ int main(int argc, char *argv[])
 	    curBlink++;
 	    IRQrequest = 1;
 
+#if 0
 	    SDL_Flip( screen );
 
 	    if ( ! filemenuEnabled ) {
 		refreshScr();
 	    }
+#endif
 
-#if defined(__i386__) || defined(__x86_64__) || defined(__ppc__)
 	    volatile long long clock_new;
 	    READ_TIMESTAMP(clock_new);
 	    long long actual_speed = (vcounter * 1000) / ((clock_new - clock_old) / one_takt_calib);
@@ -854,22 +777,8 @@ int main(int argc, char *argv[])
 //	    else if (actual_speed > 1000)
 //		one_takt_delay++;
 //		//one_takt_one_percent;
-#else
-	    Uint32 clock_new = SDL_GetTicks();
 
-	    int delay_val = (vcounter * 40) / ((clock_new - clock_old) * 1000) - 40;
-
-	    delay += (delay_val << 1);
-	    
-	    if (show_info) {
-		char buf[64];
-		
-		sprintf(buf, "%1.2fMHz", (float) (vcounter * 10) / ((clock_new - clock_old) * 10000));
-
-		drawString(160, 28, buf, 0xffff, 0);
-
-	    }
-#endif
+#if 1
 #ifdef USE_JOYSTICK
 #ifdef USE_JOYMOUSE
 	    if (joymouse_enabled && (vkbdEnabled || (joymouse_y >= 216))) {
@@ -879,12 +788,14 @@ int main(int argc, char *argv[])
 	    }
 #endif
 #endif
-
+#endif
 	    clock_old = clock_new;
 
 	    vcounter = 0;
-	    
+
+#if 1
 	    ChecKeyboard();
+#endif
 	}
 
 	if (resetRequested == 1) {
@@ -892,18 +803,11 @@ int main(int argc, char *argv[])
 	    resetRequested = 0;
 	}
 
-#if defined(__i386__) || defined(__x86_64__) || defined(__ppc__)
 	volatile long long ts2;
 	do {
 	    READ_TIMESTAMP(ts2);
 	} while ((ts2 - ts1) < (one_takt_delay * takt));
-#else
-	int tempd;
 
-	for (tempd = delay; tempd > 0; tempd--) {
-	    delaytrash++;
-	}
-#endif
     } while( exitRequested == 0);	//
 
     freeFloppy();
