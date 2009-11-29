@@ -32,7 +32,7 @@ int Speaker_Init(void)
     int rc, i;
     snd_pcm_hw_params_t *params;
     unsigned int val;
-    int dir;
+    int dir = 0;
     snd_pcm_uframes_t frames;
 
     char *audiodev = getenv("AUDIODEV");
