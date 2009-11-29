@@ -3,7 +3,7 @@
 build: build-stamp
 build-stamp:
 	dh_testdir
-	$(MAKE) -C $(CURDIR) MAKEARGS=-j4
+	$(MAKE) -C $(CURDIR) MAKEARGS=-j4 SOUND=alsa
 	$(MAKE) -C $(CURDIR)/../as6800 MAKEARGS=-j4
 	$(MAKE) -C $(CURDIR)/../dis6800 MAKEARGS=-j4
 
