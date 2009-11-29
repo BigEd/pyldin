@@ -8,10 +8,10 @@ VERSION=3.3
 EXTRAVERSION=$(shell LANG=en_US svn info 2>&1 | grep Revision | awk '{print $$2}')
 
 pyldin.exe:
-	make -f Makefile TARGET=pyldin.exe PREFIX=./ BINDIR=./ DATADIR=./ CC=$(CC)
+	make -f Makefile TARGET=pyldin.exe PREFIX=./ BINDIR=./ DATADIR=./ CC=$(CC) OPT_STRIP="-s -static -lwinmm"
 
 clean:
-	make -f Makefile clean TARGET=pyldin.exe PREFIX=./ BINDIR=./ DATADIR=./ CC=$(CC)
+	make -f Makefile clean TARGET=pyldin.exe PREFIX=./ BINDIR=./ DATADIR=./ CC=$(CC) -j4
 	rm -f `basename $(DESTDIR)`-win32-$(VERSION)$(EXTRAVERSION).zip
 	@echo
 	@echo "Please, remove $(DESTDIR) yourself."
