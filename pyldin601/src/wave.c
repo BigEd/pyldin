@@ -11,39 +11,34 @@
 #include <SDL.h>
 #include "wave.h"
 
-#define FREQ	22050
-#define BUFSIZE	FREQ
-//FREQ/20
+#define FREQ	48000
 
 static short *buffer;
+static int buffer_size;
+static int buffer_pos;
 
-static int pos;
-static int pos_count;
 static int old_ticks;
 static int old_val;
 
-static int posp;
-static int posp_count;
-
 static int fInited = 0;
+static int fEnabled = 0;
 
-static void callback(void *unused, Uint8 *stream, int len)
+static void callback(void *data, Uint8 *stream, int len)
 {
     int i;
+    int pos = 0;
+    SDL_AudioSpec *obt = (SDL_AudioSpec *) data;
     short *ptr = (short *) stream;
-    for (i=0; i<len/2; i++) {
-	if (pos_count > posp_count) {
-	    ptr[i] = buffer[posp];
-	    buffer[posp++] = 0;
-	    posp_count++;
-	} else {
-	    ptr[i] = 0;
-	}
-	if (posp >= BUFSIZE) 
-	    posp = 0;
+
+    for (i = 0; i < len/4; i++) {
+	ptr[i*2] = buffer[pos];
+	ptr[i*2+1] = buffer[pos];
+	buffer[pos++] = 0;
+	if (pos >= obt->samples)
+	    break;
     }
-    pos_count -= posp_count;
-    posp_count = 0;
+
+    buffer_pos = 0;
 }
 
 int Speaker_Init(void)
@@ -52,13 +47,14 @@ int Speaker_Init(void)
     SDL_AudioSpec wav, obt;
 
     fInited = 0;
+    fEnabled = 0;
 
-    wav.freq = FREQ;		//mode;
-    wav.format = AUDIO_S16;
-    wav.channels = 1;		/* 1 = mono, 2 = stereo */
-    wav.samples = 64;		/* Good low-latency value for callback */
+    wav.freq = FREQ;			/* Frequency */
+    wav.format = AUDIO_S16;		/* Format */
+    wav.channels = 2;			/* 1 = mono, 2 = stereo */
+    wav.samples = wav.freq / 50;	/* Good low-latency value for callback */
     wav.callback = callback;
-    wav.userdata = NULL;
+    wav.userdata = &obt;
 
     if ( SDL_InitSubSystem(SDL_INIT_AUDIO) < 0 )
     {
@@ -71,20 +67,17 @@ int Speaker_Init(void)
 	return -1;
     }
 
-    buffer = (short *) malloc (BUFSIZE * 2);
-    for(i = 0 ; i < BUFSIZE; i++ )
-	buffer[i] = 0; //(i & 8)?0xff:0x0;;
+    buffer_size = obt.samples;
+    buffer = (short *) malloc (obt.samples * 2);
+    for(i = 0 ; i < obt.samples; i++ )
+	buffer[i] = 0;
 
-    pos = 0;
-    posp = 0;
-    old_ticks = 0;
+    buffer_pos = 0;
+    fInited = 1;
     old_val = 0;
-    pos_count = 0;
-    posp_count = 0;
+    old_ticks = 0;
 
     SDL_PauseAudio(0);
-
-    fInited = 1;
 
     return 0;
 }
@@ -95,7 +88,6 @@ void Speaker_Finish(void)
 	SDL_PauseAudio(1);
 	if (buffer) 
 	    free(buffer);
-//	SDL_QuitSubSystem(SDL_INIT_AUDIO);
 	fInited = 0;
     }
 }
@@ -109,42 +101,20 @@ void Covox_Set(int val, int ticks)
 {
     if (!fInited)
 	return;
-    int slen = ((ticks - old_ticks)*1000)/FREQ; //40000; //20000;
-    if (slen > BUFSIZE) slen = BUFSIZE;
-
-//    SDL_PauseAudio(1);
 
     SDL_LockAudio();
+    unsigned int slen = ((ticks - old_ticks) * buffer_size) / 20000;
+    if ((buffer_pos < buffer_size) &&
+	(slen > 0)) {
 
-    while (slen > 0) {
-	buffer[pos++] = (old_val << 8) ^ 0x8000;
-	if (pos >= BUFSIZE) 
-	    pos = 0;
-	slen--;
-	pos_count++;
-    }
-
-    SDL_UnlockAudio();
-
-    old_ticks = ticks;
-    old_val = val;
-}
-
-void Speaker_Clear(int ticks)
-{
-    if (!fInited)
-	return;
-//    SDL_PauseAudio(0);
-/*
-	int slen = ((ticks - old_ticks)*BUFSIZE)/40000; //20000;
-	if (slen > BUFSIZE) slen = BUFSIZE;
-
-	while (slen > 0) {
-		buffer[pos++] = (old_val)?0x7fff:0;
-		if (pos >= BUFSIZE) pos = 0;
-		slen--;
+	while (slen-- > 0) {
+	    buffer[buffer_pos++] = (old_val << 8) ^ 0x8000;
+	    if (buffer_pos >= buffer_size)
+	        break;
 	}
 
-	old_ticks = ticks;
-*/
+    }
+    old_ticks = ticks;
+    old_val = val;
+    SDL_UnlockAudio();
 }
