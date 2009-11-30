@@ -794,7 +794,7 @@ int main(int argc, char *argv[])
 	do {
 	    READ_TIMESTAMP(ts2);
 	} while ((ts2 - ts1) < (one_takt_delay * takt));
-	READ_TIMESTAMP(ts1);
+	ts1 = ts2;
     } while( exitRequested == 0);	//
 
     freeFloppy();
