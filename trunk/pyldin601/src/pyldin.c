@@ -476,7 +476,11 @@ int SDLCALL HandleVideo(void *unused)
 #endif
 #endif
 	while(!(updateScreen || exitRequested))
+#ifndef __MINGW32__
 	    ChecKeyboard();
+#else
+	    usleep(5000);
+#endif
 	updateScreen = 0;
     }
     return 0;
@@ -783,8 +787,10 @@ int main(int argc, char *argv[])
 	
 	    clock_old = clock_new;
 	    vcounter = 0;
+#ifdef __MINGW32__
+	    ChecKeyboard();
+#endif
 	}
-
 	if (resetRequested == 1) {
 	    mc6800_reset();
 	    resetRequested = 0;
