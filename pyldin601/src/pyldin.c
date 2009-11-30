@@ -48,6 +48,10 @@ char *datadir = DATADIR;
 static SDL_Surface *screen;
 
 //
+static int updateScreen = 0;
+static int show_info = 0;
+static volatile uint64_t actual_speed = 0;
+//
 int	filemenuEnabled = 0;
 // timer
 int	tick50 = 0;
@@ -454,7 +458,14 @@ int SDLCALL HandleVideo(void *unused)
 	if ( ! filemenuEnabled ) {
 	    refreshScr();
 	}
-	usleep(1000000 / 50);
+
+	if (show_info) {
+	    char buf[64];
+
+	    sprintf(buf, "%1.2fMHz", (float)actual_speed / 1000);
+	    drawString(160, 28, buf, 0xffff, 0);
+	}
+
 #ifdef USE_JOYSTICK
 #ifdef USE_JOYMOUSE
 	if (joymouse_enabled && (vkbdEnabled || (joymouse_y >= 216))) {
@@ -464,7 +475,9 @@ int SDLCALL HandleVideo(void *unused)
 	}
 #endif
 #endif
-	ChecKeyboard();
+	while(!(updateScreen || exitRequested))
+	    ChecKeyboard();
+	updateScreen = 0;
     }
     return 0;
 }
@@ -556,7 +569,6 @@ void usage(char *app)
 int main(int argc, char *argv[])
 {
     int set_time = 0;
-    int show_info = 0;
     int printer_type = PRINTER_NONE;
     char *bootFloppy = NULL;
     Uint32 vid_flags;
@@ -701,7 +713,7 @@ int main(int argc, char *argv[])
 
     int j = 0;
     int i;
-    
+
     for (i = 0; i < 8; i++)
 	j = LoadRom(romName[i], j);
 
@@ -714,10 +726,11 @@ int main(int argc, char *argv[])
 	insertFloppy(FLOPPY_A, bootFloppy);
 
     printer_init(printer_type);
-    
+
     // sound initialization
     Speaker_Init();
 
+    updateScreen = 0;
     video_thread = SDL_CreateThread(HandleVideo, NULL);
 
     mc6800_reset();
@@ -750,11 +763,10 @@ int main(int argc, char *argv[])
 			    );
     }
 
+    volatile uint64_t ts1;
+    READ_TIMESTAMP(ts1);
     do {
-	volatile uint64_t ts1;
-	READ_TIMESTAMP(ts1);
-
-	takt = mc6800_step();	//
+	takt = mc6800_step();
 
 	vcounter += takt;
 	scounter += takt;
@@ -763,61 +775,15 @@ int main(int argc, char *argv[])
 	    tick50 = 0x80;
 	    curBlink++;
 	    IRQrequest = 1;
-
-#if 0
-	    SDL_Flip( screen );
-#endif
-
-#if 0
-	    if ( ! filemenuEnabled ) {
-		refreshScr();
-	    }
-#endif
+	    updateScreen = 1;
 
 	    volatile uint64_t clock_new;
 	    READ_TIMESTAMP(clock_new);
-	    uint64_t actual_speed = (vcounter * 1000) / ((clock_new - clock_old) / one_takt_calib);
+	    actual_speed = (vcounter * 1000) / ((clock_new - clock_old) / one_takt_calib);
 	
-	    if (show_info) {
-		char buf[64];
-		
-		sprintf(buf, "%1.2fMHz", (float)actual_speed / 1000);
-		//sprintf(buf, "%lldMHz", actual_speed);
-
-		drawString(160, 28, buf, 0xffff, 0);
-
-	    }
-
-//	    if (actual_speed < 1000)
-//		one_takt_delay--;
-//	    else if (actual_speed > 1000)
-//		one_takt_delay++;
-//		//one_takt_one_percent;
-
-#ifdef USE_JOYSTICK
-#ifdef USE_JOYMOUSE
-	    /*
-	     * Draw cursor cross
-	     */
-	    if (joymouse_enabled && (vkbdEnabled || (joymouse_y >= 216))) {
-		drawChar(joymouse_x, joymouse_y, '+', 0xff00, 0);
-		if (joymouse_y >= 216) 
-		    redrawVMenu = 1;
-	    }
-#endif
-#endif
 	    clock_old = clock_new;
-
 	    vcounter = 0;
-
-#if 0
-	    ChecKeyboard();
-#endif
 	}
-
-#if defined(__i386__) || defined(__x86_64__)
-	    ChecKeyboard();
-#endif
 
 	if (resetRequested == 1) {
 	    mc6800_reset();
@@ -828,7 +794,7 @@ int main(int argc, char *argv[])
 	do {
 	    READ_TIMESTAMP(ts2);
 	} while ((ts2 - ts1) < (one_takt_delay * takt));
-
+	READ_TIMESTAMP(ts1);
     } while( exitRequested == 0);	//
 
     freeFloppy();
