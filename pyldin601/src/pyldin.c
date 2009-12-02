@@ -453,8 +453,9 @@ static void ChecKeyboard(void)
 int SDLCALL HandleVideo(void *unused)
 {
     while (!exitRequested) {
+#ifndef __APPLE__
 	SDL_Flip( screen );
-
+#endif
 	if ( ! filemenuEnabled ) {
 	    refreshScr();
 	}
@@ -476,10 +477,10 @@ int SDLCALL HandleVideo(void *unused)
 #endif
 #endif
 	while(!(updateScreen || exitRequested))
-#ifndef __MINGW32__
-	    ChecKeyboard();
-#else
+#if defined(__MINGW32__) || defined(__APPLE__)
 	    usleep(5000);
+#else
+	    ChecKeyboard();
 #endif
 	updateScreen = 0;
     }
@@ -776,6 +777,9 @@ int main(int argc, char *argv[])
 	scounter += takt;
 
 	if (vcounter >= 20000) {
+#ifdef __APPLE__
+	    SDL_Flip( screen );
+#endif
 	    tick50 = 0x80;
 	    curBlink++;
 	    IRQrequest = 1;
@@ -787,7 +791,7 @@ int main(int argc, char *argv[])
 	
 	    clock_old = clock_new;
 	    vcounter = 0;
-#ifdef __MINGW32__
+#if defined(__MINGW32__) || defined(__APPLE__)
 	    ChecKeyboard();
 #endif
 	}

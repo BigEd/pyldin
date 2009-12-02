@@ -2,4 +2,4 @@
 DIR=`dirname $0`
 cd ~; cd Pictures
 export DYLD_LIBRARY_PATH=$DIR/lib
-$DIR/Pyldin-601 -t -d $DIR/share/pyldin
+exec $DIR/pyldin -t -d $DIR/share/pyldin

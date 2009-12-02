@@ -1,27 +1,34 @@
 DESTDIR      := /Applications
 
+VERSION=3.3
+EXTRAVERSION=$(shell LANG=en_US svn info 2>&1 | grep Revision | awk '{print $$2}')
+
+EXTRA_CFLAGS := -m32
+OPT_LIBS     := -m32
+
 all: pyldin
 
 pyldin:
-	make -f Makefile TARGET=Pyldin-601
+	make -f Makefile TARGET=pyldin EXTRA_CFLAGS=$(EXTRA_CFLAGS) OPT_LIBS=$(OPT_LIBS)
 
 clean:
-	make -f Makefile clean TARGET=Pyldin-601
+	make -f Makefile clean TARGET=pyldin
 
 install:
-	make -f Makefile BINDIR=MacOS PREFIX=MacOS DESTDIR=$(DESTDIR)/pyldin.app/Contents/ install TARGET=Pyldin-601
-	#mv $(DESTDIR)/pyldin.app/Contents/MacOS/pyldin $(DESTDIR)/pyldin.app/Contents/MacOS/Pyldin-601
-	cp -f addon/MacOSX/pyldin	$(DESTDIR)/pyldin.app/Contents/MacOS
-	cp -f addon/MacOSX/Info.plist	$(DESTDIR)/pyldin.app/Contents
-	chmod 755 $(DESTDIR)/pyldin.app/Contents/MacOS/pyldin
-	echo 'APPLhiti'			> $(DESTDIR)/pyldin.app/Contents/PkgInfo
-	mkdir -p $(DESTDIR)/pyldin.app/Contents/Resources
-	cp -f addon/MacOSX/pyldin.icns	$(DESTDIR)/pyldin.app/Contents/Resources
-	strip $(DESTDIR)/pyldin.app/Contents/MacOS/Pyldin-601
+	make -f Makefile BINDIR=MacOS PREFIX=MacOS DESTDIR=$(DESTDIR)/Pyldin-601.app/Contents/ install TARGET=pyldin EXTRA_CFLAGS=$(EXTRA_CFLAGS) OPT_LIBS=$(OPT_LIBS)
+	#mv $(DESTDIR)/Pyldin-601.app/Contents/MacOS/pyldin $(DESTDIR)/Pyldin-601.app/Contents/MacOS/Pyldin-601
+	cp -f addon/MacOSX/Pyldin-601	$(DESTDIR)/Pyldin-601.app/Contents/MacOS
+	cp -f addon/MacOSX/Info.plist	$(DESTDIR)/Pyldin-601.app/Contents
+	chmod 755 $(DESTDIR)/Pyldin-601.app/Contents/MacOS/pyldin
+	echo 'APPLhiti'			> $(DESTDIR)/Pyldin-601.app/Contents/PkgInfo
+	mkdir -p $(DESTDIR)/Pyldin-601.app/Contents/Resources
+	cp -f addon/MacOSX/pyldin.icns	$(DESTDIR)/Pyldin-601.app/Contents/Resources
+	strip $(DESTDIR)/Pyldin-601.app/Contents/MacOS/pyldin
 	echo "Install libraries"
-	mkdir -p $(DESTDIR)/pyldin.app/Contents/MacOS/lib
-	for file in `otool -L Pyldin-601 /opt/local/lib/libSDL_image-1.2.0.dylib | grep '/opt/' | grep -v 'dylib:' | cut -d ' ' -f1`; do \
+	mkdir -p $(DESTDIR)/Pyldin-601.app/Contents/MacOS/lib
+	for file in `otool -L pyldin | grep -v '/usr/lib' | grep -v '/System/Library' | grep -v 'dylib:' | cut -d ' ' -f1`; do \
 	 echo $$file; \
-	 cp -f $$file $(DESTDIR)/pyldin.app/Contents/MacOS/lib; \
+	 test -f $$file && cp -f $$file $(DESTDIR)/Pyldin-601.app/Contents/MacOS/lib; \
 	done
-	#strip $(DESTDIR)/pyldin.app/Contents/MacOS/lib/*.dylib >/dev/null 2>/dev/null ; true
+	cd $(DESTDIR) && zip -r9 /tmp/Pyldin-601_$(VERSION)-$(EXTRAVERSION)_OSX-`uname -m`.zip Pyldin-601.app
+	#strip $(DESTDIR)/Pyldin-601.app/Contents/MacOS/lib/*.dylib >/dev/null 2>/dev/null ; true
