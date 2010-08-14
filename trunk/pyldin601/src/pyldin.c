@@ -175,7 +175,7 @@ static void ChecKeyboard(void)
     int x = 0, y = 0;
     int vmenu_process = 0;
 
-    if(SDL_PollEvent(&event) > 0){
+    if(SDL_WaitEvent(&event) > 0){
 	switch(event.type) {
 	    case SDL_QUIT:
 		exitRequested = 1;
@@ -452,10 +452,8 @@ static void ChecKeyboard(void)
 
 int SDLCALL HandleKeyboard(void *unused)
 {
-    while (!exitRequested) {
+    while (!exitRequested)
 	ChecKeyboard();
-	usleep(50000);
-    }
     return 0;
 }
 
@@ -485,8 +483,7 @@ int SDLCALL HandleVideo(void *unused)
 	}
 #endif
 #endif
-	while(!(updateScreen || exitRequested))
-	    usleep(5000);
+	while(!(updateScreen || exitRequested)) ; // fixme!
 
 	updateScreen = 0;
     }
