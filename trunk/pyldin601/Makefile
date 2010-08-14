@@ -59,6 +59,7 @@ else
 endif
 	mkdir -p $(DESTDIR)$(BINDIR)
 	install -m 755 $(TARGET)      $(DESTDIR)$(BINDIR)
+	install -m 755 pyldin-fb      $(DESTDIR)$(BINDIR)
 	mkdir -p $(DESTDIR)$(DATADIR)/applications
 	mkdir -p $(DESTDIR)$(DATADIR)/pixmaps
 	install -m 644 pyldin.desktop $(DESTDIR)$(DATADIR)/applications
