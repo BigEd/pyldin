@@ -450,6 +450,15 @@ static void ChecKeyboard(void)
     }
 }
 
+int SDLCALL HandleKeyboard(void *unused)
+{
+    while (!exitRequested) {
+	ChecKeyboard();
+	usleep(50000);
+    }
+    return 0;
+}
+
 int SDLCALL HandleVideo(void *unused)
 {
     while (!exitRequested) {
@@ -477,11 +486,8 @@ int SDLCALL HandleVideo(void *unused)
 #endif
 #endif
 	while(!(updateScreen || exitRequested))
-#if defined(__MINGW32__) || defined(__APPLE__)
 	    usleep(5000);
-#else
-	    ChecKeyboard();
-#endif
+
 	updateScreen = 0;
     }
     return 0;
@@ -583,6 +589,7 @@ int main(int argc, char *argv[])
     SDL_Joystick *joystick;
 #endif
     SDL_Thread *video_thread;
+    SDL_Thread *keybd_thread;
 
     fprintf(stderr, "Portable Pyldin-601 emulator version " VERSION " (http://code.google.com/p/pyldin)\n");
     fprintf(stderr, "Copyright (c) 1997-2009 Sasha Chukov <sash@pdaXrom.org>, Yura Kuznetsov <yura@petrsu.ru>\n");
@@ -749,6 +756,7 @@ int main(int argc, char *argv[])
 
     updateScreen = 0;
     video_thread = SDL_CreateThread(HandleVideo, NULL);
+    keybd_thread = SDL_CreateThread(HandleKeyboard, NULL);
 
     mc6800_reset();
 
@@ -803,9 +811,6 @@ int main(int argc, char *argv[])
 	
 	    clock_old = clock_new;
 	    vcounter = 0;
-#if defined(__MINGW32__) || defined(__APPLE__)
-	    ChecKeyboard();
-#endif
 	}
 	if (resetRequested == 1) {
 	    mc6800_reset();
