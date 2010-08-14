@@ -13,9 +13,12 @@
 #define dword	unsigned int
 
 extern int vScale;
-extern byte vregs[16];
-extern byte *vMem;
 extern word *vscr;
+extern int vscr_width;
+extern int vscr_height;
+
+extern byte *vMem;
+extern byte vregs[16];
 extern byte m601a;
 extern short txt260;
 extern short grf260;

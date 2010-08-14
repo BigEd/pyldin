@@ -37,13 +37,15 @@ extern byte *vMem;
 byte m601a = 0;
 short txt260 = -1;
 short grf260 = -1;
-int vScale = 2;
 
 static byte resolution, vMode = 0, old_vMode = 0;
 
 static byte font[2048];
 
 word *vscr;		//videomem start
+int vscr_width = 640;
+int vscr_height = 480;
+int vScale = 2;
 
 void setupScr(int mode)
 {
@@ -59,7 +61,7 @@ void setupScr(int mode)
 
 void drawVMenu(void)
 {
-	int ofj = 216 * SCREEN_WIDTH * vScale * vScale + SCREEN_WIDTH_OFS;
+	int ofj = (((vscr_height - SCREEN_HEIGHT * vScale) >> 1) + 216 * vScale) * vscr_width + ((vscr_width - SCREEN_WIDTH * vScale) >> 1);
 	int ifj = 0;
 	int i, j, x;
 	for (j = 0; j < vmenu_height; j++) {
@@ -75,7 +77,7 @@ void drawVMenu(void)
 			    c >>= 1;
 			}
 		    }
-		    ofj += SCREEN_WIDTH * vScale;
+		    ofj += vscr_width;
 		}
 		ifj += (vmenu_width>>3);
 	}
@@ -83,7 +85,7 @@ void drawVMenu(void)
 
 void clearScr(void)
 {
-	memset((char *)vscr, 0, SCREEN_WIDTH * SCREEN_HEIGHT * 2 * vScale * vScale);
+	memset((char *)vscr, 0, vscr_width * vscr_height * 2);
 }
 
 void refreshScr()
@@ -121,7 +123,7 @@ void refreshScr()
 		// для коррекции вывода 27 строки при BIOS 2.60
 		// if (txt260 == 1 && rVer > 26) rVer=29;
 
-		ofj = SCREEN_WIDTH_OFS;
+		ofj = ((vscr_width - SCREEN_WIDTH * vScale) >> 1) + ((vscr_height - SCREEN_HEIGHT * vScale) >> 1) * vscr_width;
 		if (vkbdEnabled == 0) { //no virtual keyboard on screen
 			for (j = 0; j < rVer; j++) {
 			    for (i = 0; i < rHor; i++) {
@@ -147,13 +149,13 @@ void refreshScr()
 						    }
 						    t1 <<= 1;
 						}
-						ofi += SCREEN_WIDTH * vScale;
+						ofi += vscr_width;
 					    }
 					}
 					if (src >= vMem + 0xffff) 
 					    src = vMem + 0xf000;
 			    }
-			    ofj += SCREEN_WIDTH * 8 * vScale * vScale;
+			    ofj += vscr_width * 8 * vScale;
 			}
 		} else {
 			unsigned int vkbd_y = 0;
@@ -185,15 +187,15 @@ void refreshScr()
 						    t1 <<= 1;
 						    vt1 >>= 1;
 						}
-						ofi += SCREEN_WIDTH * vScale;
+						ofi += vscr_width;
 					    }
 					    vkbd_yt += (virtkbd_pict_width>>3);
 					}
 					if (src >= vMem + 0xffff) 
 					    src = vMem + 0xf000;
 			    }
-			    ofj += SCREEN_WIDTH * 8 * vScale * vScale;
-				vkbd_y += (virtkbd_pict_width>>3)*8;
+			    ofj += vscr_width * 8 * vScale;
+			    vkbd_y += (virtkbd_pict_width >>3 ) * 8;
 			}
 		}
 	} else {
@@ -204,7 +206,7 @@ void refreshScr()
 		if (rHor > 48) rHor=48;
 		if (rVer > 28) rVer=28;
 
-		ofj = SCREEN_WIDTH_OFS;
+		ofj = ((vscr_width - SCREEN_WIDTH * vScale) >> 1) + ((vscr_height - SCREEN_HEIGHT * vScale) >> 1) * vscr_width;
 
 		if (vkbdEnabled == 0) {
 /* drawing without virtual keyboard */
@@ -228,7 +230,7 @@ void refreshScr()
 						    t1 <<= 1;
 						}
 						//if (enable320 == 0) if (i==39) t1=0;
-						ofi += SCREEN_WIDTH * vScale;
+						ofi += vscr_width;
 					}
 					src++;
 				    }
@@ -248,7 +250,7 @@ void refreshScr()
 						    t1 <<= 1;
 						}
 						//if (enable320 == 0) if (i==39) t1=0;
-						ofi += SCREEN_WIDTH * vScale;
+						ofi += vscr_width;
 					}
 					src++;
 				    }
@@ -267,7 +269,7 @@ void refreshScr()
 						    t1 <<= 1;
 						}
 						//if (enable320 == 0) if (i==39) t1=0;
-						ofi += SCREEN_WIDTH * vScale;
+						ofi += vscr_width;
 					}
 					src++;
 				    }
@@ -286,13 +288,13 @@ void refreshScr()
 						    t1 <<= 1;
 						}
 						//if (enable320 == 0) if (i==39) t1=0;
-						ofi += SCREEN_WIDTH * vScale;
+						ofi += vscr_width;
 					}
 					src++;
 				    }
 				}		
 		    }
-		    ofj += SCREEN_WIDTH * 8 * vScale * vScale;
+		    ofj += vscr_width * 8 * vScale;
 		}
 /* end drawing without virtual keyboard */
 		} else {
@@ -322,7 +324,7 @@ void refreshScr()
 						    vt1 >>= 1;
 						}
 						//if (enable320 == 0) if (i==39) t1=0;
-						ofi += SCREEN_WIDTH * vScale;
+						ofi += vscr_width;
 					}
 					src++;
 					vkbd_yt += (virtkbd_pict_width>>3);
@@ -345,7 +347,7 @@ void refreshScr()
 						    vt1 >>= 1;
 						}
 						//if (enable320 == 0) if (i==39) t1=0;
-						ofi += SCREEN_WIDTH * vScale;
+						ofi += vscr_width;
 					}
 					src++;
 					vkbd_yt += (virtkbd_pict_width>>3);
@@ -367,7 +369,7 @@ void refreshScr()
 						    vt1 >>= 1;
 						}
 						//if (enable320 == 0) if (i==39) t1=0;
-						ofi += SCREEN_WIDTH * vScale;
+						ofi += vscr_width;
 					}
 					src++;
 					vkbd_yt += (virtkbd_pict_width>>3);
@@ -389,14 +391,14 @@ void refreshScr()
 						    vt1 >>= 1;
 						}
 						//if (enable320 == 0) if (i==39) t1=0;
-						ofi += SCREEN_WIDTH * vScale;
+						ofi += vscr_width;
 					}
 					src++;
 					vkbd_yt += (virtkbd_pict_width>>3);
 				    }
 				}		
 			}
-		    ofj += SCREEN_WIDTH * 8 * vScale * vScale;
+		    ofj += vscr_width * 8 * vScale;
 		    vkbd_y += (virtkbd_pict_width >> 3) * 8;
 		}
 /* end drawing with virtual keyboard */
@@ -421,7 +423,8 @@ int loadTextFont(char *name)
 void drawChar(int x, int y, dword c, word fg, word bg)
 {
 	int i, j;
-	dword offset = y * SCREEN_WIDTH * vScale * vScale + x * vScale + SCREEN_WIDTH_OFS;
+	dword offset = ((vscr_width - SCREEN_WIDTH * vScale) >> 1) + x * vScale + 
+			((vscr_height - SCREEN_HEIGHT * vScale) >> 1) * vscr_width + y * vscr_width * vScale;
 	
 	c = ((c<<1) | (c>>7)) & 0xff;
 	c = c * 8;
@@ -436,7 +439,7 @@ void drawChar(int x, int y, dword c, word fg, word bg)
 		    }
 		    d<<=1;
 		}
-		offset += SCREEN_WIDTH * vScale;
+		offset += vscr_width;
 	    }
 	}
 }

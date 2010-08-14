@@ -403,8 +403,8 @@ static void ChecKeyboard(void)
 		}
 		}; break;
 	    case SDL_MOUSEBUTTONDOWN: {
-	    	x = event.button.x / vScale;
-		y = event.button.y / vScale;
+	    	x = (event.button.x - ((vscr_width - 320 * vScale) >> 1)) / vScale;
+		y = (event.button.y - ((vscr_height - 240 * vScale) >> 1)) / vScale;
 		vmenu_process = 1;
 		}; break;
 	    case SDL_MOUSEBUTTONUP:
@@ -560,6 +560,7 @@ void usage(char *app)
 {
     fprintf(stderr, "Usage: %s [-d <dir>][-h][-i][-t][-p <type>][-s <N>][boot floppy image]\n", app);
     fprintf(stderr, "-d <dir>  - path to directory with Rom/Floppy images\n");
+    fprintf(stderr, "-g WxH    - set screen geometry WxH\n");
     fprintf(stderr, "-h        - this help\n");
     fprintf(stderr, "-i        - show cpu performance\n");
     fprintf(stderr, "-t        - setup date&time from host\n");
@@ -590,7 +591,7 @@ int main(int argc, char *argv[])
     extern int optind, optopt, opterr;
     int c;
 
-    while ((c = getopt(argc, argv, "hits:d:p:")) != -1)
+    while ((c = getopt(argc, argv, "hits:d:p:g:")) != -1)
     {
         switch (c)
         {
@@ -617,6 +618,9 @@ int main(int argc, char *argv[])
 		printer_type = PRINTER_COVOX;
 	    else if (!strcmp(optarg, "system"))
 		printer_type = PRINTER_SYSTEM;
+	    break;
+	case 'g':
+	    sscanf(optarg, "%dx%d", &vscr_width, &vscr_height);
 	    break;
         default:
 	    usage(argv[0]);
@@ -646,6 +650,14 @@ int main(int argc, char *argv[])
 	fprintf(stderr, "Use joystick %s\n", SDL_JoystickName(SDL_JoystickIndex(joystick)));		
 #endif
 
+    vscr_width = (vscr_width < 320)?320:vscr_width;
+    vscr_height = (vscr_height < 240)?240:vscr_height;
+
+    while (((vscr_width < (320 * vScale)) || (vscr_height < (240 * vScale))) && (vScale > 1))
+	vScale--;
+
+    fprintf(stderr, "Set screen geometry to %dx%d, scale %d\n", vscr_width, vscr_height, vScale);
+
 #ifdef PYLDIN_ICON
     SetIcon();
 #endif
@@ -655,7 +667,7 @@ int main(int argc, char *argv[])
     vid_flags = SDL_HWSURFACE;
     vid_flags |= SDL_DOUBLEBUF;
 
-    screen = SDL_SetVideoMode(320 * vScale, 240 * vScale, 16, vid_flags);
+    screen = SDL_SetVideoMode(vscr_width, vscr_height, 16, vid_flags);
 
     char ftemp[256];
 
