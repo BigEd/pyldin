@@ -483,7 +483,8 @@ int SDLCALL HandleVideo(void *unused)
 	}
 #endif
 #endif
-	while(!(updateScreen || exitRequested)) ; // fixme!
+	while(!(updateScreen || exitRequested))
+	    usleep(1000);
 
 	updateScreen = 0;
     }
