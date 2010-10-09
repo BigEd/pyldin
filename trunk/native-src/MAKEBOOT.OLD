@@ -1,0 +1,70 @@
+program formater;
+uses dos, crt;
+
+type
+  byte_arr = array[0..$7FFF] of byte;
+  byte_ptr = ^byte_arr;
+
+var
+  drive: byte;
+  r: registers;
+  sector: array [0..511] of byte;
+
+{$L boot}
+procedure boot; external;
+procedure parameters; external;
+
+
+  procedure init;
+  var
+    ch: char;
+    s: string[80];
+  begin
+  writeln;
+  writeln('UniDOS MakeBoot Utility.      Version 1.10');
+  writeln('Copyright (C) 1988-89  Software Research & Development Lab., Sofia');
+  if paramcount < 1 then drive:= 0
+  else
+    begin
+    s:= paramstr(1); s[1]:= upcase(s[1]);
+    if ((length(s) = 2) and (s[1] in ['A'.. 'Z'])) and (s[2] = ':') then
+      drive:= ord(s[1]) - ord('A')
+    else
+      begin
+      writeln('Invalid parameter.');
+      halt;
+      end;
+    end;
+  while keypressed do ch:= readkey;
+  writeln;
+  write('Insert disk in drive ');
+  write(chr(drive + ord('A')), ':'#13#10'Strike any key when ready ');
+  ch:= readkey;
+  end;
+
+
+
+begin
+init;
+
+r.ah:= 2; r.al:= 1;
+r.dh:= 0; r.dl:= drive;
+r.cx:=1;
+r.bx:= ofs(sector); r.es:= seg(sector);
+intr($13, r);
+if r.ah<>0 then
+  begin
+  writeln; write('Error reading disk.'); halt;
+  end;
+move(sector[11], addr(parameters)^, sector[1] - 9);
+r.ah:=3; r.al:= 1;
+r.dh:= 0; r.dl:= drive;
+r.cx:= 1;
+r.bx:= ofs(boot); r.es:= seg(boot);
+intr($13, r);
+if r.ah<>0 then
+  begin
+  writeln; write('Error writing disk.'); halt;
+  end;
+end.
+
