@@ -11,6 +11,7 @@
 #include "floppymanager.h"
 #include "screen.h"
 #include "floppy.h"
+#include "discs.h"
 
 //floppy
 static char	*filename[4];

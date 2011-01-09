@@ -19,10 +19,6 @@
 #include "mpu_cycles.h"
 
 #include "keyboard.h"
-//#include "timer.h"
-//#include "screen.h"
-#include "floppy.h"
-//#include "wave.h"
 #include "printer.h"
 
 #ifdef __GNUC__
@@ -71,13 +67,9 @@ extern	int	tick50;	// устанавливается в 1 при TIMER INT 50Hz
 
 int IRQrequest = 0;
 
-byte wr_mem[512];
-
 dword vdiskAddress;
 
 dword vdiskSIZE = 524288;
-
-static	void	INT17emulator(); // эмуляция управления контроллером диска
 
 int mc6800_init(void)
 {
@@ -748,10 +740,7 @@ int mc6800_step()
 	case SWI:
 	    if (SWIemulator(memr(PC), &A, &B, &X, &t, &PC))
 		PC++;
-	    else if (memr(PC) == 0x17) {
-		PC++;
-		INT17emulator();
-	    } else {
+	    else {
 		t = (c?1:0)|(v?2:0)|(z?4:0)|(n?8:0)|(i?16:0)|(h?32:0)|0xc0;
 		memw(SP--, PC&0xff); 
 		memw(SP--, PC>>8);
@@ -775,63 +764,6 @@ int mc6800_step()
 
     return takt;
 }
-
-static void INT17emulator()
-{
-    word bukva, i2;
-
-    int devs  = memr(X) & 0x01;
-    int track = memr(X+1);
-    int head  = memr(X+2) & 0x01;
-    int sect  = memr(X+3);
-    int offs  = (memr(X+4) << 8) | memr(X+5);
-
-    bukva = MEM[0xed20]<<8; 
-    bukva |= MEM[0xed21];
-
-//    if (m601a == 0) 
-	bukva += 81; 
-//    else 
-//	bukva += 159;
-
-    switch(A) {
-	case 0x80:
-	case 0: 
-	    A = init765(); 
-	    break;
-
-	case 1:	
-	    MEM[bukva] = 0x52;
-	    A = readSector(devs, track, sect, head, MEM + offs);
-	    MEM[bukva] = 0x20; 
-	    break;
-
-	case 2:	
-	    MEM[bukva] = 0x57;
-	    for (i2=0; i2<512; i2++) 
-		wr_mem[i2]=memr(offs+i2);
-	    A = writeSector(devs, track, sect, head, wr_mem);
-	    MEM[bukva] = 0x20; 
-	    break;
-
-	case 3:	
-	    MEM[bukva] = 0x53;
-	    A = readSector(devs, track, sect, head, wr_mem);
-	    MEM[bukva] = 0x20; 
-	    break;
-
-	case 4:	
-	    MEM[bukva] = 0x46;
-	    A = formaTrack(devs, track, head);
-	    MEM[bukva] = 0x20; 
-	    break;
-
-	default: 
-	    A = 0; 
-	    break;
-    }
-}
-
 
 byte *mc6800_getRomPtr(int chip, int page)
 {

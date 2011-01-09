@@ -11,7 +11,7 @@
 #include "core/mc6800.h"
 
 static int vfs_enabled = 0;
-static int vfs_drive = 4; // Drive E:
+static int vfs_drive = 1000; // no disk assigned
 
 static char *root_dir = "/tmp";
 static char cur_dir[PATH_MAX];
@@ -29,6 +29,20 @@ static void copy_from_mem(char *to, word from, word size)
 {
     while (size--)
 	*to++ = mc6800_memr(from++);
+}
+
+static void copy_string_to_mem(word to, char *from, word size)
+{
+    while (size-- && *from)
+	mc6800_memw(to++, *from++);
+    mc6800_memw(to, 0);
+}
+
+static void copy_string_from_mem(char *to, word from, word size)
+{
+    while (size-- && mc6800_memr(from))
+	*to++ = mc6800_memr(from++);
+    *to = 0;
 }
 
 static int convert_to_dos_name(word to, char *from)
@@ -102,11 +116,14 @@ int read_dir(DIR *dir, word tmp, int en, int di)
 int SWIemulator(int swi, byte *A, byte *B, word *X, byte *t, word *PC)
 {
     switch(swi) {
-    case 0xFE: {
+    case 0xFE:
 	fprintf(stderr, "INT $FE = %02X %02X %04X\n", *A, *B, *X);
-	strcpy(cur_dir, root_dir);
-	*A = 0;
-	return 1;
+	if (*X == 0xface) {
+	    vfs_drive = *A + 1;
+	    fprintf(stderr, "Enable Virtual File System for drive %c:\n", 'a' + vfs_drive);
+	    strcpy(cur_dir, root_dir);
+	    *A = 0;
+	    return 1;
 	}
 	break;
     case 0x42: {
@@ -131,7 +148,25 @@ int SWIemulator(int swi, byte *A, byte *B, word *X, byte *t, word *PC)
 		mc6800_memw(tmp + 11, 0x10);
 		*A = 0;
 	    } else {
-		dir = opendir(cur_dir);
+		char buf[256];
+		word tmp = (mc6800_memr(*X + 4) << 8) + mc6800_memr(*X + 5);
+		sprintf(buf, "%s/", cur_dir);
+		copy_string_from_mem(buf + strlen(buf), tmp, 32);
+		char *ptr = buf;
+		do {
+		    if (*ptr == '\\')
+			*ptr = '/';
+		} while (*++ptr);
+		ptr = strrchr(buf, '/');
+		if (ptr)
+		    *ptr = 0;
+		fprintf(stderr, "opendir dir=%s\n", buf);
+	        struct stat st;
+		if (stat(buf, &st)) {
+		    *A = 11;
+		    return 1;
+		}
+		dir = opendir(buf);
 		*A = read_dir(dir, tmp, en_mask, di_mask);
 	    }
 	    return 1;

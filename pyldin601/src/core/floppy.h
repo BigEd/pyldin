@@ -8,6 +8,8 @@
 #ifndef __FLOPPY_H__
 #define __FLOPPY_H__
 
+#include "core/mc6800.h"
+
 #define FLOPPY_A	0
 #define FLOPPY_B	1
 
@@ -15,13 +17,6 @@ extern char *diskImage[];
 extern int dSizes[];
 extern int flopWrite[];
 
-extern int floppyOn();
-extern int floppyOff();
-extern int loadDiskImage(char *name, int disk);
-extern int unloadDiskImage(char *name, int disk);
-extern int readSector(int Disk, int Track, int Sector, int Head, unsigned char *dst);
-extern int writeSector(int Disk, int Track, int Sector, int Head, unsigned char *src);
-extern int formaTrack(int Disk, int Track, int Head);
-extern int init765();
+void INT17emulator(byte *A, byte *B, word *X, byte *t, word *PC);
 
 #endif
