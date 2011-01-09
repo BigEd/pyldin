@@ -59,6 +59,9 @@ static	byte	h;
 byte vregs[16];
 byte *vMem;
 
+#define memr	mc6800_memr
+#define memw	mc6800_memw
+
 extern void setupScr(int mode);
 extern void Speaker_Set(int val, int ticks);
 
@@ -112,7 +115,7 @@ int mc6800_fini(void)
     return 0;
 }
 
-static /*INLINE*/ byte memr(word a)
+/*INLINE*/ byte mc6800_memr(word a)
 {
     byte t;
 
@@ -153,7 +156,7 @@ static /*INLINE*/ byte memr(word a)
     return MEM[a];
 }
 
-static /*INLINE*/ void memw(word a, byte d)
+/*INLINE*/ void mc6800_memw(word a, byte d)
 {
     byte old_3s=0;
 
@@ -743,7 +746,12 @@ int mc6800_step()
 	    break;
 
 	case SWI:
-	    if (memr(PC) != 0x17) {
+	    if (SWIemulator(memr(PC), &A, &B, &X, &t, &PC))
+		PC++;
+	    else if (memr(PC) == 0x17) {
+		PC++;
+		INT17emulator();
+	    } else {
 		t = (c?1:0)|(v?2:0)|(z?4:0)|(n?8:0)|(i?16:0)|(h?32:0)|0xc0;
 		memw(SP--, PC&0xff); 
 		memw(SP--, PC>>8);
@@ -754,9 +762,6 @@ int mc6800_step()
 		memw(SP--, t);
 		PC = memr(0xfffa)<<8; 
 		PC |= memr(0xfffb);
-	    } else {
-		PC++;
-		INT17emulator();
 	    }
 	    i = 1; 
 	    break;

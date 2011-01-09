@@ -13,4 +13,8 @@ extern void 	mc6800_reset(void);
 extern int 	mc6800_step(void);
 extern int 	mc6800_fini(void);
 
+extern byte mc6800_memr(word a);
+extern void mc6800_memw(word a, byte d);
+
+extern int SWIemulator(int swi, byte *A, byte *B, word *X, byte *t, word *PC);
 #endif
