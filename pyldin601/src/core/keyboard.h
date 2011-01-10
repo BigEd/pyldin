@@ -42,38 +42,15 @@
 #define KBD_GTO            0x40
 #define KBD_PERR           0x80
 
-/*
- * LED bits
- */
+void setCyrMode(byte mode);
 
-#define KBD_LED_SCROLL     0x01
-#define KBD_LED_NUM        0x02
-#define KBD_LED_CAPS       0x04
+void vkeybDown(int x, int y);
+void vkeybUp(void);
+void jkeybDown(unsigned int tempKeyCode);
+void jkeybUp(void);
+void jkeybModeDown(byte mode);
+void jkeybModeUp(byte mode);
+unsigned char checkKbd();
+unsigned char readKbd();
 
-typedef unsigned char BYTE;
-typedef unsigned short WORD;
-
-extern unsigned char cyrMode;
-
-extern int IRQrequest;
-extern int exitRequested;
-extern int resetRequested;
-extern BYTE led_status;
-
-extern unsigned char flagKey;
-
-extern WORD Zwait;
-extern BYTE fSound;
-extern BYTE visible;
-extern BYTE enableCOLOR;
-extern BYTE enable320;
-
-extern void vkeybDown(int x, int y);
-extern void vkeybUp(void);
-extern void jkeybDown(unsigned int tempKeyCode);
-extern void jkeybUp(void);
-extern unsigned char checkKbd();
-extern unsigned char readKbd();
-// extern void SetKeyboardLEDs(BYTE status);
-
-extern void viewInfo();
+extern void resetRequested(void);
