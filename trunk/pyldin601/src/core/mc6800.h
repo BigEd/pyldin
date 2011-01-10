@@ -12,6 +12,8 @@ int	mc6800_fini(void);
 void	mc6800_setIrq(int l);
 dword	mc6800_get_takts(void);
 
+byte 	*mc6800_get_memory(void);
+
 byte	mc6800_memr(word a);
 void	mc6800_memw(word a, byte d);
 

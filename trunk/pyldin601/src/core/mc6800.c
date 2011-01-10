@@ -74,7 +74,7 @@ int mc6800_init(void)
     MEM = (byte *) malloc(sizeof(byte) * 65536);
     memset(MEM, 0, 65536);
 
-    devices_init(MEM);
+    devices_init();
 
     return 0;
 }
@@ -104,6 +104,11 @@ void mc6800_setIrq(int l)
 dword mc6800_get_takts(void)
 {
     return mc6800_global_takts;
+}
+
+byte *mc6800_get_memory(void)
+{
+    return MEM;
 }
 
 byte mc6800_memr(word a)
