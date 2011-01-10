@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include "core/mc6800.h"
 #include "core/devices.h"
+#include "core/mc6845.h"
 #include "core/keyboard.h"
 #include "printer.h"
 
@@ -14,32 +15,28 @@ static	byte	*CurrP;			// указатель на содержимое текущ
 static dword vdiskAddress;
 static dword vdiskSIZE = 524288;
 
-static byte vregs_addr = 0;
-byte vregs[16];
-byte *vMem;
-
 static byte led_status = 0;
 
 static int tick50;	// устанавливается в 1 при TIMER INT 50Hz
 
 static byte fSpeaker;		// бит состояния динамика
 
-extern void setupScr(int mode);
 extern void Speaker_Set(int val, int ticks);
 
-int devices_init(byte *MEM)
+int devices_init(void)
 {
     int i;
 
     BMEM 	= (byte *) get_bios_mem(4096); //malloc(sizeof(byte) * 4096 );
     vdiskMEM 	= (byte *) get_ramdisk_mem(vdiskSIZE); //malloc(sizeof(byte) * vdiskSIZE);
-    vMem 	= MEM;
 
     for (i = 0; i < MAX_ROMCHIPS; i++) {
 	ROMP[i] = (byte *) get_romchip_mem(i, 65536); //malloc(sizeof(byte) * 65536);
     }
 
     CurrP = NULL;
+
+    mc6845_init();
 
     return 0;
 }
@@ -93,13 +90,10 @@ int devices_memr(word a, byte *t)
 
     switch (a) {
     case 0xe600:
-    case 0xe604:
-	*t = vregs_addr; // чтение адреса регистра видеоконтроллера
-	return 1;
-
     case 0xe601:
+    case 0xe604:
     case 0xe605:
-	*t = vregs[vregs_addr & 0xf]; //чтение данных из рег.видеоконтроллера
+	*t = mc6845_read(a & 0x7); //чтение данных из регистров видеоконтроллера
 	return 1;
 
     case 0xe628:
@@ -157,19 +151,16 @@ int devices_memw(word a, byte d)
 	return 0;
 
     case 0xe600:
-    case 0xe604:
-	vregs_addr = d; // запись адреса регистра видеоконтроллера
-	return 0;
-
     case 0xe601:
+    case 0xe604:
     case 0xe605:
-	vregs[vregs_addr & 0xf] = d; //запись данных в рег.видеоконтроллера
+	mc6845_write(a & 0xf, d); //запись данных в рег.видеоконтроллера
 	return 0;
 
     case 0xe629:
 	mc6800_memw(0xe62d, d); //только для программы kltr.ubp
 	setCyrMode((d&1)?0:4);
-	setupScr(d);
+	mc6845_setupScreen(d);
 	return 0;
 
     case 0xe62a:

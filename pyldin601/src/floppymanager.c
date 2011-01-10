@@ -9,7 +9,7 @@
 #include <malloc.h>
 #endif
 #include "floppymanager.h"
-#include "screen.h"
+#include "pyldin.h"
 #include "floppy.h"
 #include "discs.h"
 
@@ -28,7 +28,7 @@ static int getdir(char *path, struct dirent ***namelist)
     struct dirent   	**names = NULL;
 
     struct dirent   	*dit;
-    
+
     DIR             	*dip;
 
     if ((dip = opendir(path)) == NULL) {
@@ -37,25 +37,17 @@ static int getdir(char *path, struct dirent ***namelist)
 
     while ((dit = readdir(dip)) != NULL) {
 	struct dirent **tmp;
-	
 	tmp = (struct dirent **) malloc((count + 1) * sizeof(struct dirent *));
-	
 	memcpy(tmp, names, count * sizeof(struct dirent *));
-	
 	tmp[count] = (struct dirent *) malloc (sizeof(struct dirent));
-	
 	memcpy(tmp[count], dit, sizeof(struct dirent));
-	
 	if (names)
 	    free(names);
-	
 	names = tmp;
-	
         count++;
     }
 
     *namelist = names;
-
     closedir(dip);
 
     return count;
@@ -88,9 +80,8 @@ void ejectFloppy(int disk)
 	fprintf(stderr, "Failed\n");
     } else
 	fprintf(stderr, "Ok\n");
-    
+
     free(filename[disk]);
-    
     filename[disk] = NULL;
 }
 
@@ -100,7 +91,7 @@ void insertFloppy(int disk, char *path)
 	ejectFloppy(disk);
 
     filename[disk] = (char *) malloc(strlen(path) + 1);
-    
+
     strcpy(filename[disk], path);
 
     fprintf(stderr, "Insert floppy: %s ... ", filename[disk]);
@@ -137,7 +128,7 @@ void FloppyManagerOn(int disk, char *dir)
 void FloppyManagerUpdateList(int dir) 
 {
     int i;
-    
+
     name_selected += dir;
 
     if (name_selected < 2)
@@ -147,15 +138,15 @@ void FloppyManagerUpdateList(int dir)
 	name_selected = namecount - 1;
 
     clearScr();
-    drawString(0,0,"Select floppy image:", 0xffff, 0);
-    drawString(0,29,"Cancel", 0xffff, 0);
+    drawString("Select floppy image:", 0, 0, 0xffff, 0);
+    drawString("Cancel", 0, 29, 0xffff, 0);
 
     for (i = 2; i < namecount; i++) {
 	if (i == name_selected)
-	    drawString(0, i + 1, namelist[i]->d_name, 0, 0xffff);
+	    drawString(namelist[i]->d_name, 0, i + 1, 0, 0xffff);
 	else
-	    drawString(0, i + 1, namelist[i]->d_name, 0xffff, 0);
-    }    
+	    drawString(namelist[i]->d_name, 0, i + 1, 0xffff, 0);
+    }
 }
 
 void FloppyManagerOff(void)
@@ -183,7 +174,7 @@ int selectFloppy(int y)
     char buf[256];
 
     sprintf(buf, "%s/Floppy/%s", datadir, namelist[y]->d_name);
-    
+
     insertFloppy(wantDisk, buf);
 
     return 0;
@@ -192,7 +183,7 @@ int selectFloppy(int y)
 int selectFloppyByNum()
 {
     int n = name_selected;
-    
+
     if (n >= namecount) 
 	return 0;
 	
@@ -202,7 +193,7 @@ int selectFloppyByNum()
     char buf[256];
 
     sprintf(buf, "%s/Floppy/%s", datadir, namelist[n]->d_name);
-    
+
     insertFloppy(wantDisk, buf);
 
     return 0;

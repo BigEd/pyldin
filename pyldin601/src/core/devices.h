@@ -11,7 +11,7 @@
 #define KBD_LED_NUM        0x02
 #define KBD_LED_CAPS       0x04
 
-int devices_init(byte *MEM);
+int devices_init(void);
 int devices_fini(void);
 void devices_reset(void);
 void devices_setDATETIME(word year, word mon, word mday, word hour, word min, word sec);

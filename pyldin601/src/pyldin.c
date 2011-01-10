@@ -18,20 +18,24 @@
 
 #include "pyldin.h"
 #include "core/mc6800.h"
+#include "core/mc6845.h"
 #include "core/devices.h"
 #include "core/keyboard.h"
 #include "core/floppy.h"
-#include "screen.h"
 #include "wave.h"
 #include "sshot.h"
 #include "printer.h"
 #include "floppymanager.h"
+#include "screen.h"
 
 #include "kbdfix.h"
 
 #ifndef VERSION
 #define VERSION "unknown"
 #endif
+
+#include "virtkbd.xbm"
+#include "vmenu.xbm"
 
 #ifdef USE_JOYSTICK
 #include "joyfix.h"
@@ -52,6 +56,14 @@ static int fExit = 0;
 //
 static SDL_Surface *screen;
 
+static int vScale = 2;
+static int vscr_width = 640;
+static int vscr_height = 480;
+
+static int vkbdEnabled = 0;
+static int redrawVMenu = 0;
+static int clearVScr = 0;
+
 //
 static int updateScreen = 0;
 static int show_info = 0;
@@ -60,7 +72,6 @@ static volatile uint64_t actual_speed = 0;
 int	filemenuEnabled = 0;
 // timer
 int	fRef = 0;
-int	curBlink = 0;
 
 //
 static volatile uint64_t one_takt_delay = 0;
@@ -190,7 +201,7 @@ static void ChecKeyboard(void)
 			    filemenuEnabled = 0;
 			}
 			break;
-		    case JOYBUT_SELECT:	savepng(vscr, 320 * vScale, 27 * 8 * vScale); break;
+//		    case JOYBUT_SELECT:	savepng(vscr, 320 * vScale, 27 * 8 * vScale); break;
 		    default: 		jkeybDown(0x39);
 		}
 		break;
@@ -325,7 +336,7 @@ static void ChecKeyboard(void)
 		case SDLK_RCTRL:	jkeybModeDown(1); break;
 		case SDLK_RSHIFT:	jkeybModeDown(2); break;
 
-		case SDLK_PRINT:	savepng(vscr, 320 * vScale, 27 * 8 * vScale); break;
+//		case SDLK_PRINT:	savepng(vscr, 320 * vScale, 27 * 8 * vScale); break;
 		case SDLK_PAUSE:	resetRequested(); break;
 		case SDLK_SCROLLOCK:
 		    if (!SDL_WM_ToggleFullScreen(screen)) {
@@ -387,7 +398,7 @@ static void ChecKeyboard(void)
 			    fprintf(stderr, "Unable change video mode!\n");
 			}
 		    } else if (x > 123 && x < 140) {
-			savepng(vscr, 320 * vScale, 27 * 8 * vScale);
+//			savepng(vscr, 320 * vScale, 27 * 8 * vScale);
 		    } else if (x > 274 && x < 300) {
 			vkbdEnabled = vkbdEnabled?0:1;
 			//if (vkbdEnabled == 0) 
@@ -407,6 +418,26 @@ int SDLCALL HandleKeyboard(void *unused)
     return 0;
 }
 
+void clearScr()
+{
+#warning "clearScr() stub"
+}
+
+void drawXbm(unsigned char *xbm, int xp, int yp, int w, int h, int over)
+{
+    screen_drawXbm(screen->pixels, vscr_width, vscr_height, vScale, xbm, (vscr_width - 320 * vScale) / 2 + xp, (vscr_height - 240 * vScale) / 2 + yp, w, h, over);
+}
+
+void drawChar(unsigned int c, int xp, int yp, unsigned int fg, unsigned int bg)
+{
+    screen_drawChar(screen->pixels, vscr_width, vscr_height, vScale, c, (vscr_width - 320 * vScale) / 2 + xp, (vscr_height - 240 * vScale) / 16 + yp, fg, bg);
+}
+
+void drawString(char *str, int xp, int yp, unsigned int fg, unsigned int bg)
+{
+    screen_drawString(screen->pixels, vscr_width, vscr_height, vScale, str, (vscr_width - 320 * vScale) / 2 + xp, (vscr_height - 240 * vScale) / 16 + yp, fg, bg);
+}
+
 int SDLCALL HandleVideo(void *unused)
 {
     while (!fExit) {
@@ -414,20 +445,28 @@ int SDLCALL HandleVideo(void *unused)
 	SDL_Flip( screen );
 #endif
 	if ( ! filemenuEnabled ) {
-	    refreshScr();
+	    mc6845_drawScreen(screen->pixels, vscr_width, vscr_height, vScale);
 	}
 
 	if (show_info) {
 	    char buf[64];
 
 	    sprintf(buf, "%1.2fMHz", (float)actual_speed / 1000);
-	    drawString(160, 28, buf, 0xffff, 0);
+	    drawString(buf, 160, 28, 0xffff, 0);
+	}
+
+	if (vkbdEnabled)
+	    drawXbm(virtkbd_pict_bits, 0, 0, virtkbd_pict_width, virtkbd_pict_height, 1);
+
+	if (redrawVMenu) {
+	    drawXbm(vmenu_bits, 0, 216, vmenu_width, vmenu_height, 0);
+	    redrawVMenu = 0;
 	}
 
 #ifdef USE_JOYSTICK
 #ifdef USE_JOYMOUSE
 	if (joymouse_enabled && (vkbdEnabled || (joymouse_y >= 216))) {
-	    drawChar(joymouse_x, joymouse_y, '+', 0xff00, 0);
+	    drawChar('+', joymouse_x, joymouse_y, 0xff00, 0);
 	    if (joymouse_y >= 216) 
 		redrawVMenu = 1;
 	}
@@ -529,6 +568,7 @@ void usage(char *app)
 static byte *pyldin_bios_mem = NULL;
 static byte *pyldin_ramdisk_mem = NULL;
 static byte *pyldin_romchip_mem[MAX_ROMCHIPS] = {NULL, NULL, NULL, NULL, NULL };
+static byte *pyldin_videorom_mem = NULL;
 
 static char *romName[] = {
     "str$08.roz",
@@ -580,6 +620,26 @@ byte *get_bios_mem(dword size)
 	fprintf(stderr, "Failed!\r\n"); 
 
     return pyldin_bios_mem;
+}
+
+byte *get_videorom_mem(dword size)
+{
+    char ftemp[256];
+
+    if (pyldin_videorom_mem)
+	return pyldin_videorom_mem;
+
+    pyldin_videorom_mem = (byte *) malloc(sizeof(byte) * size);
+
+    fprintf(stderr, "Loading font rom... ");
+    sprintf(ftemp, "%s/Bios/video.roz", datadir);
+
+    if (load_packed_file(ftemp, pyldin_videorom_mem, size))
+	fprintf(stderr, "Ok\r\n");
+    else
+	fprintf(stderr, "Failed!\r\n"); 
+
+    return pyldin_videorom_mem;
 }
 
 byte *get_ramdisk_mem(dword size)
@@ -726,8 +786,6 @@ int main(int argc, char *argv[])
 
     screen = SDL_SetVideoMode(vscr_width, vscr_height, 16, vid_flags);
 
-    char ftemp[256];
-
 #ifdef PYLDIN_LOGO
     LoadLogo();
     
@@ -737,16 +795,6 @@ int main(int argc, char *argv[])
 	sleep(1);
     }
 #endif
-
-    fprintf(stderr, "Loading font rom... ");
-    sprintf(ftemp, "%s/Bios/video.roz", datadir);
-
-    if (loadTextFont(ftemp) == 0) 
-	fprintf(stderr, "Ok\r\n");
-    else { 
-	fprintf(stderr, "Failed!\r\n"); 
-	return -1; 
-    }
 
     mc6800_init();
 
@@ -769,8 +817,6 @@ int main(int argc, char *argv[])
 	fprintf(stderr, "%lld MHz\n", one_takt_calib);
 #endif
     }
-
-    int i;
 
     initFloppy();
 
@@ -801,7 +847,7 @@ int main(int argc, char *argv[])
     volatile uint64_t clock_old;
     READ_TIMESTAMP(clock_old);
 
-    vscr = (unsigned short *) screen->pixels;
+//    vscr = (unsigned short *) screen->pixels;
 
     if (set_time) {
 	struct tm *dt;
@@ -829,7 +875,7 @@ int main(int argc, char *argv[])
 	    SDL_Flip( screen );
 #endif
 	    devices_set_tick50();
-	    curBlink++;
+	    mc6845_curBlink();
 	    mc6800_setIrq(1);
 	    updateScreen = 1;
 

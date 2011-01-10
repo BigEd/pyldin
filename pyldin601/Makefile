@@ -26,8 +26,8 @@ CXXFLAGS += -DPYLDIN_LOGO -DPYLDIN_ICON
 LDFLAGS += -lSDL_image -ljpeg -lpng
 ##########################
 
-OBJS  = src/core/devices.o src/core/floppy.o src/core/keyboard.o src/core/mc6800.o src/core/swiemu.o
-OBJS += src/screen.o src/discs.o src/sshot.o src/printer.o src/floppymanager.o src/pyldin.o
+OBJS  = src/core/devices.o src/core/floppy.o src/core/keyboard.o src/core/mc6800.o src/core/swiemu.o src/core/mc6845.o
+OBJS += src/discs.o src/screen.o src/sshot.o src/printer.o src/floppymanager.o src/pyldin.o
 
 ifeq (alsa, $(SOUND))
 OBJS += src/wave-alsa.o

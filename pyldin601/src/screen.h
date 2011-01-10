@@ -5,36 +5,11 @@
  *
  */
 
-#ifndef __MC6845_H__
-#define __MC6845_H__
+#ifndef _SCREEN_H_
+#define _SCREEN_H_
 
-#define byte	unsigned char
-#define word	unsigned short
-#define dword	unsigned int
-
-extern int vScale;
-extern word *vscr;
-extern int vscr_width;
-extern int vscr_height;
-
-extern byte *vMem;
-extern byte vregs[16];
-extern byte m601a;
-extern short txt260;
-extern short grf260;
-extern int vkbdEnabled;
-extern int redrawVMenu;
-extern int clearVScr;
-
-void setupScr(int mode);
-void clearScr(void);
-extern void drawVMenu(void);
-extern void refreshScr();
-extern void refreshScr_A();
-int loadTextFont(char *name);
-extern void viewInfo();
-
-void drawChar(int x, int y, dword c, word fg, word bg);
-void drawString(int x, int y, char *str, word fg, word bg);
+void screen_drawXbm(void *video, int width, int height, int scale, unsigned char *xpm, int xp, int yp, int w, int h, int over);
+void screen_drawChar(void *video, int width, int height, int scale, unsigned int c, int xp, int yp, unsigned int fg, unsigned int bg);
+void screen_drawString(void *video, int width, int height, int scale, char *str, int xp, int yp, unsigned int fg, unsigned int bg);
 
 #endif
