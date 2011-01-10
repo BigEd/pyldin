@@ -17,10 +17,11 @@
 #include <SDL.h>
 
 #include "pyldin.h"
-#include "mc6800.h"
+#include "core/mc6800.h"
+#include "core/devices.h"
+#include "core/keyboard.h"
+#include "core/floppy.h"
 #include "screen.h"
-#include "keyboard.h"
-#include "floppy.h"
 #include "wave.h"
 #include "sshot.h"
 #include "printer.h"
@@ -45,6 +46,10 @@ char *datadir = DATADIR;
 
 #define MAX_LOADSTRING 100
 
+static int fReset = 0;
+static int fExit = 0;
+
+//
 static SDL_Surface *screen;
 
 //
@@ -54,7 +59,6 @@ static volatile uint64_t actual_speed = 0;
 //
 int	filemenuEnabled = 0;
 // timer
-int	tick50 = 0;
 int	fRef = 0;
 int	curBlink = 0;
 
@@ -105,68 +109,14 @@ static void readTSC(volatile uint64_t *v)
 
 #endif
 
-static char *romName[] = {
-    "str$08.roz",
-    "str$09.roz",
-    "str$0a.roz",
-    "str$0b.roz",
-    "str$0c.roz",
-    "str$0d.roz",
-    "str$0e.roz",
-    "str$0f.roz"
-};
-
-static char *romDiskName[] = {
-    "rom0.roz",
-    "rom1.roz",
-    "rom2.roz",
-    "rom3.roz",
-    "rom4.roz"
-};
-
-static int LoadRom(char *name, int p)
+void resetRequested(void)
 {
-    char ftemp[256];
-    char namp[9];
-    namp[8] = 0;
-
-    sprintf(ftemp, "%s/Rom/%s", datadir, name);
-
-    gzFile fi = gzopen(ftemp, "rb");
-    if (fi) {
-	while ( gzread(fi, mc6800_getRomPtr(0, p), 8192) == 8192 && p < 16) {
-	    memcpy(namp, mc6800_getRomPtr(0, p)+2, 8);
-	    fprintf(stderr, "%s as page %d\n", namp, p);
-	}
-	gzclose(fi);
-    }
-    p++;
-    return p;
+    fReset = 1;
 }
 
-static int LoadRomDisk(char *name, int c)
+void exitRequested(void)
 {
-    char ftemp[256];
-    char namp[9];
-    namp[8] = 0;
-
-    sprintf(ftemp, "%s/Rom/%s", datadir, name);
-
-    gzFile fi = gzopen(ftemp, "rb");
-    if (fi) {
-	int size = gzread(fi, mc6800_getRomPtr(c, 0), 65536);
-	if ((size > 0) & (!(size & 0x1fff))) {
-	    fprintf(stderr, "%s as ROM %d : 27%d\n", name, c, size / 1024 * 8);
-	    int ptr = size;
-	    while (ptr < 65536) {
-		memcpy(mc6800_getRomPtr(c, 0) + ptr, mc6800_getRomPtr(c, 0), size);
-		ptr += size;
-	    }
-	}
-	gzclose(fi);
-    }
-    c++;
-    return c;
+    fExit = 1;
 }
 
 static void ChecKeyboard(void)
@@ -178,13 +128,13 @@ static void ChecKeyboard(void)
     if(SDL_WaitEvent(&event) > 0){
 	switch(event.type) {
 	    case SDL_QUIT:
-		exitRequested = 1;
+		exitRequested();
 		break;
 #ifdef USE_JOYSTICK
 	    case SDL_JOYBUTTONDOWN:
 		switch(event.jbutton.button) {
-		    case JOYBUT_HOME: 	exitRequested = 1; break; //OFF
-		    case JOYBUT_START: 	resetRequested = 1; break;//RESET
+		    case JOYBUT_HOME: 	exitRequested(); break; //OFF
+		    case JOYBUT_START: 	resetRequested(); break;//RESET
 		    case JOYBUT_UP:
 			if (filemenuEnabled) {
 			    FloppyManagerUpdateList(-1);
@@ -370,13 +320,13 @@ static void ChecKeyboard(void)
 
 		case SDLK_CAPSLOCK:	jkeybDown(0x3a); break;
 		
-		case SDLK_LCTRL:	flagKey|=1; break;
-		case SDLK_LSHIFT:	flagKey|=2; break;
-		case SDLK_RCTRL:	flagKey|=1; break;
-		case SDLK_RSHIFT:	flagKey|=2; break;
+		case SDLK_LCTRL:	jkeybModeDown(1); break;
+		case SDLK_LSHIFT:	jkeybModeDown(2); break;
+		case SDLK_RCTRL:	jkeybModeDown(1); break;
+		case SDLK_RSHIFT:	jkeybModeDown(2); break;
 
 		case SDLK_PRINT:	savepng(vscr, 320 * vScale, 27 * 8 * vScale); break;
-		case SDLK_PAUSE:	resetRequested = 1; break;
+		case SDLK_PAUSE:	resetRequested(); break;
 		case SDLK_SCROLLOCK:
 		    if (!SDL_WM_ToggleFullScreen(screen)) {
 			fprintf(stderr, "Unable change video mode!\n");
@@ -393,10 +343,10 @@ static void ChecKeyboard(void)
 		SDLKey sdlkey=event.key.keysym.sym;
 		switch(sdlkey){
 
-		case SDLK_LCTRL:	flagKey&=~1; break;
-		case SDLK_LSHIFT:	flagKey&=~2; break;
-		case SDLK_RCTRL:	flagKey&=~1; break;
-		case SDLK_RSHIFT:	flagKey&=~2; break;
+		case SDLK_LCTRL:	jkeybModeUp(1); break;
+		case SDLK_LSHIFT:	jkeybModeUp(2); break;
+		case SDLK_RCTRL:	jkeybModeUp(1); break;
+		case SDLK_RSHIFT:	jkeybModeUp(2); break;
 
 		default:
 		    jkeybUp();
@@ -425,7 +375,7 @@ static void ChecKeyboard(void)
 		if (y > 216) {
 		    if (x > 5 && x < 21) {
 			//power off
-			exitRequested=1;
+			exitRequested();
 		    } else if (x > 33 && x < 50 && vkbdEnabled == 0) {
 			filemenuEnabled = 1;
 			FloppyManagerOn(FLOPPY_A, datadir);
@@ -452,14 +402,14 @@ static void ChecKeyboard(void)
 
 int SDLCALL HandleKeyboard(void *unused)
 {
-    while (!exitRequested)
+    while (!fExit)
 	ChecKeyboard();
     return 0;
 }
 
 int SDLCALL HandleVideo(void *unused)
 {
-    while (!exitRequested) {
+    while (!fExit) {
 #ifndef __APPLE__
 	SDL_Flip( screen );
 #endif
@@ -483,7 +433,7 @@ int SDLCALL HandleVideo(void *unused)
 	}
 #endif
 #endif
-	while(!(updateScreen || exitRequested))
+	while(!(updateScreen || fExit))
 	    usleep(1000);
 
 	updateScreen = 0;
@@ -574,6 +524,108 @@ void usage(char *app)
     fprintf(stderr, "            covox  - output to unsigned 8bit DAC (COVOX emulation)\n");
     fprintf(stderr, "-s <N>    - scale screen x N\n");
     exit(0);
+}
+
+static byte *pyldin_bios_mem = NULL;
+static byte *pyldin_ramdisk_mem = NULL;
+static byte *pyldin_romchip_mem[MAX_ROMCHIPS] = {NULL, NULL, NULL, NULL, NULL };
+
+static char *romName[] = {
+    "str$08.roz",
+    "str$09.roz",
+    "str$0a.roz",
+    "str$0b.roz",
+    "str$0c.roz",
+    "str$0d.roz",
+    "str$0e.roz",
+    "str$0f.roz"
+};
+
+static char *romDiskName[] = {
+    "rom0.roz",
+    "rom1.roz",
+    "rom2.roz",
+    "rom3.roz",
+    "rom4.roz"
+};
+
+int load_packed_file(char *file, byte *mem, dword size)
+{
+   gzFile fi = gzopen(file, "rb");
+
+    if (fi) {
+	gzread(fi, mem, size);
+	gzclose(fi); 
+	return size;
+    } else { 
+	return 0;
+    }
+}
+
+byte *get_bios_mem(dword size)
+{
+    char ftemp[256];
+
+    if (pyldin_bios_mem)
+	return pyldin_bios_mem;
+
+    pyldin_bios_mem = (byte *) malloc(sizeof(byte) * size);
+
+    fprintf(stderr, "Loading main rom... ");
+    sprintf(ftemp, "%s/Bios/bios.roz", datadir);
+
+    if (load_packed_file(ftemp, pyldin_bios_mem, size))
+	fprintf(stderr, "Ok\r\n");
+    else
+	fprintf(stderr, "Failed!\r\n"); 
+
+    return pyldin_bios_mem;
+}
+
+byte *get_ramdisk_mem(dword size)
+{
+    if (!pyldin_ramdisk_mem)
+	pyldin_ramdisk_mem = (byte *) malloc(sizeof(byte) * size);
+
+    return pyldin_ramdisk_mem;
+}
+
+byte *get_romchip_mem(byte chip, dword size)
+{
+    char ftemp[256];
+    int loaded = 0;
+
+    if (chip >= MAX_ROMCHIPS)
+	chip = MAX_ROMCHIPS - 1;
+    if (size > 65536)
+	size = 65536;
+
+    if (!pyldin_romchip_mem[chip])
+	pyldin_romchip_mem[chip] = (byte *) malloc(sizeof(byte) * size);
+
+    sprintf(ftemp, "%s/Rom/%s", datadir, romDiskName[chip]);
+
+    if ((loaded = load_packed_file(ftemp, pyldin_romchip_mem[chip], size))) {
+	if ((loaded > 0) & (!(loaded & 0x1fff))) {
+	    fprintf(stderr, "%s as ROM %d : 27%d\n", romDiskName[chip], chip, loaded / 1024 * 8);
+	    int ptr = loaded;
+	    while (ptr < 65536) {
+		memcpy(pyldin_romchip_mem[chip] + ptr, pyldin_romchip_mem[chip], loaded);
+		ptr += loaded;
+	    }
+	}
+    }
+
+    if ((chip == 0) && (loaded == 0)) {
+	int i;
+	for (i = 0; i < 8; i++) {
+	    sprintf(ftemp, "%s/Rom/%s", datadir, romName[i]);
+	    if (load_packed_file(ftemp, pyldin_romchip_mem[0] + i * 8192, 8192))
+		fprintf(stderr, "%s as page %d\n", pyldin_romchip_mem[0] + i * 8192 + 2, i);
+	}
+    }
+
+    return pyldin_romchip_mem[chip];
 }
 
 int main(int argc, char *argv[])
@@ -686,23 +738,6 @@ int main(int argc, char *argv[])
     }
 #endif
 
-    mc6800_init();
-
-    fprintf(stderr, "Loading main rom... ");
-    sprintf(ftemp, "%s/Bios/bios.roz", datadir);
-
-    gzFile fi = gzopen(ftemp, "rb");
-
-    if (fi) {
-	byte *m = mc6800_getRomPtr(-1, -1); 
-	gzread(fi, m, 4096);
-	gzclose(fi); 
-	fprintf(stderr, "Ok\r\n");
-    } else { 
-	fprintf(stderr, "Failed!\r\n"); 
-	return -1; 
-    }
-
     fprintf(stderr, "Loading font rom... ");
     sprintf(ftemp, "%s/Bios/video.roz", datadir);
 
@@ -712,6 +747,8 @@ int main(int argc, char *argv[])
 	fprintf(stderr, "Failed!\r\n"); 
 	return -1; 
     }
+
+    mc6800_init();
 
     fprintf(stderr, "Detecting host cpu speed... ");
     {
@@ -733,14 +770,7 @@ int main(int argc, char *argv[])
 #endif
     }
 
-    int j = 0;
     int i;
-
-    for (i = 0; i < 8; i++)
-	j = LoadRom(romName[i], j);
-
-    for (i = 0; i < 5; i++)
-	LoadRomDisk(romDiskName[i], i);
 
     initFloppy();
 
@@ -760,8 +790,8 @@ int main(int argc, char *argv[])
 
     vkbdEnabled = 0;
     redrawVMenu = 1;
-    exitRequested = 0;
-    IRQrequest = 0;
+    fReset = 0;
+    fExit = 0;
     filemenuEnabled = 0;
 
     int vcounter = 0;		//
@@ -777,7 +807,7 @@ int main(int argc, char *argv[])
 	struct tm *dt;
 	time_t t = time(NULL);
 	dt = localtime(&t);
-	mc6800_setDATETIME( dt->tm_year,
+	devices_setDATETIME( dt->tm_year,
 			    dt->tm_mon,
 			    dt->tm_mday,
 			    dt->tm_hour,
@@ -798,9 +828,9 @@ int main(int argc, char *argv[])
 #ifdef __APPLE__
 	    SDL_Flip( screen );
 #endif
-	    tick50 = 0x80;
+	    devices_set_tick50();
 	    curBlink++;
-	    IRQrequest = 1;
+	    mc6800_setIrq(1);
 	    updateScreen = 1;
 
 	    volatile uint64_t clock_new;
@@ -810,9 +840,9 @@ int main(int argc, char *argv[])
 	    clock_old = clock_new;
 	    vcounter = 0;
 	}
-	if (resetRequested == 1) {
+	if (fReset == 1) {
 	    mc6800_reset();
-	    resetRequested = 0;
+	    fReset = 0;
 	}
 
 	volatile uint64_t ts2;
@@ -820,7 +850,7 @@ int main(int argc, char *argv[])
 	    READ_TIMESTAMP(ts2);
 	} while ((ts2 - ts1) < (one_takt_delay * takt));
 	ts1 = ts2;
-    } while( exitRequested == 0);	//
+    } while( fExit == 0);	//
 
     freeFloppy();
 

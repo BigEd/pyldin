@@ -5,8 +5,6 @@
  *
  */
 
-extern int IRQrequest;
-
 extern int	fRef;
 extern int	fTick;
 extern int	tick50;

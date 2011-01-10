@@ -65,7 +65,7 @@ int printer_drb_wr(unsigned char data)
 	if (prn)
 	    fputc(data, prn);
     } else if (p_mode == PRINTER_COVOX)
-	Covox_Set(data, mc6800_global_takts);
+	Covox_Set(data, mc6800_get_takts());
 
     port_drb = data;
     

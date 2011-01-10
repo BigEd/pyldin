@@ -6,7 +6,8 @@
  */
 
 #include <stdio.h>
-#include "keyboard.h"
+#include "core/mc6800.h"
+#include "core/keyboard.h"
 
 static unsigned char keytable[]={
 /*	 0   1   2   3   4   5   6   7   8   9   a   b   c   d   e   f */
@@ -80,18 +81,11 @@ static unsigned char Ct_Sh_keytable[]={
 	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
 };
 
-unsigned char keyReady=0,keyCode,tempKeyCode,flagKey=0,cyrMode=0;
-
-int exitRequested = 0;
-int resetRequested = 0;
-
-BYTE led_status = 0;
-BYTE visible = 0;
-
-BYTE trigger = 0;
-
-//int shiftFlag = 0;
-//int ctrlFlag = 0;
+static unsigned char keyReady = 0;
+static unsigned char keyCode = 0;
+static unsigned char flagKey = 0;
+static unsigned char cyrMode=0;
+static byte trigger = 0;
 
 unsigned char getkeycode(int x, int y)
 {
@@ -132,7 +126,7 @@ unsigned char getkeycode(int x, int y)
 	else if (x < 258) retc = 0x2b; ////
 	else if (x < 277) retc = 0x0e; //backspace
 	else if (x < 295) retc = 0x46; //lat/kir
-	else if (x < 315) resetRequested = 1;
+	else if (x < 315) resetRequested();
     } else if (y < 125) {
 	if (x < 21) retc = 0x0f; //TAB
 	else if (x < 40) retc = 0x10; //Q
@@ -205,7 +199,7 @@ void vkeybDown(int x, int y)
     unsigned int tempKeyCode = getkeycode(x, y);
     if (tempKeyCode == 0xff) 
 	return;
-    IRQrequest = 1;
+    mc6800_setIrq(1);
     keyReady--;
     switch(flagKey | cyrMode) {
 	 case 1:
@@ -228,7 +222,7 @@ void jkeybDown(unsigned int tempKeyCode)
 {
     if (tempKeyCode == 0xff) 
 	return;
-    IRQrequest = 1;
+    mc6800_setIrq(1);
     keyReady--;
     switch(flagKey | cyrMode) {
 	 case 1:
@@ -245,6 +239,16 @@ void jkeybDown(unsigned int tempKeyCode)
 void jkeybUp(void)
 {
     keyReady = 0;
+}
+
+void jkeybModeDown(byte mode)
+{
+    flagKey |= mode;
+}
+
+void jkeybModeUp(byte mode)
+{
+    flagKey &= ~mode;
 }
 
 unsigned char checkKbd()
@@ -266,4 +270,9 @@ unsigned char readKbd()
     if (keyReady==0) 
 	return 0xff;
     return keyCode;
+}
+
+void setCyrMode(byte mode)
+{
+    cyrMode = mode;
 }
