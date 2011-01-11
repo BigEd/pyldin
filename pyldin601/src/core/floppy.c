@@ -21,6 +21,14 @@ int flopWrite[] = {
     0, 0, 0, 0
 };
 
+byte floppy_diskReady(int Disk)
+{
+    if (!diskImage[Disk])
+	return 0;
+
+    return 1;
+}
+
 byte *floppy_getSector(int Disk, int Track, int Sector, int Head)
 {
     if (!diskImage[Disk])

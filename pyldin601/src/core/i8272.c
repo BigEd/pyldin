@@ -4,6 +4,8 @@
 #include "core/i8272.h"
 #include "core/floppy.h"
 
+//#define DEBUG
+
 static byte fdcslct = 0;
 static byte fdcstat = 0;
 static byte fdcdata = 0;
@@ -31,6 +33,7 @@ void i8272_init(void)
 {
 }
 
+#ifdef DEBUG
 static void show_fdc_select(void)
 {
     if (fdcslct & 1)
@@ -54,14 +57,17 @@ static void show_fdc_select(void)
 	fprintf(stderr, "motor=0\n");
 
 }
+#endif
 
 static void execute_command(void)
 {
+#ifdef DEBUG
     int i;
     fprintf(stderr, "command %02X args ", fdcdata);
     for (i = 0; i < cmdcount; i++)
 	fprintf(stderr, "%02X ", cmdargs[i]);
     fprintf(stderr, "\n");
+#endif
     switch (fdcdata) {
 	case 0x04:
 	    retargs[0] = 0x20;
@@ -75,7 +81,7 @@ static void execute_command(void)
 	    break;
 	case 0x0f:
 	    retargs[0] = cmdargs[1];
-	    retargs[1] = 0x20;
+	    retargs[1] = 0x20; /* | (floppy_diskReady((fdcslct & 4)?0:1)?0:0x40); */
 	    tmpretargc = 2;
 	    curtrack = cmdargs[1];
 	    break;
@@ -112,7 +118,9 @@ static void execute_command(void)
 	    formatargc = 0;
 	    formatsect = cmdargs[2];
 	    formatfill = cmdargs[4];
+#ifdef DEBUG
 	    fprintf(stderr, "FORMAT sectors %d fill %02X\n", formatsect, formatfill);
+#endif
 	    retargs[0] = cmdargs[1];
 	    retargs[1] = 0;
 	    retargs[2] = 0;
@@ -136,8 +144,10 @@ void i8272_write(byte a, byte d)
     switch (a) {
     case 0x0:
 	fdcslct = d;
+#ifdef DEBUG
 	fprintf(stderr, "write ");
 	show_fdc_select();
+#endif
 	if (!(fdcslct & 1)) {
 	    formatsect = 0;
 	    writecount = 0;
@@ -146,7 +156,7 @@ void i8272_write(byte a, byte d)
 	}
 	return;
     case 0x10:
-	fdcstat = d;
+	// read-only register
 	return;
     case 0x11:
 	if (formatsect) {
@@ -155,8 +165,15 @@ void i8272_write(byte a, byte d)
 		formatsect--;
 		formatargc = 0;
 		secptr = floppy_getSector((fdcslct & 4)?0:1, formatargs[0], formatargs[2], formatargs[1]);
+		if (!secptr) {
+		    retargs[6] = 0x40;
+		    retargs[5] = 0x35;
+		    break;
+		}
 		int size = 0x80 << formatargs[3];
+#ifdef DEBUG
 		fprintf(stderr, "FORMAT %d %d %d %d (%d)\n", formatargs[0], formatargs[1], formatargs[2], formatargs[3], size);
+#endif
 		while (size--)
 		    *secptr++ = formatfill;
 	    }
@@ -164,11 +181,12 @@ void i8272_write(byte a, byte d)
 	}
 	if (writecount) {
 	    writecount--;
-	    //fprintf(stderr, "write [%04X:%02X]\n", writecount, d);
 	    *secptr++ = d;
 	    break;
 	}
+#ifdef DEBUG
 	fprintf(stderr, "write DATA=%02X\n", d);
+#endif
 	if (cmdargc) {
 	    cmdargs[cmdcount++] = d;
 	    if (!--cmdargc)
@@ -204,7 +222,7 @@ void i8272_write(byte a, byte d)
 	    cmdargc = 5;
 	    break;
 	default:
-	    fprintf(stderr, "------>Unknown command %d\n", d);
+	    fprintf(stderr, "FDC I8272: Unknown command %02X\n", d);
 	}
 	return;
     }
@@ -218,19 +236,22 @@ byte i8272_read(byte a)
 
     switch (a) {
     case 0x0:
+#ifdef DEBUG
 	fprintf(stderr, "read  ");
 	show_fdc_select();
+#endif
 	return fdcslct;
     case 0x10:
 	return fdcstat | 0x80 | (retargc?0x40:0) | (readcount?0x40:0);
     case 0x11:
 	if (readcount) {
 	    readcount--;
-	    //fprintf(stderr, "return [%04X:%02X]\n", readcount, *secptr);
 	    return *secptr++;
 	}
 	if (retargc) {
+#ifdef DEBUG
 	    fprintf(stderr, "return %02X\n", retargs[retargc - 1]);
+#endif
 	    return retargs[--retargc];
 	}
 	return fdcdata;
