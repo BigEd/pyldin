@@ -3,6 +3,7 @@
 #include "core/mc6800.h"
 #include "core/devices.h"
 #include "core/mc6845.h"
+#include "core/i8272.h"
 #include "core/keyboard.h"
 #include "printer.h"
 
@@ -37,6 +38,8 @@ int devices_init(void)
     CurrP = NULL;
 
     mc6845_init();
+
+    i8272_init();
 
     return 0;
 }
@@ -110,9 +113,9 @@ int devices_memr(word a, byte *t)
 	tick50 = 0;
 	return 1;
 
-    case 0xe6d0:
-	*t = 0x80;
-	return 1;
+//    case 0xe6d0:
+//	*t = 0x80;
+//	return 1;
 
     case 0xe683:
 	*t = vdiskMEM[vdiskAddress % vdiskSIZE];
@@ -126,6 +129,12 @@ int devices_memr(word a, byte *t)
 
     case 0xe634:
 	*t = printer_dra_rd();
+	return 1;
+
+    case 0xe6c0:
+    case 0xe6d0:
+    case 0xe6d1:
+	*t = i8272_read(a & 0x1f);
 	return 1;
     }
 
@@ -201,6 +210,12 @@ int devices_memw(word a, byte d)
 	vdiskMEM[vdiskAddress % vdiskSIZE] = d;
 	vdiskAddress += 1;
 	vdiskAddress %= vdiskSIZE;
+	return 0;
+
+    case 0xe6c0:
+    case 0xe6d0:
+    case 0xe6d1:
+	i8272_write(a & 0x1f, d);
 	return 0;
     }
 
