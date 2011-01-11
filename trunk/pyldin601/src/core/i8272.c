@@ -58,6 +58,10 @@ static void execute_command(void)
 	fprintf(stderr, "%02X ", cmdargs[i]);
     fprintf(stderr, "\n");
     switch (fdcdata) {
+	case 0x04:
+	    retargs[0] = 0x20;
+	    retargc = 1;
+	    break;
 	case 0x07:
 	    retargs[0] = 0;
 	    retargs[1] = 0x20;
@@ -80,11 +84,15 @@ static void execute_command(void)
 	    retargs[6] = 0xc0;
 	    retargc = 7;
 	    break;
+	case 0x45:
 	case 0x66:
 	    secptr = floppy_getSector((fdcslct & 4)?0:1, cmdargs[1], cmdargs[3], cmdargs[2]);
 	    if (!secptr)
 		break;
-	    readcount = 512; //0x80 << cmdargs[4];
+	    if (fdcdata == 0x45)
+		writecount = 512; //0x80 << cmdargs[4];
+	    if (fdcdata == 0x66)
+		readcount = 512; //0x80 << cmdargs[4];
 	    retargs[0] = cmdargs[4];
 	    retargs[1] = cmdargs[3];
 	    retargs[2] = cmdargs[2];
@@ -115,6 +123,12 @@ void i8272_write(byte a, byte d)
 	fdcstat = d;
 	return;
     case 0x11:
+	if (writecount) {
+	    writecount--;
+	    //fprintf(stderr, "write [%04X:%02X]\n", writecount, d);
+	    *secptr++ = d;
+	    break;
+	}
 	fprintf(stderr, "write DATA=%02X\n", d);
 	if (cmdargc) {
 	    cmdargs[cmdcount++] = d;
@@ -128,6 +142,9 @@ void i8272_write(byte a, byte d)
 	case 0x03: // specify
 	    cmdargc = 2;
 	    break;
+	case 0x04:
+	    cmdargc = 1;
+	    break;
 	case 0x07: // recalibrate
 	    cmdargc = 1;
 	    break;
@@ -140,6 +157,7 @@ void i8272_write(byte a, byte d)
 	case 0x4a: // read id
 	    cmdargc = 1;
 	    break;
+	case 0x45: // write
 	case 0x66: // read
 	    cmdargc = 8;
 	    break;
