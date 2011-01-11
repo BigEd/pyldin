@@ -20,6 +20,11 @@ static byte *secptr = NULL;
 static int readcount = 0;
 static int writecount = 0;
 
+static byte formatargs[4];
+static int formatargc = 0;
+static byte formatsect = 0;
+static byte formatfill = 0;
+
 static byte curtrack = 0;
 
 void i8272_init(void)
@@ -90,13 +95,28 @@ static void execute_command(void)
 	    if (!secptr)
 		break;
 	    if (fdcdata == 0x45)
-		writecount = 512; //0x80 << cmdargs[4];
+		writecount = 0x80 << cmdargs[4];
 	    if (fdcdata == 0x66)
-		readcount = 512; //0x80 << cmdargs[4];
+		readcount = 0x80 << cmdargs[4];
 	    retargs[0] = cmdargs[4];
 	    retargs[1] = cmdargs[3];
 	    retargs[2] = cmdargs[2];
 	    retargs[3] = cmdargs[1];
+	    retargs[4] = 0;
+	    retargs[5] = 0;
+	    retargs[6] = 0xc0;
+	    retargc = 7;
+	    curtrack = cmdargs[1];
+	    break;
+	case 0x4d:
+	    formatargc = 0;
+	    formatsect = cmdargs[2];
+	    formatfill = cmdargs[4];
+	    fprintf(stderr, "FORMAT sectors %d fill %02X\n", formatsect, formatfill);
+	    retargs[0] = cmdargs[1];
+	    retargs[1] = 0;
+	    retargs[2] = 0;
+	    retargs[3] = 0;
 	    retargs[4] = 0;
 	    retargs[5] = 0;
 	    retargs[6] = 0xc0;
@@ -118,11 +138,30 @@ void i8272_write(byte a, byte d)
 	fdcslct = d;
 	fprintf(stderr, "write ");
 	show_fdc_select();
+	if (!(fdcslct & 1)) {
+	    formatsect = 0;
+	    writecount = 0;
+	    readcount = 0;
+	    retargc = 0;
+	}
 	return;
     case 0x10:
 	fdcstat = d;
 	return;
     case 0x11:
+	if (formatsect) {
+	    formatargs[formatargc++] = d;
+	    if (formatargc == 4) {
+		formatsect--;
+		formatargc = 0;
+		secptr = floppy_getSector((fdcslct & 4)?0:1, formatargs[0], formatargs[2], formatargs[1]);
+		int size = 0x80 << formatargs[3];
+		fprintf(stderr, "FORMAT %d %d %d %d (%d)\n", formatargs[0], formatargs[1], formatargs[2], formatargs[3], size);
+		while (size--)
+		    *secptr++ = formatfill;
+	    }
+	    break;
+	}
 	if (writecount) {
 	    writecount--;
 	    //fprintf(stderr, "write [%04X:%02X]\n", writecount, d);
@@ -160,6 +199,9 @@ void i8272_write(byte a, byte d)
 	case 0x45: // write
 	case 0x66: // read
 	    cmdargc = 8;
+	    break;
+	case 0x4d: // format
+	    cmdargc = 5;
 	    break;
 	default:
 	    fprintf(stderr, "------>Unknown command %d\n", d);
