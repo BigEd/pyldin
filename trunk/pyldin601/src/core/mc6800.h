@@ -17,5 +17,7 @@ byte 	*mc6800_get_memory(void);
 byte	mc6800_memr(word a);
 void	mc6800_memw(word a, byte d);
 
+extern byte *get_cpu_mem(dword size);
+
 extern int SWIemulator(int swi, byte *A, byte *B, word *X, byte *t, word *PC);
 #endif
