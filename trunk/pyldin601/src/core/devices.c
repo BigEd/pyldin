@@ -28,11 +28,11 @@ int devices_init(void)
 {
     int i;
 
-    BMEM 	= (byte *) get_bios_mem(4096); //malloc(sizeof(byte) * 4096 );
-    vdiskMEM 	= (byte *) get_ramdisk_mem(vdiskSIZE); //malloc(sizeof(byte) * vdiskSIZE);
+    BMEM 	= (byte *) get_bios_mem(4096);
+    vdiskMEM 	= (byte *) get_ramdisk_mem(vdiskSIZE);
 
     for (i = 0; i < MAX_ROMCHIPS; i++) {
-	ROMP[i] = (byte *) get_romchip_mem(i, 65536); //malloc(sizeof(byte) * 65536);
+	ROMP[i] = (byte *) get_romchip_mem(i, 65536);
     }
 
     CurrP = NULL;

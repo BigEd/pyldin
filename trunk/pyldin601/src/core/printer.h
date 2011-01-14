@@ -19,4 +19,7 @@ unsigned char printer_drb_rd(void);
 unsigned char printer_cra_rd(void);
 unsigned char printer_crb_rd(void);
 
+extern void printer_put_char(byte data);
+extern void Covox_Set(int val, int ticks);
+
 #endif

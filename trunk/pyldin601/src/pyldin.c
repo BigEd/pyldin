@@ -22,6 +22,7 @@
 #include "core/devices.h"
 #include "core/keyboard.h"
 #include "core/floppy.h"
+#include "core/printer.h"
 #include "wave.h"
 #include "sshot.h"
 #include "printer.h"
@@ -52,6 +53,9 @@ char *datadir = DATADIR;
 
 static int fReset = 0;
 static int fExit = 0;
+
+#define PRNFILE	"pyldin.prn"
+static FILE *prn = NULL;
 
 //
 static SDL_Surface *screen;
@@ -686,6 +690,28 @@ byte *get_romchip_mem(byte chip, dword size)
     }
 
     return pyldin_romchip_mem[chip];
+}
+
+byte *get_cpu_mem(dword size)
+{
+    return (byte *) malloc(sizeof(byte) * size);
+}
+
+void printer_put_char(byte data)
+{
+    if (!prn) {
+	char file[256];
+	char *home = getenv("HOME");
+	if (home)
+	    sprintf(file, "%s/%s", home, PRNFILE);
+	else
+	    strcpy(file, PRNFILE);
+
+	fprintf(stderr, "Printer file: %s\n", file);
+	prn = fopen(file, "wb");
+    }
+    if (prn)
+	fputc(data, prn);
 }
 
 int main(int argc, char *argv[])
