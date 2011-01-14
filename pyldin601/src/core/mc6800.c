@@ -8,11 +8,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#if defined(__APPLE__) && (__GNUC__)
-#include <stdlib.h>
-#else
-#include <malloc.h>
-#endif
 #include <time.h>
 
 #include "core/mc6800.h"
@@ -71,7 +66,7 @@ int mc6800_init(void)
 {
     mc6800_global_takts = 0;
 
-    MEM = (byte *) malloc(sizeof(byte) * 65536);
+    MEM = (byte *) get_cpu_mem(65536);
     memset(MEM, 0, 65536);
 
     devices_init();
@@ -81,8 +76,6 @@ int mc6800_init(void)
 
 int mc6800_fini(void)
 {
-    free(MEM);
-
     devices_fini();
 
     return 0;
