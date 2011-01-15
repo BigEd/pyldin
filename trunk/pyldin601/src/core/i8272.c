@@ -221,8 +221,10 @@ void i8272_write(byte a, byte d)
 	case 0x4d: // format
 	    cmdargc = 5;
 	    break;
+#ifndef ROMOPTIMIZE
 	default:
 	    fprintf(stderr, "FDC I8272: Unknown command %02X\n", d);
+#endif
 	}
 	return;
     }
