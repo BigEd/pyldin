@@ -44,6 +44,7 @@ OPTIMIZE = -O3 -fomit-frame-pointer -fno-exceptions
 # Application sources directories
 SRC_DIRS = ./
 SRC_DIRS += ./startup
+SRC_DIRS += ./core
 SRC_DIRS += ../src
 SRC_DIRS += ../src/core
 
@@ -62,20 +63,22 @@ ROMFILES = bios.rom.h video.rom.h rom0.rom.h
 ##############################################################################################
 #  ARM .c sources
 
-SRC_ARM_C  = ../src/core/devices.c ../src/core/floppy.c ../src/core/keyboard.c ../src/core/mc6800.c ../src/core/swiemu.c ../src/core/mc6845.c ../src/core/i8272.c ../src/core/printer.c
+SRC_ARM_C  = ../src/core/devices.c ../src/core/floppy.c ../src/core/keyboard.c ../src/core/mc6800.c ../src/core/swiemu.c ../src/core/i8272.c ../src/core/printer.c
 SRC_ARM_C += ../src/screen.c
+
+SRC_ARM_C += ./core/mc6845.c
 
 SRC_ARM_C += main.c
 SRC_ARM_C += uart.c
-#SRC_ARM_C += clock-arch.c
+SRC_ARM_C += fio.c
+SRC_ARM_C += irq.c
+SRC_ARM_C += syscalls.c
+SRC_ARM_C += timer.c
 #SRC_ARM_C += adc.c
 #SRC_ARM_C += touchscreen.c
 #SRC_ARM_C +=
 SRC_ARM_C += interrupts.c
 SRC_ARM_C += system.c
-SRC_ARM_C += fio.c
-SRC_ARM_C += irq.c
-SRC_ARM_C += syscalls.c
 
 ############################
 #  ARM .cpp sources
