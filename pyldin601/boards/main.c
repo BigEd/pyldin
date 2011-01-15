@@ -117,6 +117,7 @@ void Covox_Set(int val, int ticks)
 void Speaker_Set(int val, int ticks)
 {
 }
+
 //
 // Keyboard emulation
 //
@@ -135,7 +136,7 @@ void clrScr(void)
 
     Ptr16 = (unsigned short *)LCD_BUFFER_ADDR;
 
-    for(i = 0; i < 76800; i++) {
+    for(i = 0; i < 320 * 240; i++) {
 	*Ptr16++ = 0x0;
     }
 }
@@ -145,10 +146,6 @@ void clrScr(void)
 //
 int main(void)
 {
-    char pbuf[128];
-
-    systemSetup();
-
     FIOInit(BOARD_LED1_PORT, DIR_OUT, BOARD_LED1_MASK);
     FIOInit(BOARD_LED2_PORT, DIR_OUT, BOARD_LED2_MASK);
     FIOInit(BOARD_LED3_PORT, DIR_OUT, BOARD_LED3_MASK);
@@ -161,8 +158,7 @@ int main(void)
 
     uart0Init(UART_BAUD(HOST_BAUD_U0), UART_8N1, UART_FIFO_8); // setup the UART
 
-    uart0Puts("Hello from UART0\r\n");
-    drawString("Hello world!!!", 20, 0, 0xffff, 0);
+    uart0Puts("Pyldin-601 emulator system\r\n");
 
     mc6800_init();
     mc6800_reset();

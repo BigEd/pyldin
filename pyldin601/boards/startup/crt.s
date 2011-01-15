@@ -48,14 +48,14 @@ _startup:
 
 # Exception Vectors
 
-_vectors:       ldr     PC, Reset_Addr
-                ldr     PC, Undef_Addr
-                ldr     PC, SWI_Addr
-                ldr     PC, PAbt_Addr
-                ldr     PC, DAbt_Addr
+_vectors:       ldr     pc, Reset_Addr
+                ldr     pc, Undef_Addr
+                ldr     pc, SWI_Addr
+                ldr     pc, PAbt_Addr
+                ldr     pc, DAbt_Addr
                 nop				/* Reserved Vector (holds Philips ISP checksum) */
-                ldr     PC, [PC,#-0x120]	/* Interrupt exception for LPC2478 (from VIC)   */
-                ldr     PC, FIQ_Addr
+                ldr     pc, [pc, #-0x120]	/* Interrupt exception for LPC2478 (from VIC)   */
+                ldr     pc, FIQ_Addr
 
 Reset_Addr:     .word   Reset_Handler		/* defined in this module below  */
 Undef_Addr:     .word   UNDEF_Routine		/* defined in main.c  */
@@ -73,9 +73,14 @@ FIQ_Addr:       .word   FIQ_Routine		/* defined in main.c  */
 # Reset Handler
 
 Reset_Handler:
+		.extern systemSetup /* Look system.c */
+                 ldr     sp, =__stack_end__    @ temporary stack at Stack_Top
+                 ldr r0, =systemSetup
+                 mov lr, pc
+                 bx r0
+
 		/* Setup a stack for each mode - note that this only sets up a usable stack
 		 for User mode.   Also each mode is setup with interrupts initially disabled. */
-
 		ldr     r0, =__stack_end__
 		msr     CPSR_c, #MODE_UND|I_BIT|F_BIT 	/* Undefined Instruction Mode  */
 		mov     sp, r0
@@ -92,24 +97,24 @@ Reset_Handler:
 		msr     CPSR_c, #MODE_SVC|I_BIT|F_BIT 	/* Supervisor Mode */
 		mov     sp, r0
 		sub     r0, r0, #SVC_STACK_SIZE
-		msr     CPSR_c, #MODE_SYS|F_BIT /*|I_BIT|F_BIT*/ 	/* User Mode */
+		msr     CPSR_c, #MODE_SYS /*|I_BIT|F_BIT*/ 	/* User Mode */
 		mov     sp, r0
 
 		/* copy .data section (Copy from ROM to RAM) */
-                ldr     R1, =__data_beg_src__
-                ldr     R2, =__data_beg__
-                ldr     R3, =__data_end__
-1:		cmp     R2, R3
-                ldrlo   R0, [R1], #4
-                strlo   R0, [R2], #4
+                ldr     r1, =__data_beg_src__
+                ldr     r2, =__data_beg__
+                ldr     r3, =__data_end__
+1:		cmp     r2, r3
+                ldrlo   r0, [r1], #4
+                strlo   r0, [r2], #4
                 blo     1b
 
 		/* Clear .bss section (Zero init)  */
-                mov     R0, #0
-                ldr     R1, =__bss_beg__
-                ldr     R2, =__bss_end__
-2:		cmp     R1, R2
-                strlo   R0, [R1], #4
+                mov     r0, #0
+                ldr     r1, =__bss_beg__
+                ldr     r2, =__bss_end__
+2:		cmp     r1, r2
+                strlo   r0, [r1], #4
                 blo     2b
 
 		/* Enter the C code  */
