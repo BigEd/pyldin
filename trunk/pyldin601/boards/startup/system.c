@@ -340,13 +340,5 @@ void systemSetup(void)
 
     Init_VIC();
 
-    CLEAR_SDRAM();
-
-    delayMs(500);
-
-    SET_SDRAM();
-
-    delayMs(500);
-
     return;
 }
