@@ -36,7 +36,7 @@ FMCU  = -mcpu=arm7tdmi
 
 MEM = ROM
 
-PROJECT = $(CHIP)_puldin
+PROJECT = $(CHIP)_pyldin601
 
 OPTIMIZE = -O3 -fomit-frame-pointer -fno-exceptions
 
