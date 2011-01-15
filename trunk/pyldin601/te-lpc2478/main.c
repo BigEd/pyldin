@@ -4,6 +4,7 @@
 #include "config.h"
 #include "fio.h"
 #include "uart.h"
+#include "timer.h"
 
 #include "core/mc6800.h"
 #include "core/mc6845.h"
@@ -24,6 +25,8 @@
 
 #define MEMORY_CPU	(LCD_BUFFER_ADDR + 0x30000)
 #define MEMORY_RAMDRIVE	(MEMORY_CPU + 0x10000)
+
+extern void mc6845_drawScreen_lpc24(void *video, int width, int height);
 
 static int fReset = 0;
 
@@ -142,6 +145,23 @@ void clrScr(void)
 }
 
 //
+// 50Hz timer
+//
+void TimerHandler(void)
+{
+    static int vert = 0;
+
+    devices_set_tick50();
+    mc6845_curBlink();
+    mc6800_setIrq(1);
+
+    LED_CONTROL(BOARD_LED1_FIO, BOARD_LED1_MASK, vert & 1);
+    LED_CONTROL(BOARD_LED2_FIO, BOARD_LED2_MASK, vert & 2);
+    LED_CONTROL(BOARD_LED3_FIO, BOARD_LED3_MASK, vert & 4);
+    vert++;
+}
+
+//
 //
 //
 int main(void)
@@ -153,6 +173,8 @@ int main(void)
     LED_CONTROL(BOARD_LED1_FIO, BOARD_LED1_MASK, 0);
     LED_CONTROL(BOARD_LED2_FIO, BOARD_LED2_MASK, 0);
     LED_CONTROL(BOARD_LED3_FIO, BOARD_LED3_MASK, 0);
+
+    vTimer0Init(20);
 
     clrScr();
 
@@ -175,18 +197,10 @@ int main(void)
 	scounter += takt;
 
 	if (vcounter >= 20000) {
-	    devices_set_tick50();
-	    mc6845_curBlink();
-	    mc6800_setIrq(1);
-
 	    if ((cnt % 3) == 2)
-		mc6845_drawScreen(pixels, vscr_width, vscr_height, vScale);
+		mc6845_drawScreen_lpc24(pixels, vscr_width, vscr_height);
 
 	    vcounter = 0;
-
-	    LED_CONTROL(BOARD_LED1_FIO, BOARD_LED1_MASK, cnt & 1);
-	    LED_CONTROL(BOARD_LED2_FIO, BOARD_LED2_MASK, cnt & 2);
-	    LED_CONTROL(BOARD_LED3_FIO, BOARD_LED3_MASK, cnt & 4);
 
 	    cnt++;
 	}
