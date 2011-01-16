@@ -15,10 +15,11 @@ int devices_init(void);
 int devices_fini(void);
 void devices_reset(void);
 void devices_setDATETIME(word year, word mon, word mday, word hour, word min, word sec);
-void devices_set_tick50(void);
 
-int devices_memr(word a, byte *t);
-int devices_memw(word a, byte d);
+O_INLINE void devices_set_tick50(void);
+
+O_INLINE int devices_memr(word a, byte *t);
+O_INLINE int devices_memw(word a, byte d);
 
 extern byte *get_bios_mem(dword size);
 extern byte *get_ramdisk_mem(dword size);

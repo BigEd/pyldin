@@ -18,22 +18,22 @@ static byte *videorom = NULL;
 static byte old_rHor = 0;
 static byte old_rVer = 0;
 
-void mc6845_curBlink(void)
+O_INLINE void mc6845_curBlink(void)
 {
     curBlink++;
 }
 
-void mc6845_writeReg(byte a, byte d)
+O_INLINE void mc6845_writeReg(byte a, byte d)
 {
     video_regs[a & 0xf] = d;
 }
 
-byte mc6845_readReg(byte a)
+O_INLINE byte mc6845_readReg(byte a)
 {
     return video_regs[a & 0xf];
 }
 
-void mc6845_write(byte a, byte d)
+O_INLINE void mc6845_write(byte a, byte d)
 {
     a &= 1;
     iomap[a] = d;
@@ -41,7 +41,7 @@ void mc6845_write(byte a, byte d)
 	mc6845_writeReg(iomap[0], iomap[1]);
 }
 
-byte mc6845_read(byte a)
+O_INLINE byte mc6845_read(byte a)
 {
     a &= 1;
     if (a == 1)
@@ -54,7 +54,7 @@ void mc6845_init(void)
     videorom = get_videorom_mem(2048);
 }
 
-void mc6845_setupScreen(int mode)
+O_INLINE void mc6845_setupScreen(int mode)
 {
     vMode = mode & 0x20;
     resolution = mode & 0x02;

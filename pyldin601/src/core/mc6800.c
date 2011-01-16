@@ -12,6 +12,7 @@
 
 #include "core/mc6800.h"
 #include "core/opcode.h"
+#include "core/swiemu.h"
 #include "core/devices.h"
 
 #ifdef __GNUC__
@@ -89,22 +90,22 @@ void mc6800_reset()
     PC |= mc6800_memr(0xffff);
 }
 
-void mc6800_setIrq(int l)
+O_INLINE void mc6800_setIrq(int l)
 {
     IRQrequest = l;
 }
 
-dword mc6800_get_takts(void)
+O_INLINE dword mc6800_get_takts(void)
 {
     return mc6800_global_takts;
 }
 
-byte *mc6800_get_memory(void)
+O_INLINE byte *mc6800_get_memory(void)
 {
     return MEM;
 }
 
-byte mc6800_memr(word a)
+O_INLINE byte mc6800_memr(word a)
 {
     byte t = 0xff;
 
@@ -114,7 +115,7 @@ byte mc6800_memr(word a)
     return MEM[a];
 }
 
-void mc6800_memw(word a, byte d)
+O_INLINE void mc6800_memw(word a, byte d)
 {
     if (devices_memw(a, d))
 	return;

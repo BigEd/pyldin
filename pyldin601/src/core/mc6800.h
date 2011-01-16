@@ -5,19 +5,21 @@
 #define word	unsigned short
 #define dword	unsigned int
 
+#ifndef O_INLINE
+#define O_INLINE
+#endif
+
 int	mc6800_init(void);
 void	mc6800_reset(void);
 int	mc6800_step(void);
 int	mc6800_fini(void);
-void	mc6800_setIrq(int l);
-dword	mc6800_get_takts(void);
 
-byte 	*mc6800_get_memory(void);
+O_INLINE void	mc6800_setIrq(int l);
+O_INLINE dword	mc6800_get_takts(void);
+O_INLINE byte 	*mc6800_get_memory(void);
 
-byte	mc6800_memr(word a);
-void	mc6800_memw(word a, byte d);
+O_INLINE byte mc6800_memr(word a);
+O_INLINE void mc6800_memw(word a, byte d);
 
 extern byte *get_cpu_mem(dword size);
-
-extern int SWIemulator(int swi, byte *A, byte *B, word *X, byte *t, word *PC);
 #endif
