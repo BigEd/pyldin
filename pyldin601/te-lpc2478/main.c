@@ -5,6 +5,7 @@
 #include "fio.h"
 #include "uart.h"
 #include "timer.h"
+#include "kbd.h"
 
 #include "core/mc6800.h"
 #include "core/mc6845.h"
@@ -164,6 +165,34 @@ void TimerHandler(void)
 }
 
 //
+// Keyboard interrupt
+//
+void keyboard_handler(uint8_t scancode)
+{
+    uint8_t code = scancode & 0x7f;
+    if (scancode & 0x80) {
+	if (code < 0x60)
+	    jkeybUp();
+	else {
+	    switch (code) {
+	    case KEY_CONTROL:	jkeybModeUp(1); break;
+	    case KEY_SHIFT:	jkeybModeUp(2); break;
+	    }
+	}
+    } else {
+	if (code < 0x60)
+	    jkeybDown(code);
+	else {
+	    switch (code) {
+	    case KEY_CONTROL:	jkeybModeDown(1); break;
+	    case KEY_SHIFT:	jkeybModeDown(2); break;
+	    case KEY_PAUSE:	resetRequested(); break;
+	    }
+	}
+    }
+}
+
+//
 //
 //
 int main(void)
@@ -180,6 +209,7 @@ int main(void)
     SPEAKER_CONTROL(PYLDIN_SPEAKER_FIO, PYLDIN_SPEAKER_MASK, 0);
 
     vTimer0Init(20);
+    keyboard_init();
 
     clrScr();
 
