@@ -76,6 +76,7 @@ SRC_ARM_C += fio.c
 SRC_ARM_C += irq.c
 SRC_ARM_C += syscalls.c
 SRC_ARM_C += timer.c
+SRC_ARM_C += kbd.c
 #SRC_ARM_C += adc.c
 #SRC_ARM_C += touchscreen.c
 #SRC_ARM_C +=
