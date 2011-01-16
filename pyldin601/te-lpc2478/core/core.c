@@ -2,7 +2,7 @@
 #include <string.h>
 #include <time.h>
 
-#define O_INLINE inline
+#define O_INLINE static inline
 
 #include "core/mc6800.h"
 #include "core/swiemu.h"
