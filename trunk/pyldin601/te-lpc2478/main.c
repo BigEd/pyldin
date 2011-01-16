@@ -23,9 +23,12 @@
 	a &= ~(b);\
 }
 
+#define SPEAKER_CONTROL LED_CONTROL
+
 #define MEMORY_CPU	(LCD_BUFFER_ADDR + 0x30000)
 #define MEMORY_RAMDRIVE	(MEMORY_CPU + 0x10000)
 
+extern void core_50Hz_irq(void);
 extern void mc6845_drawScreen_lpc24(void *video, int width, int height);
 
 static int fReset = 0;
@@ -119,6 +122,7 @@ void Covox_Set(int val, int ticks)
 
 void Speaker_Set(int val, int ticks)
 {
+    SPEAKER_CONTROL(PYLDIN_SPEAKER_FIO, PYLDIN_SPEAKER_MASK, val);
 }
 
 //
@@ -151,9 +155,7 @@ void TimerHandler(void)
 {
     static int vert = 0;
 
-    devices_set_tick50();
-    mc6845_curBlink();
-    mc6800_setIrq(1);
+    core_50Hz_irq();
 
     LED_CONTROL(BOARD_LED1_FIO, BOARD_LED1_MASK, vert & 1);
     LED_CONTROL(BOARD_LED2_FIO, BOARD_LED2_MASK, vert & 2);
@@ -173,6 +175,9 @@ int main(void)
     LED_CONTROL(BOARD_LED1_FIO, BOARD_LED1_MASK, 0);
     LED_CONTROL(BOARD_LED2_FIO, BOARD_LED2_MASK, 0);
     LED_CONTROL(BOARD_LED3_FIO, BOARD_LED3_MASK, 0);
+
+    FIOInit(PYLDIN_SPEAKER_PORT, DIR_OUT, PYLDIN_SPEAKER_MASK);
+    SPEAKER_CONTROL(PYLDIN_SPEAKER_FIO, PYLDIN_SPEAKER_MASK, 0);
 
     vTimer0Init(20);
 
