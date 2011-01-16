@@ -63,10 +63,12 @@ ROMFILES = bios.rom.h video.rom.h rom0.rom.h
 ##############################################################################################
 #  ARM .c sources
 
-SRC_ARM_C  = ../src/core/devices.c ../src/core/floppy.c ../src/core/keyboard.c ../src/core/mc6800.c ../src/core/swiemu.c ../src/core/i8272.c ../src/core/printer.c
-SRC_ARM_C += ../src/screen.c
+#SRC_ARM_C  = ../src/core/devices.c ../src/core/floppy.c ../src/core/keyboard.c ../src/core/mc6800.c ../src/core/swiemu.c ../src/core/i8272.c ../src/core/printer.c
+#SRC_ARM_C += ./core/mc6845.c
 
-SRC_ARM_C += ./core/mc6845.c
+SRC_ARM_C += ./core/core.c
+
+SRC_ARM_C += ../src/screen.c
 
 SRC_ARM_C += main.c
 SRC_ARM_C += uart.c
