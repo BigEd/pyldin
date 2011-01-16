@@ -3,7 +3,7 @@
 #include "core/mc6800.h"
 #include "core/floppy.h"
 
-int SWIemulator(int swi, byte *A, byte *B, word *X, byte *t, word *PC)
+O_INLINE int SWIemulator(int swi, byte *A, byte *B, word *X, byte *t, word *PC)
 {
 #ifdef ENABLE_INT17_EMULATOR
     switch(swi) {

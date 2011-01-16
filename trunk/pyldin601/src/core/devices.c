@@ -73,7 +73,7 @@ void devices_setDATETIME(word year, word mon, word mday, word hour, word min, wo
     mc6800_memw(0xed01, 0x5a);
 }
 
-int devices_memr(word a, byte *t)
+O_INLINE int devices_memr(word a, byte *t)
 {
 
     if (a >= 0xf000) {
@@ -141,7 +141,7 @@ int devices_memr(word a, byte *t)
     return 0;
 }
 
-int devices_memw(word a, byte d)
+O_INLINE int devices_memw(word a, byte d)
 {
     if ((a & 0xff00) != 0xe600)
 	return 0;
@@ -222,7 +222,7 @@ int devices_memw(word a, byte d)
     return 0;
 }
 
-void devices_set_tick50(void)
+O_INLINE void devices_set_tick50(void)
 {
     tick50 = 0x80;
 }
