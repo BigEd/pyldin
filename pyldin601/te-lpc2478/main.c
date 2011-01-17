@@ -152,7 +152,7 @@ void clrScr(void)
 //
 // 50Hz timer
 //
-void TimerHandler(void)
+void timer_handler(void)
 {
     static int vert = 0;
 
@@ -208,7 +208,7 @@ int main(void)
     FIOInit(PYLDIN_SPEAKER_PORT, DIR_OUT, PYLDIN_SPEAKER_MASK);
     SPEAKER_CONTROL(PYLDIN_SPEAKER_FIO, PYLDIN_SPEAKER_MASK, 0);
 
-    vTimer0Init(20);
+    timer_init(20);
     keyboard_init();
 
     clrScr();
