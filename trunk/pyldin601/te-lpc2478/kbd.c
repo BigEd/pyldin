@@ -32,9 +32,8 @@ int keyboard_init(void)
     FIOInit(KBD_CLK_PORT, DIR_IN, KBD_CLK_MASK);
     FIOInit(KBD_DAT_PORT, DIR_IN, KBD_DAT_MASK);
 
-    if ( Install_IRQ(EINT3_INT, (void *)vGpio2Handler, LOWEST_PRIORITY) == FALSE ) {
+    if (Install_IRQ(EINT3_INT, (void *)vGpio2Handler, LOWEST_PRIORITY) == FALSE)
 	return FALSE;
-    }
 
     IO2_INT_EN_F |= KBD_CLK_MASK;
 
