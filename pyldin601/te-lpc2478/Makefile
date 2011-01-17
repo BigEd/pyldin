@@ -58,7 +58,7 @@ LIB_DIRS += $(LD_DIRS)
 
 ##############################################################################################
 # ROM files
-ROMFILES = bios.rom.h video.rom.h rom0.rom.h
+ROMFILES = bios.lzma.h video.lzma.h rom0.lzma.h rom1.lzma.h rom2.lzma.h rom3.lzma.h rom4.lzma.h
 
 ##############################################################################################
 #  ARM .c sources
@@ -219,14 +219,22 @@ all: directories $(ROMFILES) $(OBJS) $(ELF)  $(LSS) size $(HEX) $(BIN)
 #all: directories $(OBJS) $(ELF) $(LSS) size
 
 ####
-video.rom.h:
-	zcat ../../native/Bios/video.roz | hexdump -v -e '16/1 " 0x%02x," "\n"' > $@
+video.lzma.h:
+	zcat ../../native/Bios/video.roz | lzma -cz9 - | hexdump -v -e '1/1 " 0x%02x," "\n"' > $@
 
-bios.rom.h:
-	zcat ../../native/Bios/bios.roz | hexdump -v -e '16/1 " 0x%02x," "\n"' > $@
+bios.lzma.h:
+	zcat ../../native/Bios/bios.roz | lzma -cz9 - | hexdump -v -e '1/1 " 0x%02x," "\n"' > $@
 
-rom0.rom.h:
-	zcat ../../native/RAMROMDiskPipnet/rom0.roz | hexdump -v -e '16/1 " 0x%02x," "\n"' > $@
+rom0.lzma.h:
+	zcat ../../native/RAMROMDiskPipnet/rom0.roz | lzma -cz9 - | hexdump -v -e '1/1 " 0x%02x," "\n"' > $@
+rom1.lzma.h:
+	zcat ../../native/RAMROMDiskPipnet/rom1.roz | lzma -cz9 - | hexdump -v -e '1/1 " 0x%02x," "\n"' > $@
+rom2.lzma.h:
+	zcat ../../native/RAMROMDiskPipnet/rom2.roz | lzma -cz9 - | hexdump -v -e '1/1 " 0x%02x," "\n"' > $@
+rom3.lzma.h:
+	zcat ../../native/RAMROMDiskPipnet/rom3.roz | lzma -cz9 - | hexdump -v -e '1/1 " 0x%02x," "\n"' > $@
+rom4.lzma.h:
+	zcat ../../native/RAMROMDiskPipnet/rom4.roz | lzma -cz9 - | hexdump -v -e '1/1 " 0x%02x," "\n"' > $@
 
 ####
 
