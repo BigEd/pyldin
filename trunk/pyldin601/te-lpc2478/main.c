@@ -6,6 +6,7 @@
 #include "uart.h"
 #include "timer.h"
 #include "kbd.h"
+#include "unlzma.h"
 
 #include "core/mc6800.h"
 #include "core/mc6845.h"
@@ -26,8 +27,16 @@
 
 #define SPEAKER_CONTROL LED_CONTROL
 
-#define MEMORY_CPU	(LCD_BUFFER_ADDR + 0x30000)
-#define MEMORY_RAMDRIVE	(MEMORY_CPU + 0x10000)
+#define MEMORY_CPU		(LCD_BUFFER_ADDR + 0x30000)
+#define MEMORY_CPU_SIZE		0x10000
+#define MEMORY_VIDEOROM		(MEMORY_CPU + MEMORY_CPU_SIZE)
+#define MEMORY_VIDEOROM_SIZE	0x800
+#define MEMORY_BIOS		(MEMORY_VIDEOROM + MEMORY_VIDEOROM_SIZE)
+#define MEMORY_BIOS_SIZE	0x1000
+#define MEMORY_ROMCHIPS		(MEMORY_BIOS + MEMORY_BIOS_SIZE)
+#define MEMORY_ROMCHIPS_SIZE	(0x10000 * MAX_ROMCHIPS)
+#define MEMORY_RAMDRIVE		(MEMORY_ROMCHIPS + MEMORY_ROMCHIPS_SIZE)
+#define MEMORY_RAMDRIVE_SIZE	0x80000
 
 extern void core_50Hz_irq(void);
 extern void mc6845_drawScreen_lpc24(void *video, int width, int height);
@@ -56,41 +65,84 @@ void drawString(char *str, int xp, int yp, unsigned int fg, unsigned int bg)
 }
 
 //
+// unlzma error call
+//
+void unlzma_error(char *x)
+{
+    uart0Puts("unlzma: ");
+    uart0Puts(x);
+    uart0Puts("\r\n");
+}
+
+//
 // Video ROM
 //
-static const uint8_t videorom[] = {
-#include "video.rom.h"
+static const byte videorom[] = {
+#include "video.lzma.h"
 };
 
 byte *get_videorom_mem(dword size)
 {
-    return (byte *) videorom;
+    unlzma((unsigned char *)videorom, sizeof(videorom), NULL, NULL, (byte *)MEMORY_VIDEOROM, NULL, unlzma_error);
+
+    return (byte *) MEMORY_VIDEOROM;
 }
 
 //
 // BIOS ROM
 //
-static const uint8_t biosrom[] = {
-#include "bios.rom.h"
+static const byte biosrom[] = {
+#include "bios.lzma.h"
 };
 
 byte *get_bios_mem(dword size)
 {
-    return (byte *) biosrom;
+    unlzma((unsigned char *)biosrom, sizeof(biosrom), NULL, NULL, (byte *)MEMORY_BIOS, NULL, unlzma_error);
+
+    return (byte *) MEMORY_BIOS;
 }
 
 //
 // ROM chips memory
 //
-static const uint8_t romchip0[] = {
-#include "rom0.rom.h"
+static const byte romchip0[] = {
+#include "rom0.lzma.h"
 };
+
+static const byte romchip1[] = {
+#include "rom1.lzma.h"
+};
+
+static const byte romchip2[] = {
+#include "rom2.lzma.h"
+};
+
+static const byte romchip3[] = {
+#include "rom3.lzma.h"
+};
+
+static const byte romchip4[] = {
+#include "rom4.lzma.h"
+};
+
+static const struct {
+    const byte *rom;
+    dword size;
+} romchips[] = {
+    {romchip0, sizeof(romchip0)},
+    {romchip1, sizeof(romchip1)},
+    {romchip2, sizeof(romchip2)},
+    {romchip3, sizeof(romchip3)},
+    {romchip4, sizeof(romchip4)}
+};
+
 byte *get_romchip_mem(byte chip, dword size)
 {
-    switch(chip) {
-    case 0:
-	return (byte *) romchip0;
+    if (chip < MAX_ROMCHIPS) {
+	unlzma((unsigned char *)romchips[chip].rom, romchips[chip].size, NULL, NULL, (byte *) (MEMORY_ROMCHIPS + 0x10000 * chip), NULL, unlzma_error);
+	return (byte *) (MEMORY_ROMCHIPS + 0x10000 * chip);
     }
+
     return NULL;
 }
 
