@@ -24,6 +24,9 @@ extern int flopWrite[];
 byte floppy_diskReady(int Disk);
 byte *floppy_getSector(int Disk, int Track, int Sector, int Head);
 
-void INT17emulator(byte *A, byte *B, word *X, byte *t, word *PC);
+int floppy_readSector(int Disk, int Track, int Sector, int Head, unsigned char *dst);
+int floppy_writeSector(int Disk, int Track, int Sector, int Head, unsigned char *src);
+int floppy_formaTrack(int Disk, int Track, int Head);
+int floppy_init();
 
 #endif
