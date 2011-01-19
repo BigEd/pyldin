@@ -1,0 +1,14 @@
+#summary Pyldin in real hardware
+#labels Featured
+
+= Introduction =
+
+This project is an emulator running as an independent computer. The hardware is based on the LPC2478 processor that runs the firmware with the emulator. Currently, the system being debugged on the developer board TE LPC2478LCD3.5, advanced beeper and keyboard port PS/2.
+
+= Details =
+
+Firmware supports the following peripherals:
+ * LCD display
+ * PS / 2 keyboard
+ * Beeper
+ * SD slot for memory cards as external disk drives
