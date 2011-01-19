@@ -3,7 +3,7 @@
 
 = Introduction =
 
-This project is an emulator that running as a real hardware. The hardware is based on the [http://ics.nxp.com/microcontrollers/to/pip/LPC2478.html LPC2478] microcontroller and runs the emulator firmware. Currently, the system being debugged on the developer board([http://www.terraelectronica.ru/news_made.php?ID=5 TE-LPC2478LCD3.5]), expanded with 1 bit's beeper and PS/2 keyboard port.
+This project is an emulator that running as a real hardware. The hardware is based on the [http://ics.nxp.com/microcontrollers/to/pip/LPC2478.html LPC2478] microcontroller and runs special firmware. Currently, the system being debugged on the developer board([http://www.terraelectronica.ru/news_made.php?ID=5 TE-LPC2478LCD3.5]), expanded with 1 bit's beeper and PS/2 keyboard port.
 
 || http://pyldin.googlecode.com/svn/wiki/pyldin-board-proto.jpg || http://pyldin.googlecode.com/svn/wiki/pyldin-proto.jpg ||
 
