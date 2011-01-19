@@ -3,7 +3,9 @@
 
 = Introduction =
 
-This project is an emulator running as an independent computer. The hardware is based on the LPC2478 processor that runs the firmware with the emulator. Currently, the system being debugged on the developer board TE LPC2478LCD3.5, advanced beeper and keyboard port PS/2.
+This project is an emulator running as a real hardware computer. The hardware is based on the [http://ics.nxp.com/microcontrollers/to/pip/LPC2478.html LPC2478] microcontroller that runs the firmware with the emulator. Currently, the system being debugged on the developer board TE LPC2478LCD3.5, advanced beeper and keyboard port PS/2.
+
+|| http://pyldin.googlecode.com/svn/wiki/pyldin-board-proto.jpg || http://pyldin.googlecode.com/svn/wiki/pyldin-proto.jpg ||
 
 = Details =
 
@@ -11,7 +13,7 @@ Firmware supports the following peripherals:
  * LCD display
  * PS/2 keyboard
  * Beeper
- * SD slot for memory cards as external disk drives
+ * SD slot for memory cards as external disk drives (hot-swap)
 
 = Piezo beeper and PS/2 keyboard for TE-LPC2478LCD3.5 board =
 
