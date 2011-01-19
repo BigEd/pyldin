@@ -18,7 +18,8 @@ static byte retargs[16];
 static byte retargc = 0;
 static byte tmpretargc = 0;
 
-static byte *secptr = NULL;
+static byte sector[512];
+static int datacount;
 static int readcount = 0;
 static int writecount = 0;
 
@@ -31,6 +32,7 @@ static byte curtrack = 0;
 
 void i8272_init(void)
 {
+    floppy_init();
 }
 
 #ifdef DEBUG
@@ -61,6 +63,7 @@ static void show_fdc_select(void)
 
 static void execute_command(void)
 {
+    int res;
 #ifdef DEBUG
     int i;
     fprintf(stderr, "command %02X args ", fdcdata);
@@ -97,13 +100,17 @@ static void execute_command(void)
 	    break;
 	case 0x45:
 	case 0x66:
-	    secptr = floppy_getSector((fdcslct & 4)?0:1, cmdargs[1], cmdargs[3], cmdargs[2]);
-	    if (!secptr)
+	    if (fdcdata == 0x45)
+		res = floppy_status((fdcslct & 4)?0:1);
+	    else
+		res = floppy_readSector((fdcslct & 4)?0:1, cmdargs[1], cmdargs[3], cmdargs[2], sector);
+	    if (res)
 		break;
 	    if (fdcdata == 0x45)
 		writecount = 0x80 << cmdargs[4];
 	    if (fdcdata == 0x66)
 		readcount = 0x80 << cmdargs[4];
+	    datacount = 0;
 	    retargs[0] = cmdargs[4];
 	    retargs[1] = cmdargs[3];
 	    retargs[2] = cmdargs[2];
@@ -164,24 +171,30 @@ void i8272_write(byte a, byte d)
 	    if (formatargc == 4) {
 		formatsect--;
 		formatargc = 0;
-		secptr = floppy_getSector((fdcslct & 4)?0:1, formatargs[0], formatargs[2], formatargs[1]);
-		if (!secptr) {
+		datacount = 0;
+		int size = 0x80 << formatargs[3];
+		while (size--)
+		    sector[datacount++] = formatfill;
+#ifdef DEBUG
+		fprintf(stderr, "FORMAT %d %d %d %d (%d)\n", formatargs[0], formatargs[1], formatargs[2], formatargs[3], size);
+#endif
+		if (floppy_writeSector((fdcslct & 4)?0:1, formatargs[0], formatargs[2], formatargs[1], sector)) {
 		    retargs[6] = 0x40;
 		    retargs[5] = 0x35;
 		    break;
 		}
-		int size = 0x80 << formatargs[3];
-#ifdef DEBUG
-		fprintf(stderr, "FORMAT %d %d %d %d (%d)\n", formatargs[0], formatargs[1], formatargs[2], formatargs[3], size);
-#endif
-		while (size--)
-		    *secptr++ = formatfill;
 	    }
 	    break;
 	}
 	if (writecount) {
 	    writecount--;
-	    *secptr++ = d;
+	    sector[datacount++] = d;
+	    if (!writecount) {
+		if (floppy_writeSector((fdcslct & 4)?0:1, retargs[3], retargs[1], retargs[2], sector)) {
+		    retargs[6] = 0x40;
+		    retargs[5] = 0x35;
+		}
+	    }
 	    break;
 	}
 #ifdef DEBUG
@@ -248,7 +261,7 @@ byte i8272_read(byte a)
     case 0x11:
 	if (readcount) {
 	    readcount--;
-	    return *secptr++;
+	    return sector[datacount++];
 	}
 	if (retargc) {
 #ifdef DEBUG
