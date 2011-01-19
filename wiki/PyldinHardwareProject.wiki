@@ -12,3 +12,7 @@ Firmware supports the following peripherals:
  * PS / 2 keyboard
  * Beeper
  * SD slot for memory cards as external disk drives
+
+= Piezo beeper and PS/2 keyboard for TE-LPC2478LCD3.5 board =
+
+http://pyldin.googlecode.com/svn/wiki/pyldin-tlelpc2478-mini.png
