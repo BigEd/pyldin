@@ -21,5 +21,5 @@ http://pyldin.googlecode.com/svn/wiki/pyldin-tlelpc2478-mini.png
 
 = How to use SD card as disk A (and disk B) =
 
-The system can use sd card as an external drive A (and B). To do this you must create primary partition(s) type FAT12 (linux fdisk partition type 1). The first matching partition is connected as drive A, the second as drive B. The maximum partition size is limited to 16MB. Hot-swap memory cards is supported.
+The system can use sd card as an external drive A (and B). To do this you must create primary partition(s) type FAT12 (linux fdisk partition type 1). The first matching partition is connected as drive A, the second as drive B. The maximum partition size is limited to 16MB. Hot-swap is supported.
 Before use, do not forget to format the partition(s) to the filesystem FAT12 (linux mkdosfs -F 12 /dev/sdXXXN).
