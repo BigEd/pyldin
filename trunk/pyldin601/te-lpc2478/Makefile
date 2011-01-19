@@ -156,6 +156,10 @@ ASM_DEFS += $(DEFS)
 # Flags
 
 FLAGS = $(FMCU) -DROMOPTIMIZE
+
+#FLAGS += -DENABLE_INT17_EMULATOR
+#FLAGS += -DDEBUG
+
 # generate debug info in dwarf-2 format
 FLAGS += -g -gdwarf-2
 # generate dependency info  
