@@ -210,6 +210,8 @@ void timer_handler(void)
 
     core_50Hz_irq();
 
+    floppy_power_timeout();
+
     LED_CONTROL(BOARD_LED1_FIO, BOARD_LED1_MASK, vert & 1);
     LED_CONTROL(BOARD_LED2_FIO, BOARD_LED2_MASK, vert & 2);
     LED_CONTROL(BOARD_LED3_FIO, BOARD_LED3_MASK, vert & 4);
@@ -268,7 +270,13 @@ int main(void)
     uart0Init(UART_BAUD(HOST_BAUD_U0), UART_8N1, UART_FIFO_8); // setup the UART
 
     uart0Puts("Pyldin-601 emulator system\r\n");
-
+#ifdef MEMINFO
+    {
+    char buf[128];
+    sprintf(buf, "Allocated %d bytes of SDRAM\r\n", MEMORY_RAMDRIVE + MEMORY_RAMDRIVE_SIZE - LCD_BUFFER_ADDR);
+    uart0Puts(buf);
+    }
+#endif
     mc6800_init();
     mc6800_reset();
 
