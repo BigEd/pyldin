@@ -9,6 +9,10 @@
 #include <string.h>
 #include "floppy.h"
 
+#define SSIZE	512
+#define NSECT	9
+#define NHEAD	2
+
 char *diskImage[] = {
     NULL, NULL, NULL, NULL
 };
@@ -21,31 +25,16 @@ int flopWrite[] = {
     0, 0, 0, 0
 };
 
-byte floppy_diskReady(int Disk)
-{
-    if (!diskImage[Disk])
-	return 0;
-
-    return 1;
-}
-
-byte *floppy_getSector(int Disk, int Track, int Sector, int Head)
-{
-    if (!diskImage[Disk])
-	return NULL;
-
-    int offs;
-
-    if (dSizes[Disk] > 737280) 
-        offs = (Sector-1)*SSIZE+Head*18*SSIZE+Track*18*NHEAD*SSIZE;
-    else 
-	offs = (Sector-1)*SSIZE+Head*NSECT*SSIZE+Track*NSECT*NHEAD*SSIZE;
-
-    return (byte *) diskImage[Disk] + offs;
-}
-
 static int floppyOp(int Op, int Drive, int Track, int Head, int Sector, unsigned char *mema)
 {
+    return 0xc0;
+}
+
+int floppy_status(int Disk)
+{
+    if (diskImage[Disk])
+	return 0;
+
     return 0xc0;
 }
 
