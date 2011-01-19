@@ -7,6 +7,7 @@
 #include "timer.h"
 #include "kbd.h"
 #include "unlzma.h"
+#include "diskovod.h"
 
 #include "core/mc6800.h"
 #include "core/mc6845.h"
@@ -206,16 +207,8 @@ void clrScr(void)
 //
 void timer_handler(void)
 {
-    static int vert = 0;
-
     core_50Hz_irq();
-
     floppy_power_timeout();
-
-    LED_CONTROL(BOARD_LED1_FIO, BOARD_LED1_MASK, vert & 1);
-    LED_CONTROL(BOARD_LED2_FIO, BOARD_LED2_MASK, vert & 2);
-    LED_CONTROL(BOARD_LED3_FIO, BOARD_LED3_MASK, vert & 4);
-    vert++;
 }
 
 //
@@ -243,6 +236,24 @@ void keyboard_handler(uint8_t scancode)
 	    case KEY_PAUSE:	resetRequested(); break;
 	    }
 	}
+    }
+}
+
+//
+// led control
+//
+void led_control(int led, int v)
+{
+    switch (led) {
+    case 0:
+	LED_CONTROL(BOARD_LED1_FIO, BOARD_LED1_MASK, v);
+	break;
+    case 1:
+	LED_CONTROL(BOARD_LED2_FIO, BOARD_LED2_MASK, v);
+	break;
+    case 2:
+	LED_CONTROL(BOARD_LED3_FIO, BOARD_LED3_MASK, v);
+	break;
     }
 }
 
