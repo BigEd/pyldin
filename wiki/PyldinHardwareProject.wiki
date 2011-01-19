@@ -1,4 +1,4 @@
-#summary Pyldin in the real hardware
+#summary Pyldin as the real hardware
 #labels Featured
 
 = Introduction =
