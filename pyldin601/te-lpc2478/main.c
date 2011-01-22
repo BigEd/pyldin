@@ -84,6 +84,8 @@ static const byte videorom[] = {
 
 byte *get_videorom_mem(dword size)
 {
+    size = size;
+
     unlzma((unsigned char *)videorom, sizeof(videorom), NULL, NULL, (byte *)MEMORY_VIDEOROM, NULL, unlzma_error);
 
     return (byte *) MEMORY_VIDEOROM;
@@ -98,6 +100,8 @@ static const byte biosrom[] = {
 
 byte *get_bios_mem(dword size)
 {
+    size = size;
+
     unlzma((unsigned char *)biosrom, sizeof(biosrom), NULL, NULL, (byte *)MEMORY_BIOS, NULL, unlzma_error);
 
     return (byte *) MEMORY_BIOS;
@@ -139,6 +143,8 @@ static const struct {
 
 byte *get_romchip_mem(byte chip, dword size)
 {
+    size = size;
+
     if (chip < MAX_ROMCHIPS) {
 	unlzma((unsigned char *)romchips[chip].rom, romchips[chip].size, NULL, NULL, (byte *) (MEMORY_ROMCHIPS + 0x10000 * chip), NULL, unlzma_error);
 	return (byte *) (MEMORY_ROMCHIPS + 0x10000 * chip);
@@ -152,6 +158,8 @@ byte *get_romchip_mem(byte chip, dword size)
 //
 byte *get_cpu_mem(dword size)
 {
+    size = size;
+
     return (byte *) MEMORY_CPU;
 }
 
@@ -160,6 +168,8 @@ byte *get_cpu_mem(dword size)
 //
 byte *get_ramdisk_mem(dword size)
 {
+    size = size;
+
     return (byte *) MEMORY_RAMDRIVE;
 }
 
@@ -168,14 +178,18 @@ byte *get_ramdisk_mem(dword size)
 //
 void printer_put_char(byte data)
 {
+    data = data;
 }
 
 void Covox_Set(int val, int ticks)
 {
+    val = val;
+    ticks = ticks;
 }
 
 void Speaker_Set(int val, int ticks)
 {
+    ticks = ticks;
     SPEAKER_CONTROL(PYLDIN_SPEAKER_FIO, PYLDIN_SPEAKER_MASK, val);
 }
 

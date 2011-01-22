@@ -72,6 +72,13 @@ O_INLINE int SWIemulator(int swi, byte *A, byte *B, word *X, byte *t, word *PC)
 	INT17emulator(A, B, X, t, PC);
 	return 1;
     }
+#else
+    swi = swi;
+    A = A;
+    B = B;
+    X = X;
+    t = t;
+    PC = PC;
 #endif
     return 0;
 }

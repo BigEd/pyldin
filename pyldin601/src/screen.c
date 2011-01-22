@@ -14,6 +14,7 @@
 
 void screen_drawXbm(void *video, int width, int height, int scale, unsigned char *xbm, int xp, int yp, int w, int h, int over)
 {
+    height = height;
     unsigned short *vscr = (unsigned short *) video;
     int ofj = yp * scale * width + xp * scale;//    (((vscr_height - SCREEN_HEIGHT * vScale) >> 1) + 216 * scale) * vscr_width + ((vscr_width - SCREEN_WIDTH * scale) >> 1);
     int ifj = 0;
@@ -39,6 +40,7 @@ void screen_drawXbm(void *video, int width, int height, int scale, unsigned char
 
 void screen_drawChar(void *video, int width, int height, int scale, unsigned int c, int xp, int yp, unsigned int fg, unsigned int bg)
 {
+    height = height;
     int i, j;
     unsigned short *vscr = video;
     int offset = yp * scale * width + xp * scale;
