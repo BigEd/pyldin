@@ -17,6 +17,6 @@ int mmc_init (void);
 int mmc_write_sect (uint32_t sect, uint8_t *buf, uint32_t cnt);
 int mmc_read_sect (uint32_t sect, uint8_t *buf, uint32_t cnt);
 int mmc_read_config (MMCFG *cfg);
-int mmc_fini (void);
+void mmc_fini (void);
 
 #endif

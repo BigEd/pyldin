@@ -14,7 +14,12 @@
 #include "mcipriv.h"
 #include "mci.h"
 
-//#define MCI_ENABLE_DMA
+#include <string.h>
+
+#define MCI_ENABLE_DMA
+
+/* DMA Accessible memory buffer (USB memory) */
+#define DMA_DATA_BUFFER 0x7FD00000
 
 /* Wait timeouts, in multiples of 6 byte send over MCI (for 1 bit mode)      */
 #define WR_TOUT           100000     /* ~ 200 ms with MCI clk 24MHz */
@@ -171,7 +176,7 @@ fail:
 
 /*--------------------------- mci_fini --------------------------------------*/
 
-int mmc_fini (void)
+void mmc_fini (void)
 {
    MCI_POWER = 0x00;
 }
@@ -577,7 +582,7 @@ int mci_read_sect (uint32_t sect, uint8_t *buf, uint32_t cnt) {
    uint32_t i;
 
    /* Start DMA Peripheral to Memory transfer. */
-   mci_dma_start (DMA_READ, buf);
+   mci_dma_start (DMA_READ, (uint8_t *)DMA_DATA_BUFFER);
    MCI_DATA_CTRL = 0x9B;
 
    for (i = DMA_TOUT; i; i--) {
@@ -588,10 +593,11 @@ int mci_read_sect (uint32_t sect, uint8_t *buf, uint32_t cnt) {
    }
 
    if (i == 0) {
-uart0Puts("dma_timeout\r\n");
       /* DMA Transfer timeout. */
       return (FALSE);
    }
+
+   memcpy(buf, (void *)DMA_DATA_BUFFER, 512);
 #else
     uint32_t *ptr = (uint32_t *) buf;
     uint32_t total = 0;
@@ -650,8 +656,9 @@ int mci_write_sect (uint32_t sect, uint8_t *buf, uint32_t cnt) {
       MCI_DATA_TMR  = DATA_WR_TOUT_VALUE;
       MCI_DATA_LEN  = 512;
 
+      memcpy((void *)DMA_DATA_BUFFER, buf, 512);
       /* Start DMA Memory to Peripheral transfer. */
-      mci_dma_start (DMA_WRITE, buf);
+      mci_dma_start (DMA_WRITE, (void *)DMA_DATA_BUFFER);
       MCI_DATA_CTRL = 0x99;
 
       for (i = DMA_TOUT; i; i--) {
