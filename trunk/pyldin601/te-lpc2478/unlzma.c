@@ -89,6 +89,8 @@ struct rc {
 
 static int nofill(void *buffer, unsigned int len)
 {
+	buffer = buffer;
+	len = len;
 	return -1;
 }
 
@@ -105,13 +107,13 @@ static void rc_read(struct rc *rc, void(*error)(char *x))
 /* Called once */
 static inline void rc_init(struct rc *rc,
 				       int (*fill)(void*, unsigned int),
-				       char *buffer, int buffer_size)
+				       uint8_t *buffer, int buffer_size)
 {
 	if (fill)
 		rc->fill = fill;
 	else
 		rc->fill = nofill;
-	rc->buffer = (uint8_t *)buffer;
+	rc->buffer = buffer;
 	rc->buffer_size = buffer_size;
 	rc->buffer_end = rc->buffer + rc->buffer_size;
 	rc->ptr = rc->buffer;
@@ -350,6 +352,7 @@ static inline void process_bit0(struct writer *wr, struct rc *rc,
 				     int lc, uint32_t literal_pos_mask,
 				     void(*error)(char *x)) {
 	int mi = 1;
+	pos_state = pos_state;
 	rc_update_bit_0(rc, prob);
 	prob = (p + LZMA_LITERAL +
 		(LZMA_LIT_SIZE
@@ -574,7 +577,7 @@ int unlzma(unsigned char *buf, int in_len,
 
 	rc_init(&rc, fill, inbuf, in_len);
 
-	for (i = 0; i < sizeof(header); i++) {
+	for (i = 0; i < (int)sizeof(header); i++) {
 		if (rc.ptr >= rc.buffer_end)
 			rc_read(&rc, error);
 		((unsigned char *)&header)[i] = *rc.ptr++;
