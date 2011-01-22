@@ -109,6 +109,17 @@ CPP_DEFS =
 # predefined symbols for .s sources
 ASM_DEFS = 
 
+LPC21ISP = lpc21isp
+LPC21ISP_PORT = /dev/ttyUSB0
+LPC21ISP_BAUD = 115200
+LPC21ISP_XTAL = 12000
+# other options:
+# * verbose output: -debug
+# * enter bootloader via RS232 DTR/RTS (only if hardware supports this
+#   feature - see Philips AppNote): -control
+LPC21ISP_OPTIONS = -control -verify
+#LPC21ISP_OPTIONS += -debug
+
 ##############################################################################################
 # Output files
 ELF = $(BINDIR)/$(PROJECT).elf
@@ -296,10 +307,26 @@ directories:
 
 clean:
 	$(RM) -r $(BINDIR) $(OBJDIR) $(DEPDIR) $(LSTDIR) $(ROMFILES)
+	$(RM) utils/lpc21isp
+
+utils/lpc21isp: utils/lpc21isp_148x.c
+	@echo
+	@echo Build lpc21isp programmer
+	gcc $^ -o $@
+
+# Program the device.  - lpc21isp will not work for SAM7
+load program: $(HEX) utils/lpc21isp
+	@echo
+	@echo Upload over 
+	utils/lpc21isp $(LPC21ISP_OPTIONS) $< $(LPC21ISP_PORT) $(LPC21ISP_BAUD) $(LPC21ISP_XTAL)
+    
+loadterm: $(HEX) utils/lpc21isp
+	@echo
+	@echo Upload over 
+	utils/lpc21isp $(LPC21ISP_OPTIONS) -term $< $(LPC21ISP_PORT) $(LPC21ISP_BAUD) $(LPC21ISP_XTAL)
 
 debug: $(ELF)
 	$(GDB) -x debug.gdb $<
-
 
 # set TOOLSET bin directory first in PATH    
 ifeq (,$(findstring ;,$(PATH)))
