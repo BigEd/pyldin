@@ -37,7 +37,7 @@ void led_control(int led, int v);
 
 static int partition_init()
 {
-    char sector[512];
+    byte sector[512];
     mbr_partition_entry mbr_part[4];
 
     if (!mmc_inited) {
@@ -114,7 +114,6 @@ int floppy_status(int Disk)
 
 int floppy_readSector(int Disk, int Track, int Sector, int Head, unsigned char *dst)
 {
-    char sector[512];
     int ret = 0x40;
     led_control(Disk, 1);
 #ifdef DEBUG
@@ -123,10 +122,8 @@ int floppy_readSector(int Disk, int Track, int Sector, int Head, unsigned char *
     if (partition_init()) {
 	if (partition[Disk].inited) {
 	    uint32_t n = partition[Disk].start + (Sector - 1) + Head * partition[Disk].sectors + Track * partition[Disk].sectors * partition[Disk].heads;
-	    if (mmc_read_sect(n, sector, 1)) {
-		memcpy(dst, sector, 512);
+	    if (mmc_read_sect(n, dst, 1))
 		ret = 0;
-	    }
 	}
     }
 
@@ -136,7 +133,6 @@ int floppy_readSector(int Disk, int Track, int Sector, int Head, unsigned char *
 
 int floppy_writeSector(int Disk, int Track, int Sector, int Head, unsigned char *src)
 {
-    char sector[512];
     int ret = 0x40;
     led_control(Disk, 1);
 #ifdef DEBUG
@@ -145,10 +141,8 @@ int floppy_writeSector(int Disk, int Track, int Sector, int Head, unsigned char 
     if (partition_init()) {
 	if (partition[Disk].inited) {
 	    uint32_t n = partition[Disk].start + (Sector - 1) + Head * partition[Disk].sectors + Track * partition[Disk].sectors * partition[Disk].heads;
-	    memcpy(sector, src, 512);
-	    if (mmc_write_sect(n, sector, 1)) {
+	    if (mmc_write_sect(n, src, 1))
 		ret = 0;
-	    }
 	}
     }
 
@@ -160,6 +154,8 @@ int floppy_formaTrack(int Disk, int Track, int Head)
 {
     int ret = 0x40;
     led_control(Disk, 1);
+    Track = Track;
+    Head = Head;
     led_control(Disk, 0);
     return ret;
 }
