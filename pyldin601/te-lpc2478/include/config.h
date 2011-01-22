@@ -5,7 +5,7 @@
 
 #include "system.h"
 
-#define HOST_BAUD_U0           (115200)
+#define HOST_BAUD_U0           (230400)
 #define HOST_BAUD_U1           (115200)
 
 #define PCLK Fpclk
