@@ -354,6 +354,73 @@ TFFS_fclose(
 	return ret;
 }
 
+uint32
+TFFS_fseek(
+	IN	tfile_handle_t hfile,
+	IN	uint32 offset,
+	IN	uint32 whence
+)
+{
+	uint32 file_size;
+	uint32 file_pos;
+	tdir_entry_t * pdir_entry;
+	tffs_t * ptffs;
+	tfile_t * pfile = (tfile_t *)hfile;
+	uint32 ret = ERR_TFFS_INVALID_PARAM;
+
+	if (!hfile)
+		return ERR_TFFS_INVALID_PARAM;
+
+	ptffs = pfile->ptffs;
+
+	if (pfile->open_mode != OPENMODE_READONLY)
+	    return ret;
+
+	pdir_entry = pfile->pdir_entry;
+	file_size = pfile->file_size;
+
+	if (whence == TFFS_SEEK_SET)
+	    file_pos = offset;
+	else if (whence == TFFS_SEEK_CUR)
+	    file_pos = pfile->cur_fp_offset + offset;
+	else if (whence == TFFS_SEEK_END)
+	    file_pos = file_size + offset;
+	else
+	    return ret;
+	
+	if (pfile->cur_fp_offset == file_pos)
+	    return file_pos;
+	
+	pfile->cur_fp_offset = file_pos;
+	
+	ret = file_pos;
+	
+	_file_seek(pfile, pfile->cur_fp_offset);
+	if (pfile->cur_clus != 0) {
+	    if (cache_readsector(ptffs->pcache, clus2sec(ptffs, pfile->cur_clus) + pfile->cur_sec, 
+		pfile->secbuf) != CACHE_OK) {
+		ret = ERR_TFFS_DEVICE_FAIL;
+	    }
+	}
+
+	return ret;
+}
+
+int32
+TFFS_fstat(
+	IN	tfile_handle_t hfile,
+	OUT	tffs_stat_t * stat
+)
+{
+	if (!hfile)
+		return ERR_TFFS_INVALID_PARAM;
+	
+	tfile_t * pfile = (tfile_t *)hfile;
+	stat->size = pfile->file_size;
+	stat->attr = pfile->pdir_entry->pdirent->dir_attr;
+	return TFFS_OK;
+}
+
 /*----------------------------------------------------------------------------------------------------*/
 
 int32

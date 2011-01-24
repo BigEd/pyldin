@@ -47,6 +47,11 @@ typedef struct _dirent {
 	tffs_time_t crttime;
 }dirent_t;
 
+typedef struct _tffs_stat {
+	uint32		size;
+	ubyte		attr;
+}tffs_stat_t;
+
 /*
  * Error code definitions
  */
@@ -73,6 +78,10 @@ typedef struct _dirent {
 #define ERR_TFFS_NOT_EMPTY_DIR		(-20)
 #define ERR_TFFS_REMOVE_DIR_FAIL	(-21)
 
+
+#define TFFS_SEEK_SET	0
+#define TFFS_SEEK_CUR	1
+#define TFFS_SEEK_END	2
 
 /*
  * Interface
@@ -126,6 +135,19 @@ TFFS_fwrite(
 	IN	tfile_handle_t hfile,
 	IN	uint32 buflen,
 	IN	ubyte * ptr
+);
+
+uint32
+TFFS_fseek(
+	IN	tfile_handle_t hfile,
+	IN	uint32 offset,
+	IN	uint32 whence
+);
+
+int32
+TFFS_fstat(
+	IN	tfile_handle_t hfile,
+	OUT	tffs_stat_t * stat
 );
 
 int32

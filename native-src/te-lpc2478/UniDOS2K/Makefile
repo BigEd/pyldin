@@ -41,7 +41,7 @@ MEM = ROM
 
 PROJECT = lpc2478_blink
 
-OPTIMIZE = -Os
+OPTIMIZE = -O3
 
 ##############################################################################################
 # Application sources directories
@@ -79,6 +79,7 @@ SRC_ARM_C += kbd.c
 SRC_ARM_C += mci.c
 #SRC_ARM_C +=
 SRC_ARM_C += interrupts.c
+SRC_ARM_C += swi.c
 SRC_ARM_C += system.c
 #SRC_ARM_C += adc.c
 SRC_ARM_C += fio.c
