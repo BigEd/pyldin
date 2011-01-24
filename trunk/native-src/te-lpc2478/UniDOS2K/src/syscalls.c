@@ -14,120 +14,113 @@
 #include <string.h>
 #include <reent.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <errno.h>
-#include "uart.h"
 
-#include "syscallsfs.c"
+#include "swi.h"
+
+static inline int do_SystemSWI (int reason, void *arg)
+{
+  int value;
+  asm volatile ("mov r0, %1; mov r1, %2; swi %a3; mov %0, r0"
+       : "=r" (value) /* Outputs */
+       : "r" (reason), "r" (arg), "i" (SystemSWI) /* Inputs */
+       : "r0", "r1", "lr"
+		/* Clobbers r0 and r1, and lr if in supervisor mode */);
+  return value;
+}
 
 int _open_r(struct _reent *r, const char *pathname, int flags, int mode)
 {
-    printf("open(%s, %08X, %08x)\n", pathname, flags, mode);
+    int volatile block[4];
 
-    if (!strcmp(pathname, "/dev/stdin"))
-	return STDIN_FILENO;
-    if (!strcmp(pathname, "/dev/stdout"))
-	return STDOUT_FILENO;
-    if (!strcmp(pathname, "/dev/stderr"))
-	return STDERR_FILENO;
-
-    return fs_open(r, pathname, flags, mode);
+    block[0] = (int) r;
+    block[1] = (int) pathname;
+    block[2] = flags;
+    block[3] = mode;
+    return do_SystemSWI(SWI_NEWLIB_Open_r, (void *)block);
 }
 
-// new code for _read_r provided by Alexey Shusharin - Thanks
 _ssize_t _read_r(struct _reent *r, int file, void *ptr, size_t len)
 {
-    if (file == STDIN_FILENO) {
-	int c;
-	unsigned int  i;
-	unsigned char *p = (unsigned char*)ptr;
+    int volatile block[4];
 
-	for (i = 0; i < len; i++) {
-	    while((c = uart0Getch()) < 0) ;
-
-	    *p++ = c;
-	    uart0Putch(c);
-
-	    if (c == 0x0A) {
-		uart0Putch(0x0D);
-		return i + 1;
-	    }
-	}
-
-	return i;
-    }
-
-    if (file != STDOUT_FILENO && file != STDERR_FILENO)
-	return fs_read(r, file, ptr, len);
-
-    r->_errno = EBADF;
-    return -1;
+    block[0] = (int) r;
+    block[1] = file;
+    block[2] = (int) ptr;
+    block[3] = len;
+    return do_SystemSWI(SWI_NEWLIB_Read_r, (void *)block);
 }
 
 _ssize_t _write_r (struct _reent *r, int file, const void *ptr, size_t len)
 {
-    if (file == STDOUT_FILENO || file == STDERR_FILENO) {
-	size_t i;
-	const unsigned char *p;
+    int volatile block[4];
 
-	p = (const unsigned char*) ptr;
-
-	for (i = 0; i < len; i++) {
-	    if (*p == '\n' )
-		uart0Putch('\r');
-	    uart0Putch(*p++);
-	}
-
-	return len;
-    }
-
-    if (file != STDIN_FILENO)
-	return fs_write(r, file, ptr, len);
-
-    r->_errno = EBADF;
-    return -1;
+    block[0] = (int) r;
+    block[1] = file;
+    block[2] = (int) ptr;
+    block[3] = len;
+    return do_SystemSWI(SWI_NEWLIB_Write_r, (void *)block);
 }
 
 int _close_r(struct _reent *r, int file)
 {
-    if (file == STDOUT_FILENO || file == STDERR_FILENO || file == STDIN_FILENO) {
-	r->_errno = EBADF;
-	return -1;
-    }
+    int volatile block[2];
 
-    return fs_close(r, file);
+    block[0] = (int) r;
+    block[1] = file;
+    return do_SystemSWI(SWI_NEWLIB_Close_r, (void *)block);
 }
 
 _off_t _lseek_r(struct _reent *r, int file, _off_t ptr, int dir)
 {
-    if (file == STDOUT_FILENO || file == STDERR_FILENO || file == STDIN_FILENO) {
-	r->_errno = EBADF;
-	return -1;
-    }
+    int volatile block[4];
 
-    return fs_lseek(r, file, ptr, dir);
+    block[0] = (int) r;
+    block[1] = file;
+    block[2] = ptr;
+    block[3] = dir;
+    return do_SystemSWI(SWI_NEWLIB_Lseek_r, (void *)block);
 }
 
-
-int _fstat_r(
-    struct _reent *r, 
-    int file, 
-    struct stat *st)
+int _fstat_r(struct _reent *r, int file, struct stat *st)
 {
-    if (file == STDOUT_FILENO || file == STDERR_FILENO || file == STDIN_FILENO) {
-	st->st_mode = S_IFCHR;
-	return 0;
-    }
+    int volatile block[3];
 
-    r->_errno = EBADF;
-    return -1;
+    block[0] = (int) r;
+    block[1] = file;
+    block[2] = (int) st;
+    return do_SystemSWI(SWI_NEWLIB_Fstat_r, (void *)block);
 }
-
-int _isatty(int file); /* avoid warning */
 
 int _isatty(int file)
 {
-	return 1;
+    int volatile block[1];
+
+    block[0] = file;
+    return do_SystemSWI(SWI_NEWLIB_isatty, (void *)block);
 }
+
+#if 0
+
+int _gettimeofday_r(struct _reent *r, struct timeval *tp, struct timezone *tzp)
+{
+    if (tp) {
+	/* Ask the host for the seconds since the Unix epoch.  */
+	tp->tv_sec = 0;
+	tp->tv_usec = 0;
+    }
+    /* Return fixed data for the timezone.  */
+
+    if (tzp) {
+	tzp->tz_minuteswest = 0;
+	tzp->tz_dsttime = 0;
+    }
+
+    return 0;
+}
+
+#endif
 
 #if 0
 static void _exit (int n) {

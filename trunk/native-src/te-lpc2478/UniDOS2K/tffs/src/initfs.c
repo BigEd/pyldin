@@ -44,8 +44,6 @@ TFFS_mount(
 	pbs = (boot_sector_t *)Malloc(sizeof(boot_sector_t));
 	Memset(pbs, 0, sizeof(boot_sector_t));
 	
-	printf("bs = %d\n", sizeof(boot_sector_t));
-	
 	ASSERT(sizeof(boot_sector_t) == 512);
 	
 	hdev = HAI_initdevice(dev, 512);

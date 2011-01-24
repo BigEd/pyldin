@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include "config.h"
 #include <inttypes.h>
 #include "fio.h"
@@ -52,7 +53,9 @@ _show_dirent(
 }
 
 
-static tffs_handle_t htffs;
+tffs_handle_t htffs_mmc;
+
+#define htffs htffs_mmc
 
 int cmd_mount(int argc, char *argv[])
 {
@@ -117,15 +120,99 @@ int cmd_ls(int argc, char *argv[])
 	return 0;
 }
 
+#include <fcntl.h>
+int cmd_type(int argc, char *argv[])
+{
+    if (argc < 2) {
+	fprintf(stderr, "No source file!\n");
+	return -1;
+    }
+
+    int r = open("hello.txt", O_RDONLY);
+    FILE *f = fopen(argv[1], "r");
+    if (f) {
+	char buf[1024];
+	int total = 0;
+	int ret;
+	while ((ret = fread(buf, 1, sizeof(buf), f)) > 0) {
+	    write(1, buf, ret);
+	    //fprintf(stderr, "write ret = %d\n", l);
+	    //fwrite(buf, 1, sizeof(buf), stdout);
+	    //printf("%s", buf);
+	    total += ret;
+	}
+	printf("\n\ntotal size %d\n", total);
+	fclose(f);
+    } else
+	fprintf(stderr, "No such file!\n");
+
+    return 0;
+}
+
+int cmd_cat(int argc, char *argv[])
+{
+#define BUF_SIZE	1024
+	int32 ret;
+	tfile_handle_t hfile;
+	char dir[MAX_PATH];
+	char *buf;
+	int32 all_size;
+
+    if (argc < 2) {
+	fprintf(stderr, "No source file!\n");
+	return -1;
+    }
+
+	strcpy(dir, argv[1]);
+	buf = (char *)malloc(BUF_SIZE);
+	all_size = 0;
+
+	if ((ret = TFFS_fopen(htffs, dir, "r", &hfile)) != TFFS_OK) {
+		fprintf(stderr, "TFFS_fopen %d\n", ret);
+		return -1;
+	}
+
+	while (1) {
+		memset(buf, 0, BUF_SIZE);
+
+		if ((ret = TFFS_fread(hfile, BUF_SIZE, (unsigned char *)buf)) < 0) {
+			if (ret == ERR_TFFS_FILE_EOF) {
+				break;
+			}
+			else {
+				fprintf(stderr, "TFFS_fread %d\n", ret);
+				break;
+			}
+		}
+
+		printf("%s", buf);
+		all_size += ret;
+	}
+	printf("\n============================================================\n");
+	printf("[%s] total size %d bytes\n", dir, all_size);
+
+	if ((ret = TFFS_fclose(hfile)) != TFFS_OK) {
+		fprintf(stderr, "TFFS_fclose %d\n", ret);
+		return -1;
+	}
+
+	free(buf);
+
+#undef BUF_SIZE
+	return 0;
+}
+
 static const struct commands {
 	int (*func)(int argc, char *argv[]);/* function pointer */
 	const char *name;	/* name of command */
 	const char *arg;	/* brief argument description or NULL */
 	const char *desc;	/* brief description printed with "help" */
 } commands[] = {
-	{ cmd_ls,	"dir",		"path",		"List directory contents" },
 	{ cmd_mount,	"mount",	"device",	"Mount device" },
 	{ cmd_umount,	"umount",	"device",	"Unmount device" },
+	{ cmd_ls,	"dir",		"path",		"List directory contents" },
+	{ cmd_type,	"type",		"file",		"Type file" },
+	{ cmd_cat,	"cat",		"file",		"Type file" },
 	{ 0, 0, 0, 0 }
 };
 
@@ -162,41 +249,13 @@ int system(const char *buf)
     return 0;
 }
 
-#if 0
-int testswi(int a, int b, int c)
-{
-    unsigned long r;
-    register long a1 asm ("r0") = (long) a;
-    register long a2 asm ("r1") = (long) b;
-    register long a3 asm ("r2") = (long) c;
-    asm volatile("swi 0x5	\n\t" \
-		 "mov %0, r0	\n\t" \
-		    : "=r" (r)
-		    : "r" (a1), "r" (a2), "r" (a3)
-		);
-    return r;
-}
-#endif
-
-static inline int testswi(int a, int b, int c)
-{
-    register volatile long r asm ("r0");
-    register long a1 asm ("r0") = (long) a;
-    register long a2 asm ("r1") = (long) b;
-    register long a3 asm ("r2") = (long) c;
-    asm volatile("swi 0x5 @ %0" \
-		    : "=r" (r)
-		    : "r" (a1), "r" (a2), "r" (a3)
-		);
-    return r;
-}
-
 int main(void)
 {
     uart0Init(UART_BAUD(HOST_BAUD_U0), UART_8N1, UART_FIFO_8); // setup the UART
 
     uart0Puts("Hello from UART0\r\n");
 
+//initialise_monitor_handles();
     Pink_Panel();
 
     FIOInit(BOARD_LED1_PORT, DIR_OUT, BOARD_LED1_MASK);
@@ -204,8 +263,10 @@ int main(void)
     FIOInit(BOARD_LED3_PORT, DIR_OUT, BOARD_LED3_MASK);
 
     printf("UniDOS 2000\n\n");
+//    fprintf(stderr, "check\n\n");
 //    keyboard_init();
 
+#if 0
     char *ptr = malloc(1024);
     printf("--%08X %d %p %c\n", testswi(1, 2, 3), sizeof(void*), ptr, 'd');
 
@@ -218,6 +279,7 @@ int main(void)
     f = fopen("hello.txt", "a+");
     f = fopen("hello.txt", "rb");
     f = fopen("hello.txt", "wb");
+#endif
 
     for(;;)
     {
@@ -228,6 +290,6 @@ int main(void)
 	system(buf);
     }
 
-    return 0; 
+    return 0;
 }
 
