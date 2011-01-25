@@ -9,11 +9,8 @@
 
 # vim: sw=8:ts=8:si:noexpandtab
 
-#TOOLSET =  /usr/local/arm/arm-elf/bin
-TOOLSET = /opt/iphone/arm-elf/bin
-
-#TARGET = arm-elf-
-TARGET = arm-elf-
+TOOLSET = /opt/arm-2010.09/bin
+TARGET  = arm-none-eabi-
 
 PATH=$(TOOLSET):/usr/bin:/bin:/usr/local/bin
 
@@ -111,7 +108,7 @@ ASM_DEFS =
 
 LPC21ISP = lpc21isp
 LPC21ISP_PORT = /dev/ttyUSB0
-LPC21ISP_BAUD = 115200
+LPC21ISP_BAUD = 230400
 LPC21ISP_XTAL = 12000
 # other options:
 # * verbose output: -debug
