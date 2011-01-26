@@ -95,29 +95,43 @@ struct elf_phdr {
  *   resetted in case the _start() function of the ELF tries to return
  * - sp contains a useful stack pointer
  * - pc contains, of course, the entry point of the ELF */
-int exec(char *elfarg, int sp, unsigned long entry)
+int exec(char *elfarg, unsigned long entry, unsigned long sp)
 {
-    long ret;
-    asm volatile ("push {r1-r13}\n\t"	\
-		  "mov r0, %1 \n\t"	\
-		  "mov r1, %2 \n\t"	\
-		  "mov lr, pc \n\t"	\
-		  "bx  r1     \n\t"	\
-		  "pop {r1-r13}\n\t"	\
-		  "mov %0, r0 \n\t"
+    volatile long ret;
+#if 0
+    asm volatile ("push {r1-r12, lr}\n\t"\
+		  "mov r0, %1	\n\t"	\
+		  "mov r1, %2	\n\t"	\
+		  "mov r2, %3	\n\t"	\
+		  "mov r3, sp	\n\t"	\
+		  "mov sp, r2	\n\t"	\
+		  "push {r3}	\n\t"	\
+		  "mov lr, pc	\n\t"	\
+		  "bx  r1	\n\t"	\
+		  "pop {r3}	\n\t"	\
+		  "mov sp, r3	\n\t"	\
+		  "pop {r1-r12, lr}\n\t"\
+		  "mov %0, r0	\n\t"
 		    : "=r" (ret) 
-		    : "r" (elfarg), "r" (entry)
+		    : "r" (elfarg), "r" (entry), "r" (sp)
+		    : "r0"
 		 );
+#else
+    asm volatile ("push {r1-r12, lr}\n\t"\
+		  "mov r0, %1	\n\t"	\
+		  "mov r1, %2	\n\t"	\
+		  "mov r2, %3	\n\t"	\
+		  "mov lr, pc	\n\t"	\
+		  "bx  r1	\n\t"	\
+		  "pop {r1-r12, lr}\n\t"\
+		  "mov %0, r0	\n\t"
+		    : "=r" (ret) 
+		    : "r" (elfarg), "r" (entry), "r" (sp)
+		    : "r0"
+		 );
+#endif
     return ret;
 }
-
-#if 0
-asm ("exec:\n"
-			/* elfarg already at right register */
-     "	mov lr, #0x0\n"	/* return address - reset in interrupt vector */
-     "	mov sp, r1\n"	/* stack pointer */
-     "	bx r2\n");	/* entry point */
-#endif
 
 int exec_elf(char *arg)
 {
@@ -163,11 +177,11 @@ int exec_elf(char *arg)
 	ehdr.e_version != EV_CURRENT ||
 	ehdr.e_shstrndx >= ehdr.e_shnum ||
 	ehdr.e_phentsize != sizeof(struct elf_phdr)) {
-	    fprintf(stderr, "Not a supported ELF file.\n");
+//	    fprintf(stderr, "Not a supported ELF file.\n");
 	    goto fail;
     }
 
-fprintf(stderr, "Entry point %08x\n", ehdr.e_entry);
+    fprintf(stderr, "Entry point %08x\n", ehdr.e_entry);
 
     /* read & load program headers. */
     phdr = alloca(ehdr.e_phnum * sizeof(struct elf_phdr));
@@ -219,7 +233,7 @@ fprintf(stderr, "Entry point %08x\n", ehdr.e_entry);
     close(inst);
 
     /* Now we execute the ELF. */
-    exec(elfarg, /* RAM_START + RAM_SIZE */0, ehdr.e_entry);
+    exec(elfarg, ehdr.e_entry, ehdr.e_entry + 1024*1024);
 
     return 0;
 
