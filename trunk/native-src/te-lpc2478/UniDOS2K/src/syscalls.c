@@ -124,7 +124,7 @@ void _exit(int n)
 /* "malloc clue function" */
 
 /**** Locally used variables. ****/
-extern char __stack_end__[]; 	/* Defined by the linker.               */
+extern char *__stack_end__; 	/* Defined by startup                   */
 
 extern char __end__[];          /*  end is set in the linker command 	*/
 				/* file and is the end of statically 	*/
@@ -153,6 +153,7 @@ void * _sbrk_r(struct _reent *r, ptrdiff_t nbytes)
     if (!heap_ptr) {	/*  Initialize if first time through.		*/
 	heap_ptr = __end__;
 	printf("heap_ptr = %p\n", __end__);
+	printf("stack_ptr = %p\n", __stack_end__);
     }
 
     if ((__stack_end__ - (heap_ptr + nbytes)) > STACK_BUFFER) {
