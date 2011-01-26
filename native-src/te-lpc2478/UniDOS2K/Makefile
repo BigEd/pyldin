@@ -9,11 +9,11 @@
 
 # vim: sw=8:ts=8:si:noexpandtab
 
-#TOOLSET =  /usr/local/arm/arm-elf/bin
-TOOLSET = /opt/iphone/arm-elf/bin
+TOOLSET = /opt/arm-2010.09/bin
+TARGET  = arm-none-eabi-
 
-#TARGET = arm-elf-
-TARGET = arm-elf-
+#TOOLSET = /opt/lpc2xxx/bin
+#TARGET  = arm-elf-eabi-
 
 PATH=$(TOOLSET):/usr/bin:/bin:/usr/local/bin
 
@@ -48,15 +48,12 @@ OPTIMIZE = -O3
 SRC_DIRS = ./src
 SRC_DIRS += ./startup
 
-# FATFS
-#SRC_DIRS += ./fatfs
-
 # TFFS
 SRC_DIRS += tffs/inc
 SRC_DIRS += tffs/src
 
-
-
+# ELF
+SRC_DIRS += elf
 
 # Directories to search includes
 INC_DIRS = ./include
@@ -86,21 +83,12 @@ SRC_ARM_C += fio.c
 SRC_ARM_C += irq.c
 SRC_ARM_C += syscalls.c
 
-
-
-
-# FATFS
-#SRC_ARM_C += ff.c
-#SRC_ARM_C += diskio.c
-#SRC_ARM_C += ccsbcs.c
-
-
 # TFFS
 SRC_ARM_C += initfs.c debug.c fat.c dir.c dirent.c common.c file.c crtdef.c cache.c
 SRC_ARM_C += hai_mci.c
 
-
-
+# ELF
+SRC_ARM_C += elf.c
 
 ############################
 #  ARM .cpp sources
