@@ -93,49 +93,46 @@ int _fstat_r(struct _reent *r, int file, struct stat *st)
     return do_SystemSWI(SWI_NEWLIB_Fstat_r, (void *)block);
 }
 
+#if 1
 int _isatty(int file)
 {
     int volatile block[1];
 
     block[0] = file;
-    return do_SystemSWI(SWI_NEWLIB_isatty, (void *)block);
+    return do_SystemSWI(SWI_NEWLIB_Isatty, (void *)block);
 }
 
-#if 0
-
-int _gettimeofday_r(struct _reent *r, struct timeval *tp, struct timezone *tzp)
+int _gettimeofday_r(struct _reent *r, struct timeval *tp, void *tzp)
 {
-    if (tp) {
-	/* Ask the host for the seconds since the Unix epoch.  */
-	tp->tv_sec = 0;
-	tp->tv_usec = 0;
-    }
-    /* Return fixed data for the timezone.  */
+    int volatile block[3];
 
-    if (tzp) {
-	tzp->tz_minuteswest = 0;
-	tzp->tz_dsttime = 0;
-    }
-
-    return 0;
+    block[0] = (int) r;
+    block[1] = (int) tp;
+    block[2] = (int) tzp;
+    return do_SystemSWI(SWI_NEWLIB_Gettimeofday_r, (void *)block);
 }
 
+void _exit(int n)
+{
+    int volatile block[1];
+
+    block[0] = n;
+    do_SystemSWI(SWI_NEWLIB_Exit, (void *)block);
+}
 #endif
-
-#if 0
-static void _exit (int n) {
-label:  goto label; /* endless loop */
-}
-#endif 
 
 /* "malloc clue function" */
 
-	/**** Locally used variables. ****/
-extern char end[];              /*  end is set in the linker command 	*/
+/**** Locally used variables. ****/
+extern char __stack_end__[]; 	/* Defined by the linker.               */
+
+extern char __end__[];          /*  end is set in the linker command 	*/
 				/* file and is the end of statically 	*/
 				/* allocated data (thus start of heap).	*/
 
 static char *heap_ptr;		/* Points to current end of the heap.	*/
+
+#define STACK_BUFFER 16384
 
 /************************** _sbrk_r *************************************/
 /*  Support function.  Adjusts end of heap to provide more memory to	*/
@@ -149,17 +146,27 @@ static char *heap_ptr;		/* Points to current end of the heap.	*/
 /*  Since _s_r is not used in the current implementation, the following	*/
 /* messages must be suppressed.						*/
 
-void * _sbrk_r(
-    struct _reent *_s_r, 
-    ptrdiff_t nbytes)
+void * _sbrk_r(struct _reent *r, ptrdiff_t nbytes)
 {
-	char  *base;		/*  errno should be set to  ENOMEM on error	*/
+    char  *base;		/*  errno should be set to  ENOMEM on error	*/
 
-	if (!heap_ptr) {	/*  Initialize if first time through.		*/
-		heap_ptr = end;
-	}
+    if (!heap_ptr) {	/*  Initialize if first time through.		*/
+	heap_ptr = __end__;
+	printf("heap_ptr = %p\n", __end__);
+    }
+
+    if ((__stack_end__ - (heap_ptr + nbytes)) > STACK_BUFFER) {
 	base = heap_ptr;	/*  Point to end of heap.			*/
 	heap_ptr += nbytes;	/*  Increase heap.				*/
-	
 	return base;		/*  Return pointer to start of new heap area.	*/
+    }
+
+    r->_errno = ENOMEM;
+    return (void *) -1;
 }
+
+#if 1
+void __libc_fini_array()
+{
+}
+#endif

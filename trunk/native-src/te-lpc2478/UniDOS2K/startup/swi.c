@@ -9,90 +9,6 @@
 
 #include "filesystem.c"
 
-static long _errno = 0;
-
-static long angel_open(uint32_t *argv)
-{
-//    char buf[128];
-//    sprintf(buf, "angel_open(%s %d %d)\r\n", (char *)argv[0], argv[1], argv[2]);
-//    uart0Puts(buf);
-
-    char *name = (char *)argv[0];
-    int name_len = argv[2];
-    int flag = argv[1];
-    if (!strncmp(name, ":tt", name_len)) {
-	if (flag == 0 || flag == 0x4)
-	    return 0;
-	_errno = EBADF;
-	return -1;
-    }
-
-
-    return -1;
-}
-
-static long angel_write(uint32_t *argv)
-{
-//    char buf[128];
-//    sprintf(buf, "angel_write(%d %p %d)\r\n", argv[0], (void *)argv[1], argv[2]);
-//    uart0Puts(buf);
-
-    int fd = argv[0];
-    unsigned char *ptr = (unsigned char *)argv[1];
-    int len = argv[2];
-
-    if (fd == 0) {
-	int i;
-	for (i = 0; i < len; i++) {
-	    if (*ptr == '\n')
-		uart0Putch('\r');
-	    uart0Putch(*ptr++);
-	}
-	return len;
-    }
-
-    _errno = EBADF;
-    return -1;
-}
-
-static long angel_read(uint32_t *argv)
-{
-//    char buf[128];
-//    sprintf(buf, "angel_read(%d %p %d)\r\n", argv[0], (void *)argv[1], argv[2]);
-//    uart0Puts(buf);
-
-    int fd = argv[0];
-    unsigned char *ptr = (unsigned char *)argv[1];
-    int len = argv[2];
-
-    if (fd == 0) {
-	int c;
-	int i;
-	for (i = 0; i < len; i++) {
-	    while((c = uart0Getch()) < 0) ;
-
-	    *ptr++ = c;
-	    uart0Putch(c);
-
-	    if (c == 0x0A) {
-		uart0Putch(0x0D);
-		return i + 1;
-	    }
-	}
-	return i;
-    }
-
-    _errno = EBADF;
-    return -1;
-}
-
-static long angel_errno(void)
-{
-//    uart0Puts("angel_errno()\r\n");
-    return _errno;
-}
-
-
 static long system_open_r(uint32_t *argv)
 {
     struct _reent *r = (struct _reent *) argv[0];
@@ -214,23 +130,8 @@ void syscall_routine(unsigned long number, unsigned long *regs)
     char buf[128];
 
     if (number == AngelSWI) {
-	switch(regs[0]) {
-	case AngelSWI_Reason_Open:
-	    regs[0] = angel_open((uint32_t *)regs[1]);
-	    return;
-	case AngelSWI_Reason_Write:
-	    regs[0] = angel_write((uint32_t *)regs[1]);
-	    return;
-	case AngelSWI_Reason_Read:
-	    regs[0] = angel_read((uint32_t *)regs[1]);
-	    return;
-	case AngelSWI_Reason_Errno:
-	    regs[0] = angel_errno();
-	    return;
-	default:
-	    sprintf(buf, "\r\n\r\n\r\n!!! Unknown Angel SWI %08X !!!\r\n\r\n\r\n", regs[0]);
-	    uart0Puts(buf);
-	}
+	sprintf(buf, "\r\n\r\n\r\n!!! Unknown Angel SWI %08X !!!\r\n\r\n\r\n", regs[0]);
+	uart0Puts(buf);
     } else if (number == SystemSWI) {
 	switch(regs[0]) {
 	case SWI_NEWLIB_Open_r:
@@ -251,7 +152,7 @@ void syscall_routine(unsigned long number, unsigned long *regs)
 	case SWI_NEWLIB_Fstat_r:
 	    regs[0] = system_fstat_r((uint32_t *)regs[1]);
 	    break;
-	case SWI_NEWLIB_isatty:
+	case SWI_NEWLIB_Isatty:
 	    regs[0] = system_isatty((uint32_t *)regs[1]);
 	    break;
 	default:

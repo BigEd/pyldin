@@ -11,6 +11,8 @@
 
 #include "tffs.h"
 
+#include "elf.h"
+
 #define WAIT { int i; for(i=0; i<800000; i++) asm volatile (" nop "); }
 
 void Pink_Panel(void)
@@ -128,16 +130,15 @@ int cmd_type(int argc, char *argv[])
 	return -1;
     }
 
-    int r = open("hello.txt", O_RDONLY);
     FILE *f = fopen(argv[1], "r");
     if (f) {
 	char buf[1024];
 	int total = 0;
 	int ret;
 	while ((ret = fread(buf, 1, sizeof(buf), f)) > 0) {
-	    write(1, buf, ret);
+	    //write(1, buf, ret);
 	    //fprintf(stderr, "write ret = %d\n", l);
-	    //fwrite(buf, 1, sizeof(buf), stdout);
+	    fwrite(buf, 1, ret, stdout);
 	    //printf("%s", buf);
 	    total += ret;
 	}
@@ -149,57 +150,17 @@ int cmd_type(int argc, char *argv[])
     return 0;
 }
 
-int cmd_cat(int argc, char *argv[])
+int cmd_exec(int argc, char *argv[])
 {
-#define BUF_SIZE	1024
-	int32 ret;
-	tfile_handle_t hfile;
-	char dir[MAX_PATH];
-	char *buf;
-	int32 all_size;
-
     if (argc < 2) {
 	fprintf(stderr, "No source file!\n");
 	return -1;
     }
 
-	strcpy(dir, argv[1]);
-	buf = (char *)malloc(BUF_SIZE);
-	all_size = 0;
-
-	if ((ret = TFFS_fopen(htffs, dir, "r", &hfile)) != TFFS_OK) {
-		fprintf(stderr, "TFFS_fopen %d\n", ret);
-		return -1;
-	}
-
-	while (1) {
-		memset(buf, 0, BUF_SIZE);
-
-		if ((ret = TFFS_fread(hfile, BUF_SIZE, (unsigned char *)buf)) < 0) {
-			if (ret == ERR_TFFS_FILE_EOF) {
-				break;
-			}
-			else {
-				fprintf(stderr, "TFFS_fread %d\n", ret);
-				break;
-			}
-		}
-
-		printf("%s", buf);
-		all_size += ret;
-	}
-	printf("\n============================================================\n");
-	printf("[%s] total size %d bytes\n", dir, all_size);
-
-	if ((ret = TFFS_fclose(hfile)) != TFFS_OK) {
-		fprintf(stderr, "TFFS_fclose %d\n", ret);
-		return -1;
-	}
-
-	free(buf);
-
-#undef BUF_SIZE
-	return 0;
+    if (exec_elf(argv[1]) != 0) {
+	fprintf(stderr, "Error load or execute!\n");
+    }
+    return 0;
 }
 
 static const struct commands {
@@ -212,7 +173,7 @@ static const struct commands {
 	{ cmd_umount,	"umount",	"device",	"Unmount device" },
 	{ cmd_ls,	"dir",		"path",		"List directory contents" },
 	{ cmd_type,	"type",		"file",		"Type file" },
-	{ cmd_cat,	"cat",		"file",		"Type file" },
+	{ cmd_exec,	"exec",		"file",		"Execute elf file" },
 	{ 0, 0, 0, 0 }
 };
 
@@ -237,8 +198,6 @@ int system(const char *buf)
 	    argv[i++] = &tmp[j];
     }
 
-//    show_p(argc, argv);
-
     for (i = 0; commands[i].func; i++)
 	if (!strcmp(argv[0], commands[i].name)) {
 	    return commands[i].func(argc, argv);
@@ -255,7 +214,6 @@ int main(void)
 
     uart0Puts("Hello from UART0\r\n");
 
-//initialise_monitor_handles();
     Pink_Panel();
 
     FIOInit(BOARD_LED1_PORT, DIR_OUT, BOARD_LED1_MASK);
@@ -263,23 +221,7 @@ int main(void)
     FIOInit(BOARD_LED3_PORT, DIR_OUT, BOARD_LED3_MASK);
 
     printf("UniDOS 2000\n\n");
-//    fprintf(stderr, "check\n\n");
 //    keyboard_init();
-
-#if 0
-    char *ptr = malloc(1024);
-    printf("--%08X %d %p %c\n", testswi(1, 2, 3), sizeof(void*), ptr, 'd');
-
-
-    FILE *f = fopen("hello.txt", "r");
-    f = fopen("hello.txt", "r+");
-    f = fopen("hello.txt", "w");
-    f = fopen("hello.txt", "w+");
-    f = fopen("hello.txt", "a");
-    f = fopen("hello.txt", "a+");
-    f = fopen("hello.txt", "rb");
-    f = fopen("hello.txt", "wb");
-#endif
 
     for(;;)
     {
