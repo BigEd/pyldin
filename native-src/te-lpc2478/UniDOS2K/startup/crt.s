@@ -6,7 +6,7 @@ Module includes the interrupt vectors and start-up code.
 
 		.extern __bss_beg__
 		.extern __bss_end__
-		.extern __stack_end__
+/*		.extern __stack_end__ */
 		.extern __data_beg__
 		.extern __data_end__
 		.extern __data+beg_src__
@@ -74,14 +74,14 @@ FIQ_Addr:       .word   FIQ_Routine		/* defined in main.c  */
 
 Reset_Handler:
 		.extern systemSetup /* Look system.c */
-                 ldr     sp, =__stack_end__    @ temporary stack at Stack_Top
+                 ldr     sp, __stack_end__    @ temporary stack at Stack_Top
                  ldr r0, =systemSetup
                  mov lr, pc
                  bx r0
 
 		/* Setup a stack for each mode - note that this only sets up a usable stack
 		 for User mode.   Also each mode is setup with interrupts initially disabled. */
-		ldr     r0, =__stack_end__
+		ldr     r0, __stack_end__
 		msr     CPSR_c, #MODE_UND|I_BIT|F_BIT 	/* Undefined Instruction Mode  */
 		mov     sp, r0
 		sub     r0, r0, #UND_STACK_SIZE
@@ -122,6 +122,10 @@ Reset_Handler:
 
 		/* Enter the C code  */
                 b       main
+
+.global __stack_end__
+__stack_end__:
+		.word (0x40000000 + 64 * 1024 - 4)
 
 # SWI handler
 

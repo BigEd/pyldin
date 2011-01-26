@@ -7,7 +7,9 @@ MEMORY
 	ETHRAM (w)  : ORIGIN = 0x7FE00000, LENGTH = 16K
 }
 
+/*
 __stack_end__ = 0x40000000 + 64K - 4;
+ */
 
 SECTIONS 
 {
