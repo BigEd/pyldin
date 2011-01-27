@@ -129,7 +129,6 @@ int exec_elf(char *arg)
     elfarg = strchr(arg, ' ');
     if (elfarg) {
 	*elfarg = 0;
-	elfarg++;
     }
 
     /* open ELF file */
@@ -209,6 +208,12 @@ int exec_elf(char *arg)
 
     /* close file handle */
     close(inst);
+
+    if (elfarg)
+	*elfarg = ' ';
+
+    elfarg = alloca(strlen(arg) + 1);
+    strcpy(elfarg, arg);
 
     /* Now we execute the ELF. */
     exec(elfarg, ehdr.e_entry, ehdr.e_entry + 1024*1024);
