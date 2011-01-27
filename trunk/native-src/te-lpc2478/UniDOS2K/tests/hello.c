@@ -25,8 +25,8 @@ int main(int argc, char *argv[])
     else
 	free(ptr);
 
-    for (i = 0; i < 5; i++) {
-	printf("Arg[%d] = [%d]\n", i, i*3/*(double) i / 0.2f*/);
+    for (i = 0; i < argc; i++) {
+	printf("Arg[%d] = [%s]\n", i, argv[i]);
     }
     
     printf("->%f %f\n", (float) f / i + d, (float) f1 / i + d1);
