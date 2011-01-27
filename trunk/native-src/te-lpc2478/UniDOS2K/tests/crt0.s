@@ -24,18 +24,20 @@ _start:
                 strlo   r0, [r1], #4
                 blo     2b
 
+                /* Set stack end */
+		ldr	r1, =__stack_end__
+		mov	r2, sp
+		add	r2, r2, #12
+		str	r2, [r1]
+
 		pop	{r0, r1, r2}
 
-                /* Set stack end */
-		ldr	r3, =__stack_end__
-		str	sp, [r3]
-		push	{lr}
-
 		/* Enter the C code  */
+		push	{lr}
                 bl       main
-
 		pop	{lr}
-		mov	pc, lr
+
+		bx	lr
 
 .LC1:
 		.word	__bss_start__
