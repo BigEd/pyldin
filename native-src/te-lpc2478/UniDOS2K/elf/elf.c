@@ -103,10 +103,11 @@ int exec(char *elfarg, unsigned long entry, unsigned long sp)
 		  "mov r1, %2	\n\t"	\
 		  "mov r3, sp	\n\t"	\
 		  "mov sp, %3	\n\t"	\
-		  "push {r3}	\n\t"	\
+		  "bic sp, sp, #7\n\t"	\
+		  "push {r3, r4}\n\t"	\
 		  "mov lr, pc	\n\t"	\
 		  "bx  r1	\n\t"	\
-		  "pop {r3}	\n\t"	\
+		  "pop {r3, r4}	\n\t"	\
 		  "mov sp, r3	\n\t"	\
 		  "pop {r1-r12, lr}\n\t"\
 		  "mov %0, r0	\n\t"
