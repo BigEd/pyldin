@@ -95,28 +95,21 @@ struct elf_phdr {
  *   resetted in case the _start() function of the ELF tries to return
  * - sp contains a useful stack pointer
  * - pc contains, of course, the entry point of the ELF */
-int exec(char *elfarg, unsigned long entry, unsigned long sp)
-{
-    volatile long ret;
-    asm volatile ("push {r1-r12, lr}\n\t"\
-		  "mov r0, %1	\n\t"	\
-		  "mov r1, %2	\n\t"	\
-		  "mov r3, sp	\n\t"	\
-		  "mov sp, %3	\n\t"	\
-		  "bic sp, sp, #7\n\t"	\
-		  "push {r3, r4}\n\t"	\
-		  "mov lr, pc	\n\t"	\
-		  "bx  r1	\n\t"	\
-		  "pop {r3, r4}	\n\t"	\
-		  "mov sp, r3	\n\t"	\
-		  "pop {r1-r12, lr}\n\t"\
-		  "mov %0, r0	\n\t"
-		    : "=r" (ret) 
-		    : "r" (elfarg), "r" (entry), "r" (sp)
-		    : "r0"
-		 );
-    return ret;
-}
+int exec(char *elfarg, unsigned long entry, unsigned long sp);
+asm (
+    "exec:		\n\t"
+    "push {r1-r12, lr}	\n\t"
+    "mov r3, sp		\n\t"
+    "mov sp, r2		\n\t"
+    "bic sp, sp, #7	\n\t"
+    "push {r3, r4}	\n\t"
+    "mov lr, pc		\n\t"
+    "bx  r1		\n\t"
+    "pop {r3, r4}	\n\t"
+    "mov sp, r3		\n\t"
+    "pop {r1-r12, lr}	\n\t"
+    "bx  lr		\n\t"
+);
 
 int exec_elf(char *arg)
 {
@@ -127,7 +120,7 @@ int exec_elf(char *arg)
     int r, i;
 
     if (!arg) {
-	fprintf(stderr, "No argument given.\n");
+//	fprintf(stderr, "No argument given.\n");
 	return -1;
     }
 
@@ -142,7 +135,7 @@ int exec_elf(char *arg)
     /* open ELF file */
     inst = open(elffile, O_RDONLY);
     if (inst < 0) {
-	fprintf(stderr, "Error opening ELF file!\n");
+//	fprintf(stderr, "Error opening ELF file!\n");
 	return -1;
     }
 
@@ -166,7 +159,7 @@ int exec_elf(char *arg)
 	    goto fail;
     }
 
-    fprintf(stderr, "Entry point %08x\n", ehdr.e_entry);
+//    fprintf(stderr, "Entry point %08x\n", ehdr.e_entry);
 
     /* read & load program headers. */
     phdr = alloca(ehdr.e_phnum * sizeof(struct elf_phdr));
@@ -184,7 +177,7 @@ int exec_elf(char *arg)
 	    continue;
 
 
-	fprintf(stderr, "ELF load address %08x, size %08x (%u)\n", phdr[i].p_paddr, phdr[i].p_memsz, phdr[i].p_memsz);
+//	fprintf(stderr, "ELF load address %08x, size %08x (%u)\n", phdr[i].p_paddr, phdr[i].p_memsz, phdr[i].p_memsz);
 //	return -1;
 #if 0
 	/* check whether sections fits in external ram */
@@ -224,7 +217,7 @@ int exec_elf(char *arg)
 
 fail:
     close(inst);
-    fprintf(stderr, "Error loading ELF file!\n");
+//    fprintf(stderr, "Error loading ELF file!\n");
     return -1;
 }
 
