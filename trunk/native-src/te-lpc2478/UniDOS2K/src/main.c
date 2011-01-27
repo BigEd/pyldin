@@ -163,6 +163,11 @@ int cmd_exec(int argc, char *argv[])
     return 0;
 }
 
+int cmd_run(const char *cmdline)
+{
+    return exec_elf((char *)cmdline);
+}
+
 static const struct commands {
 	int (*func)(int argc, char *argv[]);/* function pointer */
 	const char *name;	/* name of command */
@@ -181,7 +186,7 @@ int system(const char *buf)
 {
     int i, j, argc;
     int len = strlen(buf);
-    char *tmp = (char *)alloca(len);
+    char *tmp = (char *)alloca(len + 1);
     strcpy(tmp, buf);
 
     for (j = 0, argc = 0; j < len; j++) {
@@ -203,7 +208,8 @@ int system(const char *buf)
 	    return commands[i].func(argc, argv);
     }
 
-    printf("Unknown command, \"%s\".\n", buf);
+    if (cmd_run(buf))
+	printf("Bad command or file name.\n");
 
     return 0;
 }
