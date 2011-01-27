@@ -27,17 +27,14 @@ _start:
 		pop	{r0, r1, r2}
 
                 /* Set stack end */
-		ldr	r4, =__stack_end__
-		str	r2, [r4]
-		mov	r3, sp
-		mov	sp, r2
-		push	{r3, lr}
+		ldr	r3, =__stack_end__
+		str	sp, [r3]
+		push	{lr}
 
 		/* Enter the C code  */
                 bl       main
 
-		pop	{r3, lr}
-		mov	sp, r3
+		pop	{lr}
 		mov	pc, lr
 
 .LC1:

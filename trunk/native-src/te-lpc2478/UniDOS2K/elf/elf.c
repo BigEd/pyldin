@@ -98,13 +98,11 @@ struct elf_phdr {
 int exec(char *elfarg, unsigned long entry, unsigned long sp)
 {
     volatile long ret;
-#if 0
     asm volatile ("push {r1-r12, lr}\n\t"\
 		  "mov r0, %1	\n\t"	\
 		  "mov r1, %2	\n\t"	\
-		  "mov r2, %3	\n\t"	\
 		  "mov r3, sp	\n\t"	\
-		  "mov sp, r2	\n\t"	\
+		  "mov sp, %3	\n\t"	\
 		  "push {r3}	\n\t"	\
 		  "mov lr, pc	\n\t"	\
 		  "bx  r1	\n\t"	\
@@ -116,20 +114,6 @@ int exec(char *elfarg, unsigned long entry, unsigned long sp)
 		    : "r" (elfarg), "r" (entry), "r" (sp)
 		    : "r0"
 		 );
-#else
-    asm volatile ("push {r1-r12, lr}\n\t"\
-		  "mov r0, %1	\n\t"	\
-		  "mov r1, %2	\n\t"	\
-		  "mov r2, %3	\n\t"	\
-		  "mov lr, pc	\n\t"	\
-		  "bx  r1	\n\t"	\
-		  "pop {r1-r12, lr}\n\t"\
-		  "mov %0, r0	\n\t"
-		    : "=r" (ret) 
-		    : "r" (elfarg), "r" (entry), "r" (sp)
-		    : "r0"
-		 );
-#endif
     return ret;
 }
 
@@ -156,7 +140,7 @@ int exec_elf(char *arg)
 
     /* open ELF file */
     inst = open(elffile, O_RDONLY);
-    if (!inst) {
+    if (inst < 0) {
 	fprintf(stderr, "Error opening ELF file!\n");
 	return -1;
     }
