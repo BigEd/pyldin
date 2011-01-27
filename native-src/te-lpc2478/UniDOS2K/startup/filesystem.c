@@ -89,7 +89,8 @@ static _ssize_t fs_read(struct _reent *r, int file, void *ptr, size_t len)
 		fprintf(stderr, "TFFS_fread %d\n", ret);
 		r->_errno = EIO;
 		return -1;
-	    }
+	    } else
+		ret = 0;
 	}
 	return ret;
     }
