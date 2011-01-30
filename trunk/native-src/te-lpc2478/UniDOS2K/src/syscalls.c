@@ -132,7 +132,7 @@ extern char __end__[];      /*  end is set in the linker command 	*/
 				/* file and is the end of statically 	*/
 				/* allocated data (thus start of heap).	*/
 
-static char *heap_ptr;		/* Points to current end of the heap.	*/
+/*static*/ char *heap_ptr;		/* Points to current end of the heap.	*/
 
 #define STACK_BUFFER 16384
 

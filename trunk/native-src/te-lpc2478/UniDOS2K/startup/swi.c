@@ -188,20 +188,20 @@ void syscall_routine(unsigned long number, unsigned long *regs)
 	uart0Puts(buf);
     } else if (number == SystemSWI) {
 	switch(regs[0]) {
-	case SWI_NEWLIB_WriteC:
+	case SWI_WriteC:
 	    uart0Putch(regs[1] & 0xff);
 	    regs[0] = 0;
 	    break;
-	case SWI_NEWLIB_Write:
+	case SWI_Write:
 	    uart0Puts((char *)regs[1]);
 	    regs[0] = 0;
 	    break;
-	case SWI_NEWLIB_WriteHex:
+	case SWI_WriteHex:
 	    printf("0x%08X", regs[1]);
 	    regs[0] = 0;
 	    break;
-	case SWI_NEWLIB_ReadC:
-	    regs[0] = uart0Getch() & 0xff;
+	case SWI_ReadC:
+	    regs[0] = uart0Getch();
 	    break;
 	case SWI_NEWLIB_Open_r:
 	    regs[0] = system_open_r((uint32_t *)regs[1]);

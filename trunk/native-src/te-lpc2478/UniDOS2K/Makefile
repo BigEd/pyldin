@@ -41,7 +41,7 @@ MEM = ROM
 
 PROJECT = lpc2478_blink
 
-OPTIMIZE = -O3
+OPTIMIZE = -Os
 
 ##############################################################################################
 # Application sources directories

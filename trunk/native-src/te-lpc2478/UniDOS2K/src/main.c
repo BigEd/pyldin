@@ -38,40 +38,10 @@ int cmd_mount(int argc, char *argv[])
 {
     int ret;
 
-    if (!mount_fs("mmc:")) {
-	printf("Mounted!\n");
-	FILE *f = fopen("readme.txt", "r");
-	if (f) {
-	    int r;
-	    char buf[1025];
-	    printf("reading...\n");
-	    while ((r = fread(buf, 1, 1024, f)) != 0) {
-		fwrite(buf, 1, r, stdout);
-	    }
-	    fclose(f);
-	}
-
-	f = fopen("filex.txt", "w");
-	if (f) {
-	    printf("writing...\n");
-	    fprintf(f, "HAHA! KISS MY IRON asssUKA!\n");
-	    fprintf(f, "HAHA! KISS MY IRON asssUKA!\n");
-	    fprintf(f, "HAHA! KISS MY IRON asssUKA!\n");
-	    fprintf(f, "HAHA! KISS MY IRON asssUKA!\n");
-	    fclose(f);
-	}
-
-	f = fopen("filex.txt", "r");
-	if (f) {
-	    int r;
-	    char buf[1025];
-	    printf("reading...\n");
-	    while ((r = fread(buf, 1, 1024, f)) != 0) {
-		fwrite(buf, 1, r, stdout);
-	    }
-	    fclose(f);
-	}
-    }
+    if (!mount_fs("mmc:"))
+	fprintf(stderr, "Mounted!\n");
+    else
+	fprintf(stderr, "Unable mount.\n");
 
     return 0;
 }
@@ -92,7 +62,7 @@ int cmd_ls(int argc, char *argv[])
     if (argc > 1)
 	strcpy(dir, argv[1]);
     else
-	strcpy(dir, "");
+	strcpy(dir, "/");
 
     if ((dirp = opendir(dir)) == NULL) {
 	fprintf(stderr, "couldn't open directory.\n");
@@ -277,6 +247,8 @@ int system(const char *buf)
     return 0;
 }
 
+extern char *heap_ptr;
+
 int main(void)
 {
     uart0Init(UART_BAUD(HOST_BAUD_U0), UART_8N1, UART_FIFO_8); // setup the UART
@@ -294,6 +266,7 @@ int main(void)
 
     for(;;)
     {
+	printf("heap_ptr %p\n", heap_ptr);
 	char buf[128];
 	printf("$ ");
 	fgets(buf, 128, stdin);
