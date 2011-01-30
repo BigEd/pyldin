@@ -3,8 +3,8 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
-#include "config.h"
-#include "uart.h"
+//#include "config.h"
+//#include "uart.h"
 #include "swi.h"
 
 #include "filesystem.c"
@@ -23,7 +23,7 @@ static long system_open_r(uint32_t *argv)
     if (!strcmp(name, "/dev/stderr"))
 	return STDERR_FILENO;
 
-    return fs_open(r, name, flags, mode);
+    return wrap_fs_open(r, name, flags, mode);
 }
 
 static long system_write_r(uint32_t *argv)
@@ -43,7 +43,7 @@ static long system_write_r(uint32_t *argv)
 	return len;
     }
 
-    return fs_write(r, fd, ptr, len);
+    return wrap_fs_write(r, fd, ptr, len);
 }
 
 static long system_read_r(uint32_t *argv)
@@ -70,7 +70,7 @@ static long system_read_r(uint32_t *argv)
 	return i;
     }
 
-    return fs_read(r, fd, ptr, len);
+    return wrap_fs_read(r, fd, ptr, len);
 }
 
 static long system_close_r(uint32_t *argv)
@@ -83,7 +83,7 @@ static long system_close_r(uint32_t *argv)
 	return -1;
     }
 
-    return fs_close(r, fd);
+    return wrap_fs_close(r, fd);
 }
 
 static long system_lseek_r(uint32_t *argv)
@@ -98,7 +98,7 @@ static long system_lseek_r(uint32_t *argv)
 	return -1;
     }
 
-    return fs_lseek(r, fd, ptr, dir);
+    return wrap_fs_lseek(r, fd, ptr, dir);
 }
 
 static long system_fstat_r(uint32_t *argv)
@@ -112,7 +112,7 @@ static long system_fstat_r(uint32_t *argv)
 	return 0;
     }
 
-    return fs_fstat(r, fd, st);
+    return wrap_fs_fstat(r, fd, st);
 }
 
 static long system_isatty(uint32_t *argv)
@@ -122,7 +122,61 @@ static long system_isatty(uint32_t *argv)
 	return 1;
     }
 
-    return fs_isatty(fd);
+    return wrap_fs_isatty(fd);
+}
+
+static long system_exit(uint32_t *argv)
+{
+    asm("mov pc, #0");
+    return -1;
+}
+
+static long system_mkdir_r(uint32_t *argv)
+{
+    struct _reent *r = (struct _reent *) argv[0];
+    return wrap_fs_mkdir(r, (char *) argv[1], argv[2]);
+}
+
+static long system_rmdir_r(uint32_t *argv)
+{
+    struct _reent *r = (struct _reent *) argv[0];
+    return wrap_fs_rmdir(r, (char *) argv[1]);
+}
+
+static long system_unlink_r(uint32_t *argv)
+{
+    struct _reent *r = (struct _reent *) argv[0];
+    return wrap_fs_unlink(r, (char *) argv[1]);
+}
+
+static long system_opendir_r(uint32_t *argv)
+{
+    struct _reent *r = (struct _reent *) argv[0];
+    return (long)wrap_fs_opendir(r, (char *)argv[1]);
+}
+
+static long system_readdir_r(uint32_t *argv)
+{
+    struct _reent *r = (struct _reent *) argv[0];
+    return (long)wrap_fs_readdir_r(r, (void *)argv[1], (struct dirent *)argv[2], (struct dirent **)argv[3]);
+}
+
+static long system_closedir_r(uint32_t *argv)
+{
+    struct _reent *r = (struct _reent *) argv[0];
+    return (long)wrap_fs_closedir(r, (void *)argv[1]);
+}
+
+static long system_mountfs(uint32_t *argv)
+{
+    struct _reent *r = (struct _reent *) argv[0];
+    return (long)wrap_fs_mountfs(r, (char *)argv[1]);
+}
+
+static long system_umountfs(uint32_t *argv)
+{
+    struct _reent *r = (struct _reent *) argv[0];
+    return (long)wrap_fs_unmountfs(r, (char *)argv[1]);
 }
 
 void syscall_routine(unsigned long number, unsigned long *regs)
@@ -134,6 +188,21 @@ void syscall_routine(unsigned long number, unsigned long *regs)
 	uart0Puts(buf);
     } else if (number == SystemSWI) {
 	switch(regs[0]) {
+	case SWI_NEWLIB_WriteC:
+	    uart0Putch(regs[1] & 0xff);
+	    regs[0] = 0;
+	    break;
+	case SWI_NEWLIB_Write:
+	    uart0Puts((char *)regs[1]);
+	    regs[0] = 0;
+	    break;
+	case SWI_NEWLIB_WriteHex:
+	    printf("0x%08X", regs[1]);
+	    regs[0] = 0;
+	    break;
+	case SWI_NEWLIB_ReadC:
+	    regs[0] = uart0Getch() & 0xff;
+	    break;
 	case SWI_NEWLIB_Open_r:
 	    regs[0] = system_open_r((uint32_t *)regs[1]);
 	    break;
@@ -154,6 +223,33 @@ void syscall_routine(unsigned long number, unsigned long *regs)
 	    break;
 	case SWI_NEWLIB_Isatty:
 	    regs[0] = system_isatty((uint32_t *)regs[1]);
+	    break;
+	case SWI_NEWLIB_Exit:
+	    regs[0] = system_exit((uint32_t *)regs[1]);
+	    break;
+	case SWI_NEWLIB_Mkdir_r:
+	    regs[0] = system_mkdir_r((uint32_t *)regs[1]);
+	    break;
+	case SWI_NEWLIB_Rmdir_r:
+	    regs[0] = system_rmdir_r((uint32_t *)regs[1]);
+	    break;
+	case SWI_NEWLIB_Opendir_r:
+	    regs[0] = system_opendir_r((uint32_t *)regs[1]);
+	    break;
+	case SWI_NEWLIB_Readdir_r:
+	    regs[0] = system_readdir_r((uint32_t *)regs[1]);
+	    break;
+	case SWI_NEWLIB_Closedir_r:
+	    regs[0] = system_closedir_r((uint32_t *)regs[1]);
+	    break;
+	case SWI_MountFS:
+	    regs[0] = system_mountfs((uint32_t *)regs[1]);
+	    break;
+	case SWI_UmountFS:
+	    regs[0] = system_umountfs((uint32_t *)regs[1]);
+	    break;
+	case SWI_NEWLIB_Unlink_r:
+	    regs[0] = system_unlink_r((uint32_t *)regs[1]);
 	    break;
 	default:
 	    sprintf(buf, "\r\n\r\n\r\n!!! Unknown System SWI %08X !!!\r\n\r\n\r\n", regs[0]);

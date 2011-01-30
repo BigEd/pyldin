@@ -9,6 +9,7 @@
 /*  TODO: some more work has to be done on this                        */
 /***********************************************************************/
 
+#include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,6 +17,7 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <errno.h>
+#include <dirent.h>
 
 #include "swi.h"
 
@@ -126,7 +128,7 @@ void _exit(int n)
 /**** Locally used variables. ****/
 extern char *__stack_end__; 	/* Defined by startup                   */
 
-extern char __end__[];          /*  end is set in the linker command 	*/
+extern char __end__[];      /*  end is set in the linker command 	*/
 				/* file and is the end of statically 	*/
 				/* allocated data (thus start of heap).	*/
 
@@ -152,8 +154,13 @@ void * _sbrk_r(struct _reent *r, ptrdiff_t nbytes)
 
     if (!heap_ptr) {	/*  Initialize if first time through.		*/
 	heap_ptr = __end__;
+#if 1
 	printf("heap_ptr = %p\n", __end__);
 	printf("stack_ptr = %p\n", __stack_end__);
+#else
+//	do_SystemSWI(SWI_NEWLIB_WriteHex, (unsigned long) __end__);
+//	do_SystemSWI(SWI_NEWLIB_WriteHex, (unsigned long) __stack_end__);
+#endif
     }
 
     if ((__stack_end__ - (heap_ptr + nbytes)) > STACK_BUFFER) {
@@ -170,4 +177,150 @@ void * _sbrk_r(struct _reent *r, ptrdiff_t nbytes)
 void __libc_fini_array()
 {
 }
+#endif
+
+#if 1
+
+char *getcwd(char *buf, size_t size)
+{
+#warning "getcwd() incomplete!"
+    strcpy(buf, "/");
+    return buf;
+}
+
+int _kill_r(struct _reent *r, int pid, int sig)
+{
+    r->_errno = EINVAL;
+    return -1;
+}
+
+int _getpid_r(struct _reent *r)
+{
+    return 1;
+    r = r;
+}
+
+#ifdef REENT_MKDIR
+int _mkdir_r(struct _reent *r, const char *path, int mode)
+{
+    int volatile block[3];
+
+    block[0] = (int) r;
+    block[1] = (int) path;
+    block[2] = mode;
+    return do_SystemSWI(SWI_NEWLIB_Mkdir_r, (void *)block);
+}
+#else
+int mkdir(const char *path, mode_t mode)
+{
+    struct _reent r;
+    int volatile block[3];
+
+    block[0] = (int) &r;
+    block[1] = (int) path;
+    block[2] = (int) mode;
+    return do_SystemSWI(SWI_NEWLIB_Mkdir_r, (void *)block);
+}
+#endif
+
+#ifdef REENT_RMDIR
+int _rmdir_r(struct _reent *r, const char *path)
+{
+    int volatile block[2];
+
+    block[0] = (int) r;
+    block[1] = (int) path;
+    return do_SystemSWI(SWI_NEWLIB_Rmdir_r, (void *)block);
+}
+#else
+int rmdir(const char *path)
+{
+    struct _reent r;
+    int volatile block[2];
+
+    block[0] = (int) &r;
+    block[1] = (int) path;
+    return do_SystemSWI(SWI_NEWLIB_Rmdir_r, (void *)block);
+}
+#endif
+
+int _unlink_r(struct _reent *r, const char *path)
+{
+    int volatile block[2];
+
+    block[0] = (int) r;
+    block[1] = (int) path;
+    return do_SystemSWI(SWI_NEWLIB_Unlink_r, (void *)block);
+}
+
+DIR *opendir(const char *name)
+{
+    struct _reent r;
+    int volatile block[2];
+
+    block[0] = (int) &r;
+    block[1] = (int) name;
+    return (DIR *)do_SystemSWI(SWI_NEWLIB_Opendir_r, (void *)block);
+}
+
+struct dirent *readdir(DIR *dirp)
+{
+    struct _reent r;
+    static struct dirent entry;
+    struct dirent *result;
+    int volatile block[2];
+
+    block[0] = (int) &r;
+    block[1] = (int) dirp;
+    block[2] = (int) &entry;
+    block[3] = (int) &result;
+    do_SystemSWI(SWI_NEWLIB_Readdir_r, (void *)block);
+    return result;
+}
+
+int readdir_r(DIR *dirp, struct dirent *entry, struct dirent **result)
+{
+    struct _reent r;
+    int volatile block[4];
+
+    block[0] = (int) &r;
+    block[1] = (int) dirp;
+    block[2] = (int) entry;
+    block[3] = (int) result;
+    return do_SystemSWI(SWI_NEWLIB_Readdir_r, (void *)block);
+}
+
+int closedir(DIR *dirp)
+{
+    struct _reent r;
+    int volatile block[2];
+
+    block[0] = (int) &r;
+    block[1] = (int) dirp;
+    return do_SystemSWI(SWI_NEWLIB_Closedir_r, (void *)block);
+}
+
+#endif
+
+#if 1
+int mount_fs(char *fs)
+{
+    struct _reent r;
+    int volatile block[2];
+
+    block[0] = (int) &r;
+    block[1] = (int) fs;
+    return do_SystemSWI(SWI_MountFS, (void *)block);
+}
+
+int umount_fs(char *fs)
+{
+    struct _reent r;
+    int volatile block[2];
+
+    block[0] = (int) &r;
+    block[1] = (int) fs;
+    return do_SystemSWI(SWI_UmountFS, (void *)block);
+}
+
 #endif
