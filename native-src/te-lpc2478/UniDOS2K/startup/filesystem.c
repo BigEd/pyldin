@@ -13,6 +13,7 @@
 #include "../efsl/Inc/mkfs.h"
 #include "../efsl/Inc/ioman.h"
 #include "../efsl/Inc/ui.h"
+#include "../efsl/Inc/ls.h"
 
 #define MAX_FILEDESCR	32
 
@@ -63,7 +64,10 @@ static int wrap_fs_mountfs(struct _reent *r, const char *pathname)
     disc = malloc(sizeof(*disc));
     part = malloc(sizeof(*part));
 
-    if_initInterface(lfile,"mci0:");
+    if (if_initInterface(lfile,"mci0:")) {
+	r->_errno = EACCES;
+	return -1;
+    }
     ioman_init(ioman,lfile,0);
     disc_initDisc(disc,ioman);
     memClr(disc->partitions,sizeof(PartitionField)*4);
@@ -266,69 +270,43 @@ static int wrap_fs_unlink(struct _reent *r, char *path)
 
 static void *wrap_fs_opendir(struct _reent *r, char *path)
 {
-#if 0
-    DIR *d = (DIR *)malloc(sizeof(DIR));
-    if (!d) {
+    DirList *list = malloc(sizeof(DirList));
+    if (!list) {
 	r->_errno = ENOMEM;
 	return NULL;
     }
-    FRESULT rc = f_opendir(d, path);
-    switch (rc) {
-    case FR_OK: return d;
-    case FR_NO_PATH:
-    case FR_INVALID_NAME:
-    case FR_INVALID_DRIVE:
-	r->_errno = ENOENT;
-	break;
-    default:
+    if (ls_openDir(list, fs, path) != 0) {
 	r->_errno = EACCES;
+	return NULL;
     }
-#endif
-    return NULL;
+    return list;
 }
 
 static int wrap_fs_readdir_r(struct _reent *r, void *dirp, struct dirent *entry, struct dirent **result)
 {
-#if 0
-    FILINFO fno;
-    FRESULT rc = f_readdir(dirp, &fno);
-    if (rc == FR_OK) {
-	char *fn;
-	if (fno.fname[0] == 0) {
-	    *result = NULL;
-	    return 0;
-	}
-#if 0
-#if _USE_LFN
-	fn = *fno.lfname ? fno.lfname : fno.fname;
-#else
-	fn = fno.fname;
-#endif
-#endif
-	fn = fno.fname;
-	strncpy(entry->d_name, fn, NAME_MAX - 1);
-	entry->d_type = 0;
-	if (fno.fattrib & AM_DIR)
-	    entry->d_type |= DT_DIR;
-	else
-	    entry->d_type |= DT_REG;
-	entry->d_size = fno.fsize;
-	*result = entry;
+    DirList *list = dirp;
+    if (ls_getNext(list) != 0) {
+	*result = NULL;
 	return 0;
     }
-#endif
-    r->_errno = EBADF;
-    *result = NULL;
-    return -1;
+//    strncpy(entry->d_name, (char *)list->currentEntry.FileName, NAME_MAX - 1);
+// OMG we use 8+3!
+    strncpy(entry->d_name, (char *)list->currentEntry.FileName, 8 + 3);
+    entry->d_name[8 + 3] = 0;
+    entry->d_size = list->currentEntry.FileSize;
+    if (list->currentEntry.Attribute & ATTR_DIRECTORY)
+	entry->d_type |= DT_DIR;
+    else
+	entry->d_type |= DT_REG;
+    *result = entry;
+    return 0;
 }
 
 static int wrap_fs_closedir(struct _reent *r, void *dirp)
 {
-#if 0
 #warning "SWI wrap_fs_closedir"
     free(dirp);
     return 0;
-#endif
 }
 
 #endif

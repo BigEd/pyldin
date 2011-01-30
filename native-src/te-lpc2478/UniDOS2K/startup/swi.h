@@ -3,10 +3,10 @@
 
 #define SystemSWI			0x80
 
-#define SWI_NEWLIB_WriteC		0x70
-#define SWI_NEWLIB_Write		0x71
-#define SWI_NEWLIB_WriteHex		0x72
-#define SWI_NEWLIB_ReadC		0x73
+#define SWI_WriteC			0x70
+#define SWI_Write			0x71
+#define SWI_WriteHex			0x72
+#define SWI_ReadC			0x73
 
 #define SWI_NEWLIB_Open_r		0x80
 #define SWI_NEWLIB_Read_r		0x81
