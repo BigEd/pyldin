@@ -3,6 +3,11 @@
 
 #define SystemSWI			0x80
 
+#define SWI_NEWLIB_WriteC		0x70
+#define SWI_NEWLIB_Write		0x71
+#define SWI_NEWLIB_WriteHex		0x72
+#define SWI_NEWLIB_ReadC		0x73
+
 #define SWI_NEWLIB_Open_r		0x80
 #define SWI_NEWLIB_Read_r		0x81
 #define SWI_NEWLIB_Write_r		0x82
@@ -14,6 +19,17 @@
 #define SWI_NEWLIB_Gettimeofday_r	0x87
 #define SWI_NEWLIB_Exit			0x88
 
+#define SWI_NEWLIB_Mkdir_r		0x89
+#define SWI_NEWLIB_Rmdir_r		0x8a
+
+#define SWI_NEWLIB_Opendir_r		0x8b
+#define SWI_NEWLIB_Readdir_r		0x8c
+#define SWI_NEWLIB_Closedir_r		0x8d
+
+#define SWI_NEWLIB_Unlink_r		0x8e
+
+#define SWI_MountFS			0xa0
+#define SWI_UmountFS			0xa1
 
 /* Now the SWI numbers and reason codes for RDI (Angel) monitors.  */
 #define AngelSWI_ARM 			0x123456

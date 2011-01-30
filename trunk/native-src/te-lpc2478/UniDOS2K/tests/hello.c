@@ -31,5 +31,38 @@ int main(int argc, char *argv[])
     
     printf("->%f %f\n", (float) f / i + d, (float) f1 / i + d1);
 
+	FILE *f = fopen("readme.txt", "r");
+	if (f) {
+	    int r;
+	    char buf[1025];
+	    printf("reading...\n");
+	    while ((r = fread(buf, 1, 1024, f)) != 0) {
+		fwrite(buf, 1, r, stdout);
+	    }
+	    fclose(f);
+	}
+
+	f = fopen("filex.txt", "a");
+	if (f) {
+	    printf("writing...\n");
+	    fprintf(f, "HAHA! KISS ME!\n");
+	    fprintf(f, "HAHA! KISS ME!\n");
+	    fprintf(f, "HAHA! KISS ME!\n");
+	    fprintf(f, "HAHA! KISS ME!\n");
+	    fclose(f);
+	}
+
+	f = fopen("filex.txt", "r");
+	if (f) {
+	    int r;
+	    char buf[1025];
+	    printf("reading...\n");
+	    while ((r = fread(buf, 1, 1024, f)) != 0) {
+		fwrite(buf, 1, r, stdout);
+	    }
+	    fclose(f);
+	}
+
+
     return 0;
 }

@@ -9,7 +9,7 @@
 #include "kbd.h"
 #include "mci.h"
 
-#include "tffs.h"
+#include "dirent.h"
 
 #include "elf.h"
 
@@ -34,38 +34,43 @@ void keyboard_handler(uint8_t scan)
 {
 }
 
-void
-_show_dirent(
-	dirent_t * pdirent)
-{
-	printf("%8d byte", pdirent->dir_file_size);
-	printf("\t%2d/%02d/%02d - %02d:%02d  ", pdirent->crttime.year,
-		pdirent->crttime.month,
-		pdirent->crttime.day,
-		pdirent->crttime.hour,
-		pdirent->crttime.min);
-
-	if (pdirent->dir_attr & DIR_ATTR_DIRECTORY) {
-		printf("\033[32m%s\033[0m", pdirent->d_name);
-	}
-	else {
-		printf("%s", pdirent->d_name);
-	}
-	printf("\n");
-}
-
-
-tffs_handle_t htffs_mmc;
-
-#define htffs htffs_mmc
-
 int cmd_mount(int argc, char *argv[])
 {
     int ret;
 
-    if ((ret = TFFS_mount("mmc", &htffs)) != TFFS_OK) {
-        printf("TFFS_mount() %d\n", ret);
-        return -1;
+    if (!mount_fs("mmc:")) {
+	printf("Mounted!\n");
+	FILE *f = fopen("readme.txt", "r");
+	if (f) {
+	    int r;
+	    char buf[1025];
+	    printf("reading...\n");
+	    while ((r = fread(buf, 1, 1024, f)) != 0) {
+		fwrite(buf, 1, r, stdout);
+	    }
+	    fclose(f);
+	}
+
+	f = fopen("filex.txt", "w");
+	if (f) {
+	    printf("writing...\n");
+	    fprintf(f, "HAHA! KISS MY IRON asssUKA!\n");
+	    fprintf(f, "HAHA! KISS MY IRON asssUKA!\n");
+	    fprintf(f, "HAHA! KISS MY IRON asssUKA!\n");
+	    fprintf(f, "HAHA! KISS MY IRON asssUKA!\n");
+	    fclose(f);
+	}
+
+	f = fopen("filex.txt", "r");
+	if (f) {
+	    int r;
+	    char buf[1025];
+	    printf("reading...\n");
+	    while ((r = fread(buf, 1, 1024, f)) != 0) {
+		fwrite(buf, 1, r, stdout);
+	    }
+	    fclose(f);
+	}
     }
 
     return 0;
@@ -73,56 +78,40 @@ int cmd_mount(int argc, char *argv[])
 
 int cmd_umount(int argc, char *argv[])
 {
-    TFFS_umount(htffs);
-
+    umount_fs("mmc:");
     return 0;
 }
 
 #define MAX_PATH	256
 int cmd_ls(int argc, char *argv[])
 {
-	tdir_handle_t hdir;
-	char dir[MAX_PATH];
-	int file_num;
-	int ret;
+    DIR *dirp;
+    struct dirent *dp;
+    char dir[MAX_PATH];
 
-	if (argc > 1)
-	    strcpy(dir, argv[1]);
+    if (argc > 1)
+	strcpy(dir, argv[1]);
+    else
+	strcpy(dir, "");
+
+    if ((dirp = opendir(dir)) == NULL) {
+	fprintf(stderr, "couldn't open directory.\n");
+	return -1;
+    }
+
+    while ((dp = readdir(dirp)) != NULL) {
+	if (dp->d_type & DT_DIR)
+	    printf("   <dir>  %s\n", dp->d_name);
 	else
-	    strcpy(dir, "/");
+	    printf("%8lu  %s\n", dp->d_size, dp->d_name);
+    }
 
-	if ((ret = TFFS_opendir(htffs, dir, &hdir)) != TFFS_OK) {
-		printf("TFFS_opendir %d\n", ret);
-		return -1;
-	}
+    closedir(dirp);
 
-	file_num = 0;
-	while (1) {
-		dirent_t dirent;
-
-		if ((ret = TFFS_readdir(hdir, &dirent)) == TFFS_OK) {
-			_show_dirent(&dirent);
-		}
-		else if (ret == ERR_TFFS_LAST_DIRENTRY) {
-			break;
-		}
-		else {
-			printf("TFFS_readdir %d\n", ret);
-			break;
-		}
-		file_num++;
-	}
-
-	printf("\nTotal %d files.\n", file_num);
-	if ((ret = TFFS_closedir(hdir)) != TFFS_OK) {
-		printf("TFFS_closedir %d\n", ret);
-		return -1;
-	}
-
-	return 0;
+    return 0;
 }
 
-#include <fcntl.h>
+//#include <fcntl.h>
 int cmd_type(int argc, char *argv[])
 {
     if (argc < 2) {
@@ -136,16 +125,57 @@ int cmd_type(int argc, char *argv[])
 	int total = 0;
 	int ret;
 	while ((ret = fread(buf, 1, sizeof(buf), f)) > 0) {
-	    //write(1, buf, ret);
-	    //fprintf(stderr, "write ret = %d\n", l);
 	    fwrite(buf, 1, ret, stdout);
-	    //printf("%s", buf);
 	    total += ret;
 	}
-	printf("\n\ntotal size %d\n", total);
 	fclose(f);
     } else
 	fprintf(stderr, "No such file!\n");
+
+    return 0;
+}
+
+int cmd_md(int argc, char *argv[])
+{
+    if (argc < 2) {
+	fprintf(stderr, "No directory!\n");
+	return -1;
+    }
+
+    if (mkdir(argv[1], 0)) {
+	fprintf(stderr, "Unable create directory.\n");
+	return -1;
+    }
+
+    return 0;
+}
+
+int cmd_rd(int argc, char *argv[])
+{
+    if (argc < 2) {
+	fprintf(stderr, "No directory!\n");
+	return -1;
+    }
+
+    if (rmdir(argv[1])) {
+	fprintf(stderr, "Unable remove directory.\n");
+	return -1;
+    }
+
+    return 0;
+}
+
+int cmd_del(int argc, char *argv[])
+{
+    if (argc < 2) {
+	fprintf(stderr, "No such file!\n");
+	return -1;
+    }
+
+    if (unlink(argv[1])) {
+	fprintf(stderr, "Unable remove file.\n");
+	return -1;
+    }
 
     return 0;
 }
@@ -168,6 +198,35 @@ int cmd_run(const char *cmdline)
     return exec_elf((char *)cmdline);
 }
 
+int cmd_dump(int argc, char *argv[])
+{
+    if (argc < 3) {
+	fprintf(stderr, "No start address and length!\n");
+	return -1;
+    }
+
+    uint8_t *base = (uint8_t *) strtoul(argv[1], 0, 0);
+    uint32_t len = strtoul(argv[2], 0, 0);
+    uint32_t i;
+    char s[17];
+
+    for (i = 0; i < len; i++) {
+	if (i % 16 == 0) {
+	    if (!i)
+		printf("\n%08X: ", base + i);
+	    else
+		printf("%s\n%08X: ", s, base + i);
+	    memset(s, 0, 17);
+	}
+	printf("%02X ", base[i]);
+	s[i % 16] = ((base[i] >= 32) && (base[i] < 128))?base[i]:'.';
+    }
+
+    printf("\n");
+
+    return 0;
+}
+
 static const struct commands {
 	int (*func)(int argc, char *argv[]);/* function pointer */
 	const char *name;	/* name of command */
@@ -178,7 +237,11 @@ static const struct commands {
 	{ cmd_umount,	"umount",	"device",	"Unmount device" },
 	{ cmd_ls,	"dir",		"path",		"List directory contents" },
 	{ cmd_type,	"type",		"file",		"Type file" },
+	{ cmd_md,	"md",		"dir",		"Make directory" },
+	{ cmd_rd,	"rd",		"dir",		"Remove directory" },
+	{ cmd_del,	"del",		"file",		"Remove file" },
 	{ cmd_exec,	"exec",		"file",		"Execute elf file" },
+	{ cmd_dump,	"dump",		"addr offset",	"Show memory" },
 	{ 0, 0, 0, 0 }
 };
 

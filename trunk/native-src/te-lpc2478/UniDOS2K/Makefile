@@ -49,8 +49,13 @@ SRC_DIRS = ./src
 SRC_DIRS += ./startup
 
 # TFFS
-SRC_DIRS += tffs/inc
-SRC_DIRS += tffs/src
+#SRC_DIRS += tffs/inc
+#SRC_DIRS += tffs/src
+
+# EFSL
+SRC_DIRS += efsl/Inc
+SRC_DIRS += efsl/Src
+SRC_DIRS += efsl
 
 # ELF
 SRC_DIRS += elf
@@ -67,25 +72,24 @@ LIB_DIRS += $(LD_DIRS)
 #  ARM .c sources
 
 SRC_ARM_C = main.c
-#SRC_ARM_C += clock-arch.c
 SRC_ARM_C += uart.c
-#SRC_ARM_C += touchscreen.c
 SRC_ARM_C += kbd.c
-#SRC_ARM_C += dma.c
-#SRC_ARM_C += diskio.c
 SRC_ARM_C += mci.c
 #SRC_ARM_C +=
 SRC_ARM_C += interrupts.c
 SRC_ARM_C += swi.c
 SRC_ARM_C += system.c
-#SRC_ARM_C += adc.c
 SRC_ARM_C += fio.c
 SRC_ARM_C += irq.c
 SRC_ARM_C += syscalls.c
 
 # TFFS
-SRC_ARM_C += initfs.c debug.c fat.c dir.c dirent.c common.c file.c crtdef.c cache.c
-SRC_ARM_C += hai_mci.c
+#SRC_ARM_C += initfs.c debug.c fat.c dir.c dirent.c common.c file.c crtdef.c cache.c
+#SRC_ARM_C += hai_mci.c
+
+# EFSL
+SRC_ARM_C += debug.c dir.c disc.c efs.c extract.c fat.c file.c fs.c ioman.c ls.c mkfs.c partition.c plibc.c time.c ui.c
+SRC_ARM_C += lpc24mci.c
 
 # ELF
 SRC_ARM_C += elf.c
