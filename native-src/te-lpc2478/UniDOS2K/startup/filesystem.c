@@ -94,6 +94,7 @@ static int wrap_fs_open(struct _reent *r, const char *pathname, int flags, int m
     int fd = wrap_fs_get_fd();
     if (fd >= 0) {
 	euint8 m = 0;
+	flags &= 0xffff;
 	if (flags == O_RDONLY)
 	    m = MODE_READ;
 	else if (flags & O_APPEND)
