@@ -21,5 +21,6 @@ typedef struct hwInterface hwInterface;
 esint8 if_initInterface(hwInterface* file,eint8* fileName);
 esint8 if_readBuf(hwInterface* file,euint32 address,euint8* buf);
 esint8 if_writeBuf(hwInterface* file,euint32 address,euint8* buf);
+esint8 if_finiInterface(hwInterface* file);
 
 #endif

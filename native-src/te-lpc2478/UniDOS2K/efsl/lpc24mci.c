@@ -31,6 +31,20 @@ esint8 if_initInterface(hwInterface* file, eint8* fileName)
 /*****************************************************************************/ 
 
 /* ****************************************************************************  
+ * esint8 if_finiInterface(hwInterface* file)
+ * Description: This function shutdown storage device hardware
+ *
+ * Return value: Return 0 on succes and -1 on failure.
+*/
+esint8 if_finiInterface(hwInterface* file)
+{
+    mmc_fini();
+
+    return 0;
+}
+/*****************************************************************************/ 
+
+/* ****************************************************************************  
  * short if_readBuf(hwInterface* file,unsigned long address,unsigned char* buf)
  * Description: This function should fill the characterpointer buf with 512 
  * bytes, offset by address*512 bytes. Adress is thus a LBA address.
