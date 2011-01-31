@@ -50,24 +50,30 @@ static int wrap_fs_get_fd(void)
     return -1;
 }
 
-static hwInterface *lfile=0;
-static IOManager *ioman=0;
-static Disc *disc=0;
-static Partition *part=0;
-static FileSystem *fs=0;
+static hwInterface *lfile = NULL;
+static IOManager *ioman = NULL;
+static Disc *disc = NULL;
+static Partition *part = NULL;
+static FileSystem *fs = NULL;
 
 static int wrap_fs_mountfs(struct _reent *r, const char *pathname)
 {
+    if (fs) {
+	r->_errno = EBUSY;
+	return -1;
+    }
 
     lfile = malloc(sizeof(*lfile));
-    ioman = malloc(sizeof(*ioman));
-    disc = malloc(sizeof(*disc));
-    part = malloc(sizeof(*part));
 
     if (if_initInterface(lfile,"mci0:")) {
+	free(lfile);
 	r->_errno = EACCES;
 	return -1;
     }
+    ioman = malloc(sizeof(*ioman));
+    disc = malloc(sizeof(*disc));
+    part = malloc(sizeof(*part));
+    
     ioman_init(ioman,lfile,0);
     disc_initDisc(disc,ioman);
     memClr(disc->partitions,sizeof(PartitionField)*4);
@@ -86,8 +92,19 @@ static int wrap_fs_mountfs(struct _reent *r, const char *pathname)
 
 static int wrap_fs_unmountfs(struct _reent *r, const char *pathname)
 {
+    if (!fs) {
+	r->_errno = EINVAL;
+	return -1;
+    }
     fs_umount(fs);
+    free(part);
+    free(disc);
+    free(ioman);
     free(fs);
+    if_finiInterface(lfile);
+    free(lfile);
+    fs = NULL;
+    lfile = NULL;
     return 0;
 }
 
