@@ -39,7 +39,7 @@ FMCU  = -mcpu=arm7tdmi
 MEM = ROM
 #MEM = RAM
 
-PROJECT = lpc2478_blink
+PROJECT = lpc2478_UniDOS
 
 OPTIMIZE = -Os
 
