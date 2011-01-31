@@ -73,8 +73,16 @@ _start:
 
 		push	{r2, lr}
 
-		/* Enter the C code  */
-                bl       main
+		mov	r2, r0
+		ldr	r0, .LC3
+		bl	setjmp
+		cmp	r0, #0
+		/* if return from longjmp exit return code */
+		ldrne	r0, .LC4
+		ldrne	r0, [r0]
+		/* else enter the C code  */
+		moveq	r0, r2
+		bleq	main
 
 		pop	{r2, lr}
 		mov	sp, r2
@@ -85,6 +93,10 @@ _start:
 		.word	__bss_start__
 .LC2:
 		.word	__bss_end__
+.LC3:
+		.word	__exit_jump_buf__
+.LC4:
+		.word	__exit_jump_stat__
 
 		.comm	__stack_end__, 4, 4
 

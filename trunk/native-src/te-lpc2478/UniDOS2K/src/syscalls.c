@@ -18,8 +18,12 @@
 #include <sys/time.h>
 #include <errno.h>
 #include <dirent.h>
+#include <setjmp.h>
 
 #include "swi.h"
+
+jmp_buf	__exit_jump_buf__;
+int 	__exit_jump_stat__;
 
 static inline int do_SystemSWI (int reason, void *arg)
 {
@@ -95,7 +99,6 @@ int _fstat_r(struct _reent *r, int file, struct stat *st)
     return do_SystemSWI(SWI_NEWLIB_Fstat_r, (void *)block);
 }
 
-#if 1
 int _isatty(int file)
 {
     int volatile block[1];
@@ -116,12 +119,16 @@ int _gettimeofday_r(struct _reent *r, struct timeval *tp, void *tzp)
 
 void _exit(int n)
 {
+#ifndef USE_SWI_EXIT
+    __exit_jump_stat__ = n;
+    longjmp(__exit_jump_buf__, 1);
+#else
     int volatile block[1];
 
     block[0] = n;
     do_SystemSWI(SWI_NEWLIB_Exit, (void *)block);
-}
 #endif
+}
 
 /* "malloc clue function" */
 
