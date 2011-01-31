@@ -1,4 +1,4 @@
-all: hello disas dis6800
+all: hello disas dis6800 jump exit
 
 TOOLSET := /opt/arm-2010.09/bin
 TARGET  := arm-none-eabi-
@@ -20,5 +20,11 @@ disas: crt0.o disas.o
 dis6800: crt0.o dis6800.o
 	$(CC) $(LDFLAGS) -o $@ $^ ../src/syscalls.c
 
+jump: crt0.o jump.o
+	$(CC) $(LDFLAGS) -o $@ $^ ../src/syscalls.c
+
+exit: crt0.o exit.o
+	$(CC) $(LDFLAGS) -o $@ $^ ../src/syscalls.c
+
 clean:
-	rm -f *.o disas hello dis6800 test
+	rm -f *.o disas hello dis6800 test jump exit
