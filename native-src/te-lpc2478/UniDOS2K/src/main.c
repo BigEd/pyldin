@@ -230,6 +230,9 @@ int system(const char *buf)
 	    tmp[j] = 0;
     }
 
+    if (!argc)
+	return 0;
+
     char **argv = alloca(argc * sizeof(void));
     for (j = 0, i = 0; i < argc; j++) {
 	if ((j == 0 && tmp[j] > ' ') || (tmp[j - 1] == 0 && tmp[j] > ' '))
