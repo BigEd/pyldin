@@ -188,13 +188,6 @@ void __libc_fini_array()
 
 #if 1
 
-char *getcwd(char *buf, size_t size)
-{
-#warning "getcwd() incomplete!"
-    strcpy(buf, "/");
-    return buf;
-}
-
 int _kill_r(struct _reent *r, int pid, int sig)
 {
     r->_errno = EINVAL;
@@ -258,6 +251,37 @@ int _unlink_r(struct _reent *r, const char *path)
     block[0] = (int) r;
     block[1] = (int) path;
     return do_SystemSWI(SWI_NEWLIB_Unlink_r, (void *)block);
+}
+
+int _rename_r(struct _reent *r, const char *path, const char *newpath)
+{
+    int volatile block[3];
+
+    block[0] = (int) r;
+    block[1] = (int) path;
+    block[2] = (int) newpath;
+    return do_SystemSWI(SWI_NEWLIB_Rename_r, (void *)block);
+}
+
+int chdir(const char *path)
+{
+    struct _reent r;
+    int volatile block[2];
+
+    block[0] = (int) &r;
+    block[1] = (int) path;
+    return do_SystemSWI(SWI_NEWLIB_Chdir_r, (void *)block);
+}
+
+char *getcwd(char *buf, size_t size)
+{
+    struct _reent r;
+    int volatile block[3];
+
+    block[0] = (int) &r;
+    block[1] = (int) buf;
+    block[2] = (int) size;
+    return (char *) do_SystemSWI(SWI_NEWLIB_Getcwd_r, (void *)block);
 }
 
 DIR *opendir(const char *name)

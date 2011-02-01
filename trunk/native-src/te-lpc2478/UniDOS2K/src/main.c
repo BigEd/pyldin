@@ -62,7 +62,7 @@ int cmd_ls(int argc, char *argv[])
     if (argc > 1)
 	strcpy(dir, argv[1]);
     else
-	strcpy(dir, "/");
+	strcpy(dir, ".");
 
     if ((dirp = opendir(dir)) == NULL) {
 	fprintf(stderr, "couldn't open directory.\n");
@@ -150,6 +150,36 @@ int cmd_del(int argc, char *argv[])
     return 0;
 }
 
+int cmd_rename(int argc, char *argv[])
+{
+    if (argc < 3) {
+	fprintf(stderr, "No such file!\n");
+	return -1;
+    }
+
+    if (rename(argv[1], argv[2])) {
+	fprintf(stderr, "Unable remove file.\n");
+	return -1;
+    }
+
+    return 0;
+}
+
+int cmd_cd(int argc, char *argv[])
+{
+    if (argc < 2) {
+	fprintf(stderr, "No new path!\n");
+	return -1;
+    }
+
+    if (chdir(argv[1])) {
+	fprintf(stderr, "Unable change directory.\n");
+	return -1;
+    }
+
+    return 0;
+}
+
 int cmd_exec(int argc, char *argv[])
 {
     if (argc < 2) {
@@ -210,6 +240,8 @@ static const struct commands {
 	{ cmd_md,	"md",		"dir",		"Make directory" },
 	{ cmd_rd,	"rd",		"dir",		"Remove directory" },
 	{ cmd_del,	"del",		"file",		"Remove file" },
+	{ cmd_rename,	"rename",	"old new",	"Rename file" },
+	{ cmd_cd,	"cd",		"newdir",	"Change directory" },
 	{ cmd_exec,	"exec",		"file",		"Execute elf file" },
 	{ cmd_dump,	"dump",		"addr offset",	"Show memory" },
 	{ 0, 0, 0, 0 }
@@ -271,7 +303,9 @@ int main(void)
     {
 	printf("heap_ptr %p\n", heap_ptr);
 	char buf[128];
-	printf("$ ");
+	char wd[128];
+	getcwd(wd, 128);
+	printf("%s $ ", wd);
 	fgets(buf, 128, stdin);
 	buf[strlen(buf) - 1] = 0;
 	system(buf);
