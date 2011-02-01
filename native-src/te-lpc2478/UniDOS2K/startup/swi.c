@@ -149,6 +149,24 @@ static long system_unlink_r(uint32_t *argv)
     return wrap_fs_unlink(r, (char *) argv[1]);
 }
 
+static long system_rename_r(uint32_t *argv)
+{
+    struct _reent *r = (struct _reent *) argv[0];
+    return wrap_fs_rename(r, (char *) argv[1], (char *) argv[2]);
+}
+
+static long system_chdir_r(uint32_t *argv)
+{
+    struct _reent *r = (struct _reent *) argv[0];
+    return wrap_fs_chdir(r, (char *) argv[1]);
+}
+
+static long system_getcwd_r(uint32_t *argv)
+{
+    struct _reent *r = (struct _reent *) argv[0];
+    return (long) wrap_fs_getcwd(r, (char *) argv[1], argv[2]);
+}
+
 static long system_opendir_r(uint32_t *argv)
 {
     struct _reent *r = (struct _reent *) argv[0];
@@ -250,6 +268,15 @@ void syscall_routine(unsigned long number, unsigned long *regs)
 	    break;
 	case SWI_NEWLIB_Unlink_r:
 	    regs[0] = system_unlink_r((uint32_t *)regs[1]);
+	    break;
+	case SWI_NEWLIB_Rename_r:
+	    regs[0] = system_rename_r((uint32_t *)regs[1]);
+	    break;
+	case SWI_NEWLIB_Chdir_r:
+	    regs[0] = system_chdir_r((uint32_t *)regs[1]);
+	    break;
+	case SWI_NEWLIB_Getcwd_r:
+	    regs[0] = system_getcwd_r((uint32_t *)regs[1]);
 	    break;
 	default:
 	    sprintf(buf, "\r\n\r\n\r\n!!! Unknown System SWI %08X !!!\r\n\r\n\r\n", regs[0]);

@@ -27,6 +27,10 @@
 #define SWI_NEWLIB_Closedir_r		0x8d
 
 #define SWI_NEWLIB_Unlink_r		0x8e
+#define SWI_NEWLIB_Rename_r		0x8f
+
+#define SWI_NEWLIB_Chdir_r		0x90
+#define SWI_NEWLIB_Getcwd_r		0x91
 
 #define SWI_MountFS			0xa0
 #define SWI_UmountFS			0xa1

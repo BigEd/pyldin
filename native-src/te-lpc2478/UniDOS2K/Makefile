@@ -53,9 +53,12 @@ SRC_DIRS += ./startup
 #SRC_DIRS += tffs/src
 
 # EFSL
-SRC_DIRS += efsl/Inc
-SRC_DIRS += efsl/Src
-SRC_DIRS += efsl
+#SRC_DIRS += efsl/Inc
+#SRC_DIRS += efsl/Src
+#SRC_DIRS += efsl
+
+# FullFat
+SRC_DIRS += fullfat/src
 
 # ELF
 SRC_DIRS += elf
@@ -88,8 +91,13 @@ SRC_ARM_C += syscalls.c
 #SRC_ARM_C += hai_mci.c
 
 # EFSL
-SRC_ARM_C += debug.c dir.c disc.c efs.c extract.c fat.c file.c fs.c ioman.c ls.c mkfs.c partition.c plibc.c time.c ui.c
-SRC_ARM_C += lpc24mci.c
+#SRC_ARM_C += debug.c dir.c disc.c efs.c extract.c fat.c file.c fs.c ioman.c ls.c mkfs.c partition.c plibc.c time.c ui.c
+#SRC_ARM_C += lpc24mci.c
+
+# FullFat
+SRC_ARM_C += ff_blk.c ff_dir.c ff_fat.c ff_format.c ff_ioman.c ff_safety.c ff_time.c \
+    ff_crc.c ff_error.c ff_file.c ff_hash.c ff_memory.c ff_string.c ff_unicode.c
+SRC_ARM_C += blkdev_mci.c
 
 # ELF
 SRC_ARM_C += elf.c
