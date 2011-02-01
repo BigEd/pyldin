@@ -126,7 +126,7 @@ static int wrap_fs_open(struct _reent *r, const char *pathname, int flags, int m
 	    m = MODE_WRITE;
 	}
 
-	fprintf(stderr, "open() flag: %08X mode: %c\n", flags, m);
+	fprintf(stderr, "open(%s) flag: %08X mode: %c\n", pathname, flags, m);
 	if (!m) {
 	    fprintf(stderr, "unknown mode\n");
 	    r->_errno = EACCES;
