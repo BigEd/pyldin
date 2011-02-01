@@ -9,6 +9,12 @@
 #include "fullfat.h"
 #include "blkdev_mci.h"
 
+#ifdef DEBUG_FS
+#define xfprintf	printf
+#else
+#define xfprintf(...)
+#endif
+
 #define PARTITION_NUMBER	0					// FullFAT can mount primary partitions only. Specified at Runtime.
 
 #define MAX_FILEDESCR		32
@@ -175,7 +181,7 @@ static int wrap_fs_open(struct _reent *r, const char *pathname, int flags, int m
 	    strcpy(tmpath, pathname);
 	normalize_path(tmpath);
 
-	fprintf(stderr, "open(%s) flag: %08X mode: %02X\n", tmpath, flags, m);
+	xfprintf(stderr, "open(%s) flag: %08X mode: %02X\n", tmpath, flags, m);
 
 	if ((fd_list[fd].file = FF_Open(pIoman, tmpath, m, &error)) == NULL) {
 	    r->_errno = EACCES;
@@ -211,10 +217,10 @@ static int wrap_fs_close(struct _reent *r, int file)
 {
     if (fd_list[file].used) {
 	int ret = 0;
-	fprintf(stderr, "close file\n");
+	xfprintf(stderr, "close file\n");
 	FF_ERROR error = FF_Close(fd_list[file].file);
 	if (error) {
-	    fprintf(stderr, "f_close %d\n", ret);
+	    xfprintf(stderr, "f_close %d\n", ret);
 	    r->_errno = EIO;
 	    ret = -1;
 	}
@@ -293,7 +299,7 @@ static int wrap_fs_mkdir(struct _reent *r, char *path, uint32_t mode)
     if (!error)
 	return 0;
 
-    fprintf(stderr, "FullFAT says: (%d) %s\n", error, FF_GetErrMessage(error));;
+    xfprintf(stderr, "FullFAT says: (%d) %s\n", error, FF_GetErrMessage(error));;
 
     if (error == FF_ERR_DIR_OBJECT_EXISTS) {
 	r->_errno = EEXIST;
@@ -331,14 +337,14 @@ static int wrap_fs_unlink(struct _reent *r, char *path)
 	strcpy(tmpath, path);
     normalize_path(tmpath);
 
-fprintf(stderr, "unlink(%s)\n", tmpath);
+    xfprintf(stderr, "unlink(%s)\n", tmpath);
 
     FF_ERROR error = FF_RmFile(pIoman, tmpath);
 
     if (!error)
 	return 0;
 
-    fprintf(stderr, "FullFAT says: (%d) %s\n", error, FF_GetErrMessage(error));;
+    xfprintf(stderr, "FullFAT says: (%d) %s\n", error, FF_GetErrMessage(error));;
 
     r->_errno = EACCES;
 
@@ -398,7 +404,7 @@ static int wrap_fs_chdir(struct _reent *r, char *path)
 	strcpy(tmpath, path);
     normalize_path(tmpath);
 
-fprintf(stderr, "chdir(%s)\n", tmpath);
+    xfprintf(stderr, "chdir(%s)\n", tmpath);
 
     if (!FF_FindFirst(pIoman, &dir, tmpath)) {
 	strcpy(current_path, tmpath);
@@ -432,7 +438,7 @@ static void *wrap_fs_opendir(struct _reent *r, char *path)
 	strcpy(tmpath, path);
     normalize_path(tmpath);
 
-fprintf(stderr, "opendir(%s)\n", tmpath);
+    xfprintf(stderr, "opendir(%s)\n", tmpath);
 
     error = FF_FindFirst(pIoman, &dir->dirent, tmpath);
     if (!error) {
