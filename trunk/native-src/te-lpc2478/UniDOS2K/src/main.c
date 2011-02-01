@@ -227,6 +227,14 @@ int cmd_dump(int argc, char *argv[])
     return 0;
 }
 
+int cmd_heap(int argc, char *argv[])
+{
+    extern char *heap_ptr;
+    printf("Current heap address: %p\n", heap_ptr);
+
+    return 0;
+}
+
 static const struct commands {
 	int (*func)(int argc, char *argv[]);/* function pointer */
 	const char *name;	/* name of command */
@@ -244,6 +252,7 @@ static const struct commands {
 	{ cmd_cd,	"cd",		"newdir",	"Change directory" },
 	{ cmd_exec,	"exec",		"file",		"Execute elf file" },
 	{ cmd_dump,	"dump",		"addr offset",	"Show memory" },
+	{ cmd_heap,	"heap",		"",		"Show heap" },
 	{ 0, 0, 0, 0 }
 };
 
@@ -282,13 +291,11 @@ int system(const char *buf)
     return 0;
 }
 
-extern char *heap_ptr;
-
 int main(void)
 {
     uart0Init(UART_BAUD(HOST_BAUD_U0), UART_8N1, UART_FIFO_8); // setup the UART
 
-    uart0Puts("Hello from UART0\r\n");
+//    uart0Puts("Hello from UART0\r\n");
 
     Pink_Panel();
 
@@ -301,7 +308,6 @@ int main(void)
 
     for(;;)
     {
-	printf("heap_ptr %p\n", heap_ptr);
 	char buf[128];
 	char wd[128];
 	getcwd(wd, 128);
