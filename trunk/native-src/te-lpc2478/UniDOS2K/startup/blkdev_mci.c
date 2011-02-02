@@ -2,10 +2,6 @@
 #include <stdio.h>
 #include "blkdev_mci.h"
 #include "mci.h"
-//#include <semaphore.h>
-//#include <unistd.h>
-//#include <sys/types.h>
-//#include <fcntl.h>
 
 struct _DEV_INFO {
     int		pDevice;	// File pointer to the device.

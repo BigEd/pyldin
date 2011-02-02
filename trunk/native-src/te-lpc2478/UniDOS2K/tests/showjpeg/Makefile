@@ -10,7 +10,7 @@ CC = $(CROSS)gcc
 
 CFLAGS = -O3 -fomit-frame-pointer -ffast-math
 CFLAGS += -DJPEG_FASTER_M211=0
-CFLAGS += -mcpu=arm7tdmi -mtune=arm7tdmi -Wall -I../../src -I../../startup
+CFLAGS += -mcpu=arm7tdmi -mtune=arm7tdmi -Wall -I../../include
 LDFLAGS = $(CFLAGS) -T../armelf.xn
 
 OBJS = main.o gba-jpeg-decode.o

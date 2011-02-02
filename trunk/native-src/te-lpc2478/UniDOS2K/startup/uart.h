@@ -15,7 +15,7 @@
 
 #include "config.h"
 #include <inttypes.h>
-#include <LPC_UTIL_DEFS.h>
+#include "LPC_UTIL_DEFS.h"
 
 /*
 #include "app_types.h"

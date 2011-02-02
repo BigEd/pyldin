@@ -2,37 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "config.h"
 #include <inttypes.h>
-#include "fio.h"
-#include "uart.h"
-#include "kbd.h"
-#include "mci.h"
 
 #include "dirent.h"
 
 #include "elf.h"
-
-#define WAIT { int i; for(i=0; i<800000; i++) asm volatile (" nop "); }
-
-void Pink_Panel(void)
-{
-    unsigned long  i;
-    unsigned short *Ptr16;
-    unsigned int   *Ptr32;
-
-    Ptr16 = (unsigned short *)LCD_BUFFER_ADDR;
-    Ptr32 = (unsigned int *)LCD_BUFFER_ADDR;
-
-    // *Ptr16 = *PICTURE;
-    for(i = 0; i < 76800; i++) {
-	*Ptr16++=0xF00F; 
-    }
-}
-
-void keyboard_handler(uint8_t scan)
-{
-}
 
 int cmd_mount(int argc, char *argv[])
 {
@@ -293,18 +267,7 @@ int system(const char *buf)
 
 int main(void)
 {
-    uart0Init(UART_BAUD(HOST_BAUD_U0), UART_8N1, UART_FIFO_8); // setup the UART
-
-//    uart0Puts("Hello from UART0\r\n");
-
-    Pink_Panel();
-
-    FIOInit(BOARD_LED1_PORT, DIR_OUT, BOARD_LED1_MASK);
-    FIOInit(BOARD_LED2_PORT, DIR_OUT, BOARD_LED2_MASK);
-    FIOInit(BOARD_LED3_PORT, DIR_OUT, BOARD_LED3_MASK);
-
     printf("UniDOS 2000\n\n");
-//    keyboard_init();
 
     for(;;)
     {

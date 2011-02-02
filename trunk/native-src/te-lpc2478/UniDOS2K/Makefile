@@ -76,12 +76,15 @@ LIB_DIRS += $(LD_DIRS)
 
 SRC_ARM_C = main.c
 SRC_ARM_C += uart.c
-SRC_ARM_C += kbd.c
+#SRC_ARM_C += kbd.c
 SRC_ARM_C += mci.c
 #SRC_ARM_C +=
 SRC_ARM_C += interrupts.c
 SRC_ARM_C += swi.c
 SRC_ARM_C += system.c
+SRC_ARM_C += lcd.c
+SRC_ARM_C += leds.c
+SRC_ARM_C += emc.c
 SRC_ARM_C += fio.c
 SRC_ARM_C += irq.c
 SRC_ARM_C += syscalls.c

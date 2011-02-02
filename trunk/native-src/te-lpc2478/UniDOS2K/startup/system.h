@@ -63,6 +63,8 @@
     a = t; \
 }
 
+void delayMs(unsigned long delayInMs);
+
 extern void systemSetup(void);
 
 #ifdef __cplusplus
