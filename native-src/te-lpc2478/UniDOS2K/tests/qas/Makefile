@@ -8,7 +8,7 @@ CROSS := $(TOOLSET)/$(TARGET)
 AS = $(CROSS)gcc -c
 CC = $(CROSS)gcc
 
-CFLAGS = -O2 -mcpu=arm7tdmi -Wall -I../../src -I../../startup
+CFLAGS = -O2 -mcpu=arm7tdmi -Wall -I../../include
 LDFLAGS = $(CFLAGS) -T../armelf.xn
 
 OBJS   = a_cp.o a_norm.o bits.o eval.o instr.o operate.o \

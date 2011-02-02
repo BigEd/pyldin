@@ -17,8 +17,8 @@
 #include "sys_config.h"
 */
 
-#include <config.h>
-#include <LPC_UTIL_DEFS.h>
+#include "config.h"
+#include "LPC_UTIL_DEFS.h"
 #include <inttypes.h>
 
 #include "uart.h"
