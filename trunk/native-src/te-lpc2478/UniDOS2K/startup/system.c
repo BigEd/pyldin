@@ -16,6 +16,7 @@
 #include "leds.h"
 #ifdef USE_LCD
 #include "lcd.h"
+#include "console/screen.h"
 #endif
 #ifdef USE_EMC
 #include "emc.h"
@@ -180,8 +181,6 @@ void systemSetup(void)
     Init_VIC();
 
     Init_Leds();
-
-    uart0Init(UART_BAUD(HOST_BAUD_U0), UART_8N1, UART_FIFO_8); // setup the UART
 
     return;
 }

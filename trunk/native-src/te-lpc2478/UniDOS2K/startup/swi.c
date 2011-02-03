@@ -4,10 +4,30 @@
 #include <errno.h>
 #include <string.h>
 //#include "config.h"
-//#include "uart.h"
+#include "uart.h"
 #include "swi.h"
 
 #include "filesystem.c"
+
+int (*stdio_func[3]) (int c) = { uart0Getch, uart0Putch, uart0Putch };
+
+static int system_stdio(int fd, int c)
+{
+    if (fd >= 0 && fd < 3) {
+	return stdio_func[fd](c);
+    }
+
+    return c;
+}
+
+int redirect_stdio(int fd, int (* func) (int c))
+{
+    if (fd >= 0 && fd < 3) {
+	stdio_func[fd] = func;
+    }
+
+    return 0;
+}
 
 static long system_open_r(uint32_t *argv)
 {
@@ -37,8 +57,8 @@ static long system_write_r(uint32_t *argv)
 	int i;
 	for (i = 0; i < len; i++) {
 	    if (*ptr == '\n')
-		uart0Putch('\r');
-	    uart0Putch(*ptr++);
+		system_stdio(fd, '\r');
+	    system_stdio(fd, *ptr++);
 	}
 	return len;
     }
@@ -57,13 +77,16 @@ static long system_read_r(uint32_t *argv)
 	int c;
 	int i;
 	for (i = 0; i < len; i++) {
-	    while((c = uart0Getch()) < 0) ;
+	    while((c = system_stdio(0, 0)) < 0) ;
+
+	    if (c == 0x0D)
+		c = 0x0A;
 
 	    *ptr++ = c;
-	    uart0Putch(c);
+	    system_stdio(1, c);
 
 	    if (c == 0x0A) {
-		uart0Putch(0x0D);
+		system_stdio(1, 0x0D);
 		return i + 1;
 	    }
 	}
@@ -129,6 +152,7 @@ static long system_exit(uint32_t *argv)
 {
     asm("mov pc, #0");
     return -1;
+    argv = argv;
 }
 
 static long system_mkdir_r(uint32_t *argv)
@@ -197,12 +221,24 @@ static long system_umountfs(uint32_t *argv)
     return (long)wrap_fs_unmountfs(r, (char *)argv[1]);
 }
 
+void system_enable_irq(void);
+asm("system_enable_irq:	\n\t"
+    "push {r0}		\n\t"
+    "mrs r0, CPSR	\n\t"
+    "bic r0, r0, #0xc0	\n\t"
+    "msr CPSR, R0	\n\t"
+    "pop {r0}		\n\t"
+    "bx  lr		\n\t"
+    );
+
 void syscall_routine(unsigned long number, unsigned long *regs)
 {
     char buf[128];
 
+    system_enable_irq();
+
     if (number == AngelSWI) {
-	sprintf(buf, "\r\n\r\n\r\n!!! Unknown Angel SWI %08X !!!\r\n\r\n\r\n", regs[0]);
+	sprintf(buf, "\r\n\r\n\r\n!!! Unknown Angel SWI %08X !!!\r\n\r\n\r\n", (unsigned int)regs[0]);
 	uart0Puts(buf);
     } else if (number == SystemSWI) {
 	switch(regs[0]) {
@@ -215,7 +251,7 @@ void syscall_routine(unsigned long number, unsigned long *regs)
 	    regs[0] = 0;
 	    break;
 	case SWI_WriteHex:
-	    printf("0x%08X", regs[1]);
+	    printf("0x%08X", (unsigned int)regs[1]);
 	    regs[0] = 0;
 	    break;
 	case SWI_ReadC:
@@ -279,11 +315,12 @@ void syscall_routine(unsigned long number, unsigned long *regs)
 	    regs[0] = system_getcwd_r((uint32_t *)regs[1]);
 	    break;
 	default:
-	    sprintf(buf, "\r\n\r\n\r\n!!! Unknown System SWI %08X !!!\r\n\r\n\r\n", regs[0]);
+	    sprintf(buf, "\r\n\r\n\r\n!!! Unknown System SWI %08X !!!\r\n\r\n\r\n", (unsigned int)regs[0]);
 	    uart0Puts(buf);
 	}
     } else {
-	sprintf(buf, "\r\n\r\n\r\n!!! syscall %d (%08X %08X %08X %08X %08X) !!!\r\n\r\n\r\n", number, regs[0], regs[1], regs[2], regs[3], regs[4]);
+	sprintf(buf, "\r\n\r\n\r\n!!! syscall %d (%08X %08X %08X %08X %08X) !!!\r\n\r\n\r\n", 
+		(unsigned int)number, (unsigned int)regs[0], (unsigned int)regs[1], (unsigned int)regs[2], (unsigned int)regs[3], (unsigned int)regs[4]);
 	uart0Puts(buf);
     }
 }
