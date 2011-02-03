@@ -265,16 +265,16 @@ int system(const char *buf)
     return 0;
 }
 
-int main(void)
+int unidos(void)
 {
-    printf("UniDOS 2000\n\n");
+    printf("UniDOS Version build (%s)\n\n", __DATE__);
 
     for(;;)
     {
 	char buf[128];
 	char wd[128];
 	getcwd(wd, 128);
-	printf("%s $ ", wd);
+	printf("%s$ ", wd);
 	fgets(buf, 128, stdin);
 	buf[strlen(buf) - 1] = 0;
 	system(buf);

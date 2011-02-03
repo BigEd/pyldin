@@ -1,7 +1,7 @@
 CHIP		 = LPC2478
 USE_LCD		 = yes
 USE_EMC		 = yes
-USE_KBD		 = no
+USE_KBD		 = yes
 
 TOOLSET		:= /opt/arm-2010.09/bin
 TOOLCHAIN	:= arm-none-eabi-
@@ -40,13 +40,14 @@ LPC21ISP_BAUD	 = 230400
 LPC21ISP_XTAL	 = 12000
 LPC21ISP_OPTIONS = -control -verify
 
-STARTUP_OBJS	 = startup/system.o startup/uart.o startup/fio.o startup/leds.o startup/interrupts.o startup/irq.o startup/mci.o startup/swi.o startup/blkdev_mci.o
+STARTUP_OBJS	 = startup/crt.o startup/system.o startup/main.o startup/uart.o startup/fio.o startup/leds.o startup/interrupts.o startup/irq.o \
+    startup/mci.o startup/swi.o startup/blkdev_mci.o startup/console/koi5x8.o startup/console/screen.o startup/console/console.o
 
 FULLFAT_OBJS	 = fullfat/src/ff_blk.o fullfat/src/ff_crc.o fullfat/src/ff_dir.o fullfat/src/ff_error.o fullfat/src/ff_fat.o fullfat/src/ff_file.o \
     fullfat/src/ff_format.o fullfat/src/ff_hash.o fullfat/src/ff_ioman.o fullfat/src/ff_memory.o fullfat/src/ff_safety.o fullfat/src/ff_string.o \
     fullfat/src/ff_time.o fullfat/src/ff_unicode.o
 
-CMDSHELL_OBJS	 = startup/crt.o src/main.o src/syscalls.o src/elf.o
+CMDSHELL_OBJS	 = src/unidos.o src/syscalls.o src/elf.o
 
 ifeq (yes, $(USE_LCD))
 CFLAGS		+= -DUSE_LCD
@@ -63,7 +64,7 @@ CFLAGS		+= -DUSE_KBD
 STARTUP_OBJS	+= startup/kbd.o
 endif
 
-OBJS		 = $(CMDSHELL_OBJS) $(STARTUP_OBJS) $(FULLFAT_OBJS)
+OBJS		 = $(STARTUP_OBJS) $(FULLFAT_OBJS) $(CMDSHELL_OBJS)
 
 $(TARGET): $(OBJS)
 	$(LD) $^ $(LDFLAGS) -o $@

@@ -18,7 +18,7 @@ Module includes the interrupt vectors and start-up code.
 .set  UND_STACK_SIZE, 0x00000100		/* stack for "undefined instruction" interrupts is 4 bytes	*/
 .set  ABT_STACK_SIZE, 0x00000100		/* stack for "abort" interrupts is 4 bytes			*/
 .set  FIQ_STACK_SIZE, 0x00000100		/* stack for "FIQ" interrupts  is 4 bytes			*/
-.set  IRQ_STACK_SIZE, 0X00000100		/* stack for "IRQ" normal interrupts is 4 bytes			*/
+.set  IRQ_STACK_SIZE, 0X00000200		/* stack for "IRQ" normal interrupts is 4 bytes			*/
 .set  SVC_STACK_SIZE, 0x00004000		/* stack for "SVC" supervisor mode is 4 bytes			*/
 
 /* Standard definitions of Mode bits and Interrupt (I & F) flags in PSRs (program status registers) */
@@ -91,10 +91,10 @@ Reset_Handler:
 		msr     CPSR_c, #MODE_FIQ|I_BIT|F_BIT 	/* FIQ Mode */
 		mov     sp, r0	
 		sub     r0, r0, #FIQ_STACK_SIZE
-		msr     CPSR_c, #MODE_IRQ|I_BIT|F_BIT 	/* IRQ Mode */
+		msr     CPSR_c, #MODE_IRQ /*|I_BIT|F_BIT*/ 	/* IRQ Mode */
 		mov     sp, r0
 		sub     r0, r0, #IRQ_STACK_SIZE
-		msr     CPSR_c, #MODE_SVC|I_BIT|F_BIT 	/* Supervisor Mode */
+		msr     CPSR_c, #MODE_SVC /*|I_BIT|F_BIT*/ 	/* Supervisor Mode */
 		mov     sp, r0
 		sub     r0, r0, #SVC_STACK_SIZE
 		msr     CPSR_c, #MODE_SYS /*|I_BIT|F_BIT*/ 	/* User Mode */
