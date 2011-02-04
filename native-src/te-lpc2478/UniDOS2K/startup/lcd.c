@@ -104,14 +104,14 @@ void LCD_Cursor_Dis(int cursor)
 void LCD_Move_Cursor(int x, int y)
 {
     CRSR_XY = 0;
-    CRSR_XY |= (x-32) & 0x3FF;
-    CRSR_XY |= ((y-32) & 0x3FF )<<16;
+    CRSR_XY |= (x & 0x3FF);
+    CRSR_XY |= ((y & 0x3FF) << 16);
 }
 
 void LCD_Copy_Cursor(const unsigned int *pCursor, int cursor, int size)
 {
     int i;
-    unsigned int *pDst = (unsigned int *)CRSR_IMG;
+    unsigned int *pDst = (unsigned int *)&CRSR_IMG;
     pDst += cursor * 64;
 
     for(i = 0; i < size ; i++) *pDst++ = *pCursor++;

@@ -8,7 +8,6 @@
 #include "kbd.h"
 #include "uart.h"
 
-
 int unidos(void);
 
 int redirect_stdio(int fd, int (* func) (int c));
@@ -18,7 +17,7 @@ int main(void)
     uart0Init(UART_BAUD(HOST_BAUD_U0), UART_8N1, UART_FIFO_8); // setup the UART
 
 #ifdef USE_LCD
-    screen_init((void *)0xa0000000, 320, 240);
+    screen_init();
     console_init();
 
     redirect_stdio(1, console_putchar);

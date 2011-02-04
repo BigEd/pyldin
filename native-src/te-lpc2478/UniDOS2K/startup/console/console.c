@@ -4,16 +4,16 @@
 
 #define CON_TAB_WIDTH 4
 
-static short current_x = 0;
-static short current_y = 0;
+static short con_x = 0;
+static short con_y = 0;
 
 static int con_width;
 static int con_height;
 
 void console_init(void)
 {
-    current_x = 0;
-    current_y = 0;
+    con_x = 0;
+    con_y = 0;
 
     screen_get_text_size(&con_width, &con_height);
 }
@@ -23,24 +23,25 @@ int console_putchar(int c)
     c &= 0xff;
 
     if (c == '\n') {
-	current_y++;
-	/* current_x = 0; */
+	con_y++;
+	/* con_x = 0; */
     } else if (c == '\r')
-	current_x = 0;
+	con_x = 0;
     else if (c == '\t')
-	current_x += CON_TAB_WIDTH;
+	con_x += CON_TAB_WIDTH;
     else
-	screen_putchar(c, current_x++, current_y);
+	screen_putchar(c, con_x++, con_y);
 
-    if (current_x >= con_width) {
-	current_x = 0;
-	current_y++;
+    if (con_x >= con_width) {
+	con_x = 0;
+	con_y++;
     }
-    if (current_y == con_height) {
-	current_y--;
+    if (con_y == con_height) {
+	con_y--;
 	/* vertical scroll */
 	screen_scroll_up();
     }
+    screen_cursor(con_x, con_y);
     return 0;
 }
 
