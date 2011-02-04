@@ -100,6 +100,7 @@ static int wrap_fs_mountfs(struct _reent *r, const char *pathname)
     strcpy(current_path, "/");
 
     return 0;
+    pathname = pathname;
 }
 
 static int wrap_fs_unmountfs(struct _reent *r, const char *pathname)
@@ -116,6 +117,7 @@ static int wrap_fs_unmountfs(struct _reent *r, const char *pathname)
     pIoman = NULL;
 
     return 0;
+    pathname = pathname;
 }
 
 static char *normalize_path(char *path)
@@ -307,6 +309,7 @@ static int wrap_fs_mkdir(struct _reent *r, char *path, uint32_t mode)
 	r->_errno = EACCES;
 
     return -1;
+    mode = mode;
 }
 
 static int wrap_fs_rmdir(struct _reent *r, char *path)
@@ -478,12 +481,14 @@ static int wrap_fs_readdir_r(struct _reent *r, void *dirp, struct dirent *entry,
 
     *result = entry;
     return 0;
+    r = r;
 }
 
 static int wrap_fs_closedir(struct _reent *r, void *dirp)
 {
     free(dirp);
     return 0;
+    r = r;
 }
 
 #endif

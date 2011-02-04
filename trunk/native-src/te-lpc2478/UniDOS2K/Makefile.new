@@ -1,6 +1,6 @@
 CHIP		 = LPC2478
-USE_LCD		 = yes
 USE_EMC		 = yes
+USE_LCD		 = yes
 USE_KBD		 = yes
 
 TOOLSET		:= /opt/arm-2010.09/bin

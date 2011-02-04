@@ -9,7 +9,15 @@
 
 #include "filesystem.c"
 
-int (*stdio_func[3]) (int c) = { uart0Getch, uart0Putch, uart0Putch };
+static int empty_stdio(int c);
+
+int (*stdio_func[3]) (int c) = { empty_stdio, empty_stdio, empty_stdio };
+
+static int empty_stdio(int c)
+{
+    return 0;
+    c = c;
+}
 
 static int system_stdio(int fd, int c)
 {
@@ -20,7 +28,7 @@ static int system_stdio(int fd, int c)
     return c;
 }
 
-int redirect_stdio(int fd, int (* func) (int c))
+int redirect_stdio(int fd, void *func /*int (* func) (int c)*/)
 {
     if (fd >= 0 && fd < 3) {
 	stdio_func[fd] = func;

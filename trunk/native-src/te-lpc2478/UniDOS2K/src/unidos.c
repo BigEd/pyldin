@@ -3,27 +3,34 @@
 #include <string.h>
 #include <unistd.h>
 #include <inttypes.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include "dirent.h"
 
 #include "elf.h"
 
+int mount_fs(char *fs);
+int umount_fs(char *fs);
+
 int cmd_mount(int argc, char *argv[])
 {
-    int ret;
-
     if (!mount_fs("mmc:"))
 	fprintf(stderr, "Mounted!\n");
     else
 	fprintf(stderr, "Unable mount.\n");
 
     return 0;
+    argc = argc;
+    argv = argv;
 }
 
 int cmd_umount(int argc, char *argv[])
 {
     umount_fs("mmc:");
     return 0;
+    argc = argc;
+    argv = argv;
 }
 
 #define MAX_PATH	256
@@ -47,7 +54,7 @@ int cmd_ls(int argc, char *argv[])
 	if (dp->d_type & DT_DIR)
 	    printf("   <dir>  %s\n", dp->d_name);
 	else
-	    printf("%8lu  %s\n", dp->d_size, dp->d_name);
+	    printf("%8u  %s\n", dp->d_size, dp->d_name);
     }
 
     closedir(dirp);
@@ -187,9 +194,9 @@ int cmd_dump(int argc, char *argv[])
     for (i = 0; i < len; i++) {
 	if (i % 16 == 0) {
 	    if (!i)
-		printf("\n%08X: ", base + i);
+		printf("\n%p: ", base + i);
 	    else
-		printf("%s\n%08X: ", s, base + i);
+		printf("%s\n%p: ", s, base + i);
 	    memset(s, 0, 17);
 	}
 	printf("%02X ", base[i]);
@@ -207,7 +214,11 @@ int cmd_heap(int argc, char *argv[])
     printf("Current heap address: %p\n", heap_ptr);
 
     return 0;
+    argc = argc;
+    argv = argv;
 }
+
+int cmd_help(int argc, char *argv[]);
 
 static const struct commands {
 	int (*func)(int argc, char *argv[]);/* function pointer */
@@ -217,18 +228,33 @@ static const struct commands {
 } commands[] = {
 	{ cmd_mount,	"mount",	"device",	"Mount device" },
 	{ cmd_umount,	"umount",	"device",	"Unmount device" },
-	{ cmd_ls,	"dir",		"path",		"List directory contents" },
-	{ cmd_type,	"type",		"file",		"Type file" },
-	{ cmd_md,	"md",		"dir",		"Make directory" },
-	{ cmd_rd,	"rd",		"dir",		"Remove directory" },
-	{ cmd_del,	"del",		"file",		"Remove file" },
-	{ cmd_rename,	"rename",	"old new",	"Rename file" },
+	{ cmd_ls,	"ls",		"path",		"List directory contents" },
+	{ cmd_type,	"cat",		"file",		"Type file" },
+	{ cmd_md,	"mkdir",	"dir",		"Make directory" },
+	{ cmd_rd,	"rmdir",	"dir",		"Remove directory" },
+	{ cmd_del,	"rm",		"file",		"Remove file" },
+	{ cmd_rename,	"mv",		"old new",	"Move/Rename file" },
 	{ cmd_cd,	"cd",		"newdir",	"Change directory" },
 	{ cmd_exec,	"exec",		"file",		"Execute elf file" },
 	{ cmd_dump,	"dump",		"addr offset",	"Show memory" },
 	{ cmd_heap,	"heap",		"",		"Show heap" },
+	{ cmd_help,	"help",		"",		"Show commands"},
 	{ 0, 0, 0, 0 }
 };
+
+int cmd_help(int argc, char *argv[])
+{
+    int i;
+
+    for (i = 0; commands[i].func; i++) {
+	if (argc < 2)
+	    printf("%s %s %s\n", commands[i].name, commands[i].arg, commands[i].desc);
+	else if (!strcmp(argv[1], commands[i].name))
+	    printf("%s %s %s\n", commands[i].name, commands[i].arg, commands[i].desc);
+    }
+
+    return 0;
+}
 
 int system(const char *buf)
 {
@@ -267,7 +293,7 @@ int system(const char *buf)
 
 int unidos(void)
 {
-    printf("UniDOS Version build (%s)\n\n", __DATE__);
+    printf("UniDOS  Version build (%s)\n\n", __DATE__);
 
     for(;;)
     {
