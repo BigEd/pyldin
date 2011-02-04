@@ -74,6 +74,10 @@ _start:
 		push	{r2, lr}
 
 		mov	r2, r0
+		ldr	r0, =__libc_init_array
+		mov	lr, pc
+		bx	r0
+
 		ldr	r0, .LC3
 		bl	setjmp
 		cmp	r0, #0
@@ -83,6 +87,10 @@ _start:
 		/* else enter the C code  */
 		moveq	r0, r2
 		bleq	main
+
+		ldr	r2, =__libc_fini_array
+		mov	lr, pc
+		bx	r2
 
 		pop	{r2, lr}
 		mov	sp, r2
