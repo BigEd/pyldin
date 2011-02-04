@@ -3,6 +3,9 @@
 #include "font.h"
 #include "koi5x8.h"
 #include "screen.h"
+#include "../config.h"
+#include "../lcd.h"
+#include "cursor.h"
 
 #warning FIX IT!
 static unsigned short *screen = (unsigned short *)0xa0000000;
@@ -17,11 +20,20 @@ static DOS_FONT *font;
 static unsigned short fg_color;
 static unsigned short bg_color;
 
-void screen_init(void *videomem, int width, int height)
+void screen_init(void)
 {
-    screen = (unsigned short *) videomem;
-    screen_width = width;
-    screen_height = height;
+    LCD_Init(LCD_BUFFER_ADDR, NULL);
+
+    LCD_Cursor_Dis(0);
+    LCD_Copy_Cursor ((unsigned int *)Cursor, 0, sizeof(Cursor)/sizeof(uint32_t));
+    LCD_Cursor_Cfg(CRSR_FRAME_SYNC | CRSR_PIX_32);
+    LCD_Cursor_En(0);
+//    LCD_Move_Cursor(0, 0);
+    LCD_Ctrl(1);
+
+    screen = (unsigned short *) LCD_BUFFER_ADDR;
+    screen_width = 320;
+    screen_height = 240;
 
     font = &font_koi5x8;
 
@@ -70,6 +82,19 @@ void screen_putchar(unsigned char c, int x, int y)
 	    addr += screen_width;
 	}
     }
+}
+
+void screen_cursor_enable(int en)
+{
+    if (en)
+	LCD_Cursor_En(0);
+    else
+	LCD_Cursor_Dis(0);
+}
+
+void screen_cursor(int x, int y)
+{
+    LCD_Move_Cursor(x * font->width, y * font->height);
 }
 
 void screen_get_size(int *w, int *h)

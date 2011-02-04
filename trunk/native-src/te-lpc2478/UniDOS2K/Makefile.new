@@ -41,7 +41,7 @@ LPC21ISP_XTAL	 = 12000
 LPC21ISP_OPTIONS = -control -verify
 
 STARTUP_OBJS	 = startup/crt.o startup/system.o startup/main.o startup/uart.o startup/fio.o startup/leds.o startup/interrupts.o startup/irq.o \
-    startup/mci.o startup/swi.o startup/blkdev_mci.o startup/console/koi5x8.o startup/console/screen.o startup/console/console.o
+    startup/mci.o startup/swi.o startup/blkdev_mci.o
 
 FULLFAT_OBJS	 = fullfat/src/ff_blk.o fullfat/src/ff_crc.o fullfat/src/ff_dir.o fullfat/src/ff_error.o fullfat/src/ff_fat.o fullfat/src/ff_file.o \
     fullfat/src/ff_format.o fullfat/src/ff_hash.o fullfat/src/ff_ioman.o fullfat/src/ff_memory.o fullfat/src/ff_safety.o fullfat/src/ff_string.o \
@@ -51,7 +51,7 @@ CMDSHELL_OBJS	 = src/unidos.o src/syscalls.o src/elf.o
 
 ifeq (yes, $(USE_LCD))
 CFLAGS		+= -DUSE_LCD
-STARTUP_OBJS	+= startup/lcd.o
+STARTUP_OBJS	+= startup/lcd.o startup/console/koi5x8.o startup/console/screen.o startup/console/console.o startup/console/cursor.o
 endif
 
 ifeq (yes, $(USE_EMC))

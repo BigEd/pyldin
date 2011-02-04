@@ -175,9 +175,7 @@ void systemSetup(void)
     Init_EMC();
 #endif
     Init_PORT();
-#ifdef USE_LCD
-    Init_LCD_controller();
-#endif
+
     Init_VIC();
 
     Init_Leds();
