@@ -18,8 +18,8 @@ Module includes the interrupt vectors and start-up code.
 .set  UND_STACK_SIZE, 0x00000100		/* stack for "undefined instruction" interrupts is 4 bytes	*/
 .set  ABT_STACK_SIZE, 0x00000100		/* stack for "abort" interrupts is 4 bytes			*/
 .set  FIQ_STACK_SIZE, 0x00000100		/* stack for "FIQ" interrupts  is 4 bytes			*/
-.set  IRQ_STACK_SIZE, 0X00000200		/* stack for "IRQ" normal interrupts is 4 bytes			*/
-.set  SVC_STACK_SIZE, 0x00004000		/* stack for "SVC" supervisor mode is 4 bytes			*/
+.set  IRQ_STACK_SIZE, 0X00000100		/* stack for "IRQ" normal interrupts is 4 bytes			*/
+.set  SVC_STACK_SIZE, 0x00001000		/* stack for "SVC" supervisor mode is 4 bytes			*/
 
 /* Standard definitions of Mode bits and Interrupt (I & F) flags in PSRs (program status registers) */
 .set  MODE_USR, 0x10            		/* Normal User Mode 						*/
@@ -125,7 +125,7 @@ Reset_Handler:
 
 .global __stack_end__
 __stack_end__:
-		.word (0x40000000 + 64 * 1024 - 4)
+		.word __stack_top__
 
 # SWI handler
 

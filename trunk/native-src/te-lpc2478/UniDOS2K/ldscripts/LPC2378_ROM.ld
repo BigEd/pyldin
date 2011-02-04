@@ -2,12 +2,12 @@
 MEMORY 
 {
 	FLASH  (rx) : ORIGIN = 0x00000000, LENGTH = 512K
-	RAM    (w)  : ORIGIN = 0x40000000, LENGTH = 64K
+	RAM    (w)  : ORIGIN = 0x40000000, LENGTH = 32K
 	USBRAM (w)  : ORIGIN = 0x7FD00000, LENGTH = 16K
 	ETHRAM (w)  : ORIGIN = 0x7FE00000, LENGTH = 16K
 }
 
-__stack_top__ = 0x40000000 + 64K - 4;
+__stack_top__ = 0x40000000 + 32K - 4;
 
 SECTIONS 
 {
