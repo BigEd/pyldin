@@ -428,6 +428,7 @@ FF_T_UINT32 FF_FindEntryInDir(FF_IOMAN *pIoman, FF_T_UINT32 DirCluster, const FF
 	FF_CleanupEntryFetch(pIoman, &FetchContext);
 
 	return 0;
+	pError = pError;
 }
 
 
@@ -1095,7 +1096,7 @@ FF_ERROR FF_PopulateLongDirent(FF_IOMAN *pIoman, FF_DIRENT *pDirent, FF_T_UINT16
 	FF_ERROR	Error;
 	FF_T_UINT	uiNumLFNs;
 	FF_T_UINT	uiLfnLength = 0;
-	FF_T_UINT	i,y;
+	FF_T_UINT	i;
 #ifdef FF_UNICODE_UTF8_SUPPORT
 //	FF_T_SINT32	slRetVal;
 	FF_T_UINT16 nLfnBegin;

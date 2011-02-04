@@ -161,12 +161,9 @@ void * _sbrk_r(struct _reent *r, ptrdiff_t nbytes)
 
     if (!heap_ptr) {	/*  Initialize if first time through.		*/
 	heap_ptr = __end__;
-#if 1
+#ifdef DEBUG
 	printf("heap_ptr = %p\n", __end__);
 	printf("stack_ptr = %p\n", __stack_end__);
-#else
-//	do_SystemSWI(SWI_NEWLIB_WriteHex, (unsigned long) __end__);
-//	do_SystemSWI(SWI_NEWLIB_WriteHex, (unsigned long) __stack_end__);
 #endif
     }
 
@@ -192,6 +189,8 @@ int _kill_r(struct _reent *r, int pid, int sig)
 {
     r->_errno = EINVAL;
     return -1;
+    pid = pid;
+    sig = sig;
 }
 
 int _getpid_r(struct _reent *r)

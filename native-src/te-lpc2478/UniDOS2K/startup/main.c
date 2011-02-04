@@ -10,11 +10,15 @@
 
 int unidos(void);
 
-int redirect_stdio(int fd, int (* func) (int c));
+int redirect_stdio(int fd, void * /*int (* func) (int c)*/);
 
 int main(void)
 {
     uart0Init(UART_BAUD(HOST_BAUD_U0), UART_8N1, UART_FIFO_8); // setup the UART
+
+    redirect_stdio(0, uart0Getch);
+    redirect_stdio(1, uart0Putch);
+    redirect_stdio(2, uart0Putch);
 
 #ifdef USE_LCD
     screen_init();
