@@ -12,8 +12,14 @@ static void myfunc(void)
     printf("Not reached.\n");
 }
 
+void bye(void)
+{
+    printf("bye!\n");
+}
+
 int main(void)
 {
+    atexit(bye);
     printf("Trying some function that may throw.\n");
     myfunc();
     printf("Not reached.\n");
