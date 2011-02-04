@@ -33,6 +33,7 @@ BLK_DEV_MCI fnOpen(char *szDeviceName)
 	}
     }
     return NULL;
+    szDeviceName = szDeviceName;
 }
 
 

@@ -3,6 +3,12 @@ USE_EMC		 = yes
 USE_LCD		 = yes
 USE_KBD		 = yes
 
+#CHIP		 = LPC2378
+#USE_EMC		 = no
+#USE_LCD		 = no
+#USE_KBD		 = no
+#USE_LIBFS	 = efsl
+
 TOOLSET		:= /opt/arm-2010.09/bin
 TOOLCHAIN	:= arm-none-eabi-
 
@@ -28,6 +34,7 @@ CFLAGS		+= -mcpu=arm7tdmi
 CFLAGS		+= -D$(CHIP)
 CFLAGS		+= -Iinclude
 CFLAGS		+= -Ifullfat/src
+CFLAGS		+= $(CFLAGS_OPT)
 
 CXXFLAGS	 = $(CFLAGS)
 
@@ -41,11 +48,17 @@ LPC21ISP_XTAL	 = 12000
 LPC21ISP_OPTIONS = -control -verify
 
 STARTUP_OBJS	 = startup/crt.o startup/system.o startup/main.o startup/uart.o startup/fio.o startup/leds.o startup/interrupts.o startup/irq.o \
-    startup/mci.o startup/swi.o startup/blkdev_mci.o
+    startup/mci.o startup/swi.o
 
-FULLFAT_OBJS	 = fullfat/src/ff_blk.o fullfat/src/ff_crc.o fullfat/src/ff_dir.o fullfat/src/ff_error.o fullfat/src/ff_fat.o fullfat/src/ff_file.o \
+ifeq (efsl, $(USE_LIBFS))
+LIBFS_OBJS	 = efsl/Src/debug.o efsl/Src/dir.o efsl/Src/disc.o efsl/Src/efs.o efsl/Src/extract.o efsl/Src/fat.o efsl/Src/file.o efsl/Src/fs.o \
+    efsl/Src/ioman.o efsl/Src/ls.o efsl/Src/mkfs.o efsl/Src/partition.o efsl/Src/plibc.o efsl/Src/time.o efsl/Src/ui.o efsl/lpc24mci.o
+CFLAGS		+= -DUSE_LIBFS_EFSL -Istartup -Iefsl/Inc
+else
+LIBFS_OBJS	 = fullfat/src/ff_blk.o fullfat/src/ff_crc.o fullfat/src/ff_dir.o fullfat/src/ff_error.o fullfat/src/ff_fat.o fullfat/src/ff_file.o \
     fullfat/src/ff_format.o fullfat/src/ff_hash.o fullfat/src/ff_ioman.o fullfat/src/ff_memory.o fullfat/src/ff_safety.o fullfat/src/ff_string.o \
-    fullfat/src/ff_time.o fullfat/src/ff_unicode.o
+    fullfat/src/ff_time.o fullfat/src/ff_unicode.o startup/blkdev_mci.o
+endif
 
 CMDSHELL_OBJS	 = src/unidos.o src/syscalls.o src/elf.o
 
@@ -64,7 +77,7 @@ CFLAGS		+= -DUSE_KBD
 STARTUP_OBJS	+= startup/kbd.o
 endif
 
-OBJS		 = $(STARTUP_OBJS) $(FULLFAT_OBJS) $(CMDSHELL_OBJS)
+OBJS		 = $(STARTUP_OBJS) $(LIBFS_OBJS) $(CMDSHELL_OBJS)
 
 $(TARGET): $(OBJS)
 	$(LD) $^ $(LDFLAGS) -o $@
