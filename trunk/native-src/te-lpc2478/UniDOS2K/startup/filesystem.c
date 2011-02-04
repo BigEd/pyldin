@@ -276,14 +276,14 @@ static int wrap_fs_fstat(struct _reent *r, int file, struct stat *st)
     return -1;
 }
 
-static int wrap_fs_isatty(int file)
+static int wrap_fs_isatty_r(struct _reent *r, int file)
 {
     if (fd_list[file].used) {
 	errno = EINVAL;
 	return 0;
     }
 
-    errno = EBADF;
+    r->_errno = EBADF;
     return 0;
 }
 

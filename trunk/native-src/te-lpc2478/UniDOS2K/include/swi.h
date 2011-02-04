@@ -14,7 +14,7 @@
 #define SWI_NEWLIB_Close_r		0x83
 #define SWI_NEWLIB_Lseek_r		0x84
 #define SWI_NEWLIB_Fstat_r		0x85
-#define SWI_NEWLIB_Isatty		0x86
+#define SWI_NEWLIB_Isatty_r		0x86
 
 #define SWI_NEWLIB_Gettimeofday_r	0x87
 #define SWI_NEWLIB_Exit			0x88
