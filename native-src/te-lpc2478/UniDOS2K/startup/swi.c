@@ -150,14 +150,15 @@ static long system_fstat_r(uint32_t *argv)
     return wrap_fs_fstat(r, fd, st);
 }
 
-static long system_isatty(uint32_t *argv)
+static long system_isatty_r(uint32_t *argv)
 {
-    int fd = argv[0];
+    struct _reent *r = (struct _reent *) argv[0];
+    int fd = argv[1];
     if (fd == 0 || fd == 1 || fd == 2) {
 	return 1;
     }
 
-    return wrap_fs_isatty(fd);
+    return wrap_fs_isatty_r(r, fd);
 }
 
 static long system_exit(uint32_t *argv)
@@ -287,8 +288,8 @@ void syscall_routine(unsigned long number, unsigned long *regs)
 	case SWI_NEWLIB_Fstat_r:
 	    regs[0] = system_fstat_r((uint32_t *)regs[1]);
 	    break;
-	case SWI_NEWLIB_Isatty:
-	    regs[0] = system_isatty((uint32_t *)regs[1]);
+	case SWI_NEWLIB_Isatty_r:
+	    regs[0] = system_isatty_r((uint32_t *)regs[1]);
 	    break;
 	case SWI_NEWLIB_Exit:
 	    regs[0] = system_exit((uint32_t *)regs[1]);

@@ -99,12 +99,13 @@ int _fstat_r(struct _reent *r, int file, struct stat *st)
     return do_SystemSWI(SWI_NEWLIB_Fstat_r, (void *)block);
 }
 
-int _isatty(int file)
+int _isatty_r(struct _reent *r, int file)
 {
-    int volatile block[1];
+    int volatile block[2];
 
-    block[0] = file;
-    return do_SystemSWI(SWI_NEWLIB_Isatty, (void *)block);
+    block[0] = (int)r;
+    block[1] = file;
+    return do_SystemSWI(SWI_NEWLIB_Isatty_r, (void *)block);
 }
 
 int _gettimeofday_r(struct _reent *r, struct timeval *tp, void *tzp)
