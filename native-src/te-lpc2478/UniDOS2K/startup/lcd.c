@@ -1,11 +1,10 @@
 #include <inttypes.h>
 #include "config.h"
 #include "lcd.h"
+#include "lcdconf.h"
 
-void Init_LCD_controller(void)
+void LCD_Init(unsigned int scraddr, unsigned int *pallete)
 {
-    PCONP |= 0x00100000; // Power Control for CLCDC.
-
     // Assign pin:
     PINSEL0 &= BIN32(11111111,11110000,00000000,11111111);
     PINSEL0 |= BIN32(00000000,00000101,01010101,00000000); // P0.4(LCD0), P0.5(LCD1), P0.6(LCD8), P0.7(LCD9), P0.8(LCD16), P0.9(LCD17). 
@@ -46,26 +45,74 @@ void Init_LCD_controller(void)
     CONFIG_BIT(FIO2DIR, 1, 1);//  FIO2DIR_bit.P2_1  = 1;
     CONFIG_BIT(FIO2CLR, 1, 1);//  FIO2CLR_bit.P2_1  = 1;
 
+    PCONP |= 0x00100000; // Power Control for CLCDC.
+    CRSR_CTRL &= ~0x1;  // Disable cursor
+    LCD_CTRL   = ((C_LCD_CTRL_WATERMARK << 16) | (C_LCD_CTRL_BEPO << 10) | (C_LCD_CTRL_BEBO << 9) | (C_LCD_CTRL_BGR << 8) | (C_LCD_CTRL_LcdTFT << 5) | (C_LCD_CTRL_LcdBpp << 1));
     LCD_CFG    = 1;
-    LCD_TIMH   = ((38<<24) | (20<<16) | (30<<8) | (((320/16)-1)<<2));
-    LCD_TIMV   = ((15<<24) | (4<<16) | (3<<10) | 240);
-    LCD_POL    = ((0<<27) | (0<<26) | (((320/1)-1)<<16) | (1<<14) | (1<<13)| (1<<12) | (1<<11)| (1<<6) | (0<<5) | (2<<0));
+    LCD_POL    = ((C_LCD_POL_PCD_HI << 27) | (C_LCD_POL_BCD << 26) | (C_LCD_POL_CPL << 16) | (C_LCD_POL_IOE << 14) | (C_LCD_POL_IPC << 13)| (C_LCD_POL_IHS << 12) | (C_LCD_POL_IVS << 11)| (C_LCD_POL_ACB << 6) | (C_LCD_POL_CLKSEL << 5) | (C_LCD_POL_PCD_LO << 0));
+    LCD_TIMH   = ((C_LCD_H_BACK_PORCH << 24) | (C_LCD_H_FRONT_PORCH << 16) | (C_LCD_H_PULSE <<  8) | (((C_LCD_H_SIZE / 16) - 1) << 2));
+    LCD_TIMV   = ((C_LCD_V_BACK_PORCH << 24) | (C_LCD_V_FRONT_PORCH << 16) | (C_LCD_V_PULSE << 10) | C_LCD_V_SIZE);
+    LCD_UPBASE = scraddr;
+    LCD_LPBASE = scraddr;
 
-    LCD_CTRL   = ((0<<16) | (0<<10) | (0<<9) | (1<<8) | (1<<5) | (4<<1) | (0<<0)); // 100 = 16 bpp. 101 = 24 bpp (TFT panel only). 110 = 16 bpp, 5:6:5 mode. 
-
-    LCD_UPBASE = LCD_BUFFER_ADDR;
-    LCD_LPBASE = LCD_BUFFER_ADDR;
+    if (pallete)
+	LCD_SetPallete(pallete);
 
     int i;
-    for(i=0; i < 50000; i++)
-	NOP;
+    for(i=0; i < 50000; i++) NOP;
 
-    LCD_CTRL |= 1;
+    PINSEL11 = ( (6 << 1) | 1); // LCD 16 bit (1:5:5:5), LCD port is enabled
+}
 
-    for(i=0; i < 50000; i++)
-	NOP;
+void LCD_Ctrl(int en)
+{
+    int i;
+    if (en) {
+	LCD_CTRL |= 1;
+	for(i=0; i < 50000; i++) NOP;
+	LCD_CTRL |= (1<<11);
+    } else {
+	LCD_CTRL |= ~(1<<11);
+	for(i=0; i < 50000; i++) NOP;
+	LCD_CTRL |= ~1;
+    }
+}
 
-    LCD_CTRL |= 1<<11;
-    PCONP |= 0x00100000; // Power Control for CLCDC.
-    PINSEL11 = ( (5<<1) | 1);
+void LCD_SetPallete(const unsigned int *pPallete)
+{
+    int i;
+    unsigned int *pDst = (unsigned int *)LCD_PAL;
+    for (i = 0; i < 128; i++) *pDst++ = *pPallete++;
+}
+
+void LCD_Cursor_Cfg(int Cfg)
+{
+    CRSR_CFG = Cfg;
+}
+
+void LCD_Cursor_En(int cursor)
+{
+  /* Set Cursor and enable */
+    CRSR_CTRL = ( cursor & 0x30 ) | 0x1;
+}
+
+void LCD_Cursor_Dis(int cursor)
+{
+    CRSR_CTRL &= ~(0x1);
+}
+
+void LCD_Move_Cursor(int x, int y)
+{
+    CRSR_XY = 0;
+    CRSR_XY |= (x-32) & 0x3FF;
+    CRSR_XY |= ((y-32) & 0x3FF )<<16;
+}
+
+void LCD_Copy_Cursor(const unsigned int *pCursor, int cursor, int size)
+{
+    int i;
+    unsigned int *pDst = (unsigned int *)CRSR_IMG;
+    pDst += cursor * 64;
+
+    for(i = 0; i < size ; i++) *pDst++ = *pCursor++;
 }
