@@ -285,6 +285,77 @@ static int wrap_fs_unlink(struct _reent *r, char *path)
     return -1;
 }
 
+static int wrap_fs_rename(struct _reent *r, char *oldpath, char *newpath)
+{
+#if 0
+    char tmpath[256];
+    if ((oldpath[0] != '/') && (oldpath[0] != '\\'))
+	snprintf(tmpath, 256, "%s/%s", current_path, oldpath);
+    else
+	strcpy(tmpath, oldpath);
+    normalize_path(tmpath);
+
+    char tmpath1[256];
+    if ((newpath[0] != '/') && (newpath[0] != '\\'))
+	snprintf(tmpath1, 256, "%s/%s", current_path, newpath);
+    else
+	strcpy(tmpath1, newpath);
+    normalize_path(tmpath1);
+
+    FF_ERROR error = FF_Move(pIoman, tmpath, tmpath1);
+
+    if (!error)
+	return 0;
+#endif
+
+    r->_errno = EACCES;
+    return -1;
+}
+
+static char *wrap_fs_getcwd(struct _reent *r, char *buf, int size)
+{
+    if (buf && !size) {
+	r->_errno = EINVAL;
+	return NULL;
+    }
+    if (!buf)
+	buf = malloc(size);
+    if (!buf) {
+	r->_errno = EINVAL;
+	return NULL;
+    }
+
+#if 0
+    strncpy(buf, current_path, size - 1);
+#else
+    strncpy(buf, "/", size - 1);
+#endif
+    return buf;
+}
+
+static int wrap_fs_chdir(struct _reent *r, char *path)
+{
+#if 0
+    FF_DIRENT dir;
+    char tmpath[256];
+    if ((path[0] != '/') && (path[0] != '\\'))
+	snprintf(tmpath, 256, "%s/%s", current_path, path);
+    else
+	strcpy(tmpath, path);
+    normalize_path(tmpath);
+
+    xfprintf(stderr, "chdir(%s)\n", tmpath);
+
+    if (!FF_FindFirst(pIoman, &dir, tmpath)) {
+	strcpy(current_path, tmpath);
+	return 0;
+    }
+#endif
+
+    r->_errno = ENOTDIR;
+    return -1;
+}
+
 static void *wrap_fs_opendir(struct _reent *r, char *path)
 {
     DirList *list = malloc(sizeof(DirList));

@@ -7,7 +7,11 @@
 #include "uart.h"
 #include "swi.h"
 
+#ifdef USE_LIBFS_EFSL
+#include "../efsl/filesystem.c"
+#else
 #include "filesystem.c"
+#endif
 
 static int empty_stdio(int c);
 
