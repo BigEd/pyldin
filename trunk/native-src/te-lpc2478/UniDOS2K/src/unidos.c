@@ -8,7 +8,10 @@
 
 #include "dirent.h"
 
-#include "elf.h"
+#include "loadelf.h"
+
+#define ELF_LOAD_ADDR	0xA0080000
+#define ELF_STACKSIZE	(1024*1024)
 
 int mount_fs(char *fs);
 int umount_fs(char *fs);
@@ -168,15 +171,15 @@ int cmd_exec(int argc, char *argv[])
 	return -1;
     }
 
-    if (exec_elf(argv[1]) != 0) {
-	fprintf(stderr, "Error load or execute!\n");
+    if (exec_elf((void *)ELF_LOAD_ADDR, ELF_STACKSIZE, argv[1]) == ELF_NO_FILE) {
+	fprintf(stderr, "Error load elf file!\n");
     }
     return 0;
 }
 
 int cmd_run(const char *cmdline)
 {
-    return exec_elf((char *)cmdline);
+    return exec_elf((void *)ELF_LOAD_ADDR, ELF_STACKSIZE, (char *)cmdline);
 }
 
 int cmd_dump(int argc, char *argv[])
@@ -285,7 +288,7 @@ int system(const char *buf)
 	    return commands[i].func(argc, argv);
     }
 
-    if (cmd_run(buf))
+    if (cmd_run(buf) == ELF_NO_FILE)
 	printf("Bad command or file name.\n");
 
     return 0;

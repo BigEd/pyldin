@@ -73,11 +73,13 @@ _start:
 
 		push	{r2, lr}
 
-		mov	r2, r0
+		push	{r0, r1}
 		ldr	r0, =__libc_init_array
 		mov	lr, pc
 		bx	r0
+		pop	{r0, r1}
 
+		mov	r2, r0
 		ldr	r0, .LC3
 		bl	setjmp
 		cmp	r0, #0

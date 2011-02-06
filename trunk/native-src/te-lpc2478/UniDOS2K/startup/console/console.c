@@ -52,6 +52,7 @@ int console_putstring(char *str)
     return 0;
 }
 
+#ifdef USE_KBD
 int console_getchar(void)
 {
     unsigned int c = keyboard_get_key();
@@ -59,3 +60,4 @@ int console_getchar(void)
 	return c & 0xff;
     return -1;
 }
+#endif
