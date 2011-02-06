@@ -9,7 +9,7 @@ AS = $(CROSS)gcc -c
 CC = $(CROSS)gcc
 
 CFLAGS = -O2 -mcpu=arm7tdmi -Wall -I../../include
-LDFLAGS = $(CFLAGS) -T../armelf.xn
+LDFLAGS = $(CFLAGS) -T../armelf.xbn -pie -N
 
 OBJS   = a_cp.o a_norm.o bits.o eval.o instr.o operate.o \
 	 parse.o riscos.o a_fp.o assm.o egettok.o input.o \

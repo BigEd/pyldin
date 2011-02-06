@@ -10,7 +10,7 @@ CC = $(CROSS)gcc
 CXX= $(CROSS)g++
 
 CFLAGS = -O2 -mcpu=arm7tdmi -Wall -I../include
-LDFLAGS = $(CFLAGS) -Tarmelf.xn
+LDFLAGS = $(CFLAGS) -Tarmelf.xbn -pie -N
 
 hello: crt0.o hello.o
 	$(CC) $(LDFLAGS) -o $@ $^ ../src/syscalls.c
