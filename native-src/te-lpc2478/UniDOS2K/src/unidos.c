@@ -221,6 +221,48 @@ int cmd_heap(int argc, char *argv[])
     argv = argv;
 }
 
+#include "process_escape_sequence.c"
+
+int cmd_echo(int argc, char *argv[])
+{
+    int opt_n = 0;
+    int opt_e = 0;
+    int no_opts = 0;
+
+    argv++;
+    argc--;
+
+    while (argc > 0) {
+	if (!no_opts) {
+	    if (!strcmp(*argv, "-n"))
+		opt_n = 1;
+	    else if (!strcmp(*argv, "-e"))
+		opt_e = 1;
+	    else
+		no_opts = 1;
+	}
+	if (no_opts) {
+	    char *str = *argv;
+	    while (*str) {
+		if (opt_e && *str == '\\') {
+		    str++;
+		    putchar(bb_process_escape_sequence((const char **)&str));
+		} else {
+		    putchar(*str);
+		    str++;
+		}
+	    }
+	}
+	argv++;
+	argc--;
+    }
+
+    if (!opt_n)
+	printf("\n");
+
+    return 0;
+}
+
 int cmd_help(int argc, char *argv[]);
 
 static const struct commands {
@@ -229,19 +271,20 @@ static const struct commands {
 	const char *arg;	/* brief argument description or NULL */
 	const char *desc;	/* brief description printed with "help" */
 } commands[] = {
-	{ cmd_mount,	"mount",	"device",	"Mount device" },
-	{ cmd_umount,	"umount",	"device",	"Unmount device" },
-	{ cmd_ls,	"ls",		"path",		"List directory contents" },
-	{ cmd_type,	"cat",		"file",		"Type file" },
-	{ cmd_md,	"mkdir",	"dir",		"Make directory" },
-	{ cmd_rd,	"rmdir",	"dir",		"Remove directory" },
-	{ cmd_del,	"rm",		"file",		"Remove file" },
-	{ cmd_rename,	"mv",		"old new",	"Move/Rename file" },
-	{ cmd_cd,	"cd",		"newdir",	"Change directory" },
-	{ cmd_exec,	"exec",		"file",		"Execute elf file" },
-	{ cmd_dump,	"dump",		"addr offset",	"Show memory" },
-	{ cmd_heap,	"heap",		"",		"Show heap" },
-	{ cmd_help,	"help",		"",		"Show commands"},
+	{ cmd_mount,	"mount",	"<device>",		"Mount device" },
+	{ cmd_umount,	"umount",	"<device>",		"Unmount device" },
+	{ cmd_ls,	"ls",		"<path>",		"List directory contents" },
+	{ cmd_type,	"cat",		"<file>",		"Type file" },
+	{ cmd_md,	"mkdir",	"<dir>",		"Make directory" },
+	{ cmd_rd,	"rmdir",	"<dir>",		"Remove directory" },
+	{ cmd_del,	"rm",		"<file>",		"Remove file" },
+	{ cmd_rename,	"mv",		"<old dir> <new dir>",	"Move/Rename file" },
+	{ cmd_cd,	"cd",		"<newdir>",		"Change directory" },
+	{ cmd_exec,	"exec",		"file",			"Execute elf file" },
+	{ cmd_dump,	"dump",		"addr offset",		"Show memory dump" },
+	{ cmd_heap,	"heap",		"",			"Show current heap address" },
+	{ cmd_help,	"help",		"[command]",		"Show commands"},
+	{ cmd_echo,	"echo",		"[-e][-r]<string>",	"Show string"},
 	{ 0, 0, 0, 0 }
 };
 
@@ -269,7 +312,22 @@ int system(const char *buf)
     for (j = 0, argc = 0; j < len; j++) {
 	if ((j == 0 && tmp[j] > ' ') || (tmp[j - 1] == 0 && tmp[j] > ' '))
 	    argc++;
-	
+
+	if (tmp[j] == '"' || tmp[j] == '\'') {
+	    char startc = tmp[j++];
+	    int esc = 0;
+	    for (; j < len; j++) {
+		if (tmp[j] == '\\') {
+		    esc = 1;
+		    continue;
+		} else if (tmp[j] == startc && !esc) {
+		    break;
+		}
+		esc = 0;
+	    }
+	    continue;
+	}
+
 	if (tmp[j] == ' ')
 	    tmp[j] = 0;
     }
@@ -279,8 +337,18 @@ int system(const char *buf)
 
     char **argv = alloca(argc * sizeof(void));
     for (j = 0, i = 0; i < argc; j++) {
-	if ((j == 0 && tmp[j] > ' ') || (tmp[j - 1] == 0 && tmp[j] > ' '))
+	if ((j == 0 && tmp[j] > ' ') || (tmp[j - 1] == 0 && tmp[j] > ' ')) {
+	    char startc;
+	    if (tmp[j] == '"' || tmp[j] == '\'') {
+		startc = tmp[j];
+		if (strlen(&tmp[j]) > 0) {
+		    if (tmp[j] == tmp[j + strlen(&tmp[j]) - 1])
+			tmp[j + strlen(&tmp[j]) - 1] = 0;
+		}
+		j++;
+	    }
 	    argv[i++] = &tmp[j];
+	}
     }
 
     for (i = 0; commands[i].func; i++)
