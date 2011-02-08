@@ -3,6 +3,6 @@
 
 #define ELF_NO_FILE	(-1000)
 
-int exec_elf(void *addr, size_t stacksize, char *arg);
+int load_elf(void *addr, char *arg, void *entry);
 
 #endif

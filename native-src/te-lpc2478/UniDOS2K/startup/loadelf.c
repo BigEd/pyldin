@@ -30,29 +30,6 @@
 
 #define min(a, b)	((a) < (b) ? (a) : (b))
 
-#ifndef TEST
-/* Execute.  Add ELF program entry,
- * - r0 contains a pointer to the argument command line, or 0
- * - r1 contains the entry point of the ELF
- * - r2 contains a useful stack pointer
- */
-int exec_mem(char *elfarg, void *entry, void *sp);
-asm (
-    "exec_mem:		\n\t"
-    "push {r1-r12, lr}	\n\t"
-    "mov r3, sp		\n\t"
-    "mov sp, r2		\n\t"
-    "bic sp, sp, #7	\n\t"
-    "push {r3, r4}	\n\t"
-    "mov lr, pc		\n\t"
-    "bx  r1		\n\t"
-    "pop {r3, r4}	\n\t"
-    "mov sp, r3		\n\t"
-    "pop {r1-r12, lr}	\n\t"
-    "bx  lr		\n\t"
-);
-#endif
-
 int load_elf(void *addr, char *arg, void *entry)
 {
     Elf32_Ehdr ehdr;
@@ -244,7 +221,7 @@ int load_elf(void *addr, char *arg, void *entry)
 			*(uint32_t *)(ph + rel[j].r_offset) += (uint32_t)ph;
 			break;
 		    default:
-			fprintf(stderr, "%s: unsipported relocation type %08X\n", __FILE__, ELF32_R_TYPE(rel[j].r_info));
+			fprintf(stderr, "%s: unsipported relocation type %08X\n", __FILE__, (int)ELF32_R_TYPE(rel[j].r_info));
 			goto fail;
 		    }
 /*
@@ -280,26 +257,7 @@ fail:
 }
 
 
-#ifndef TEST
-int exec_elf(void *addr, size_t stacksize, char *arg)
-{
-    void *entry = NULL;
-    char *elfarg;
-
-    if (load_elf(addr, arg, &entry))
-	return ELF_NO_FILE;
-
-    elfarg = alloca(strlen(arg) + 1);
-    strcpy(elfarg, arg);
-
-#ifdef DEBUG
-    fprintf(stderr, "[%s] entry = %p\n", elfarg, entry);
-#endif
-
-    return exec_mem(elfarg, entry, entry + stacksize);
-}
-
-#else
+#ifdef TEST
 int main(int argc, char *argv[])
 {
     void *entry = NULL;

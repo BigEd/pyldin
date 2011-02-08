@@ -178,14 +178,6 @@ void * _sbrk_r(struct _reent *r, ptrdiff_t nbytes)
     return (void *) -1;
 }
 
-#if 1
-void __libc_fini_array()
-{
-}
-#endif
-
-#if 1
-
 int _kill_r(struct _reent *r, int pid, int sig)
 {
     r->_errno = EINVAL;
@@ -331,9 +323,6 @@ int closedir(DIR *dirp)
     return do_SystemSWI(SWI_NEWLIB_Closedir_r, (void *)block);
 }
 
-#endif
-
-#if 1
 int mount_fs(char *fs)
 {
     struct _reent r;
@@ -354,4 +343,43 @@ int umount_fs(char *fs)
     return do_SystemSWI(SWI_UmountFS, (void *)block);
 }
 
-#endif
+int exec_mem(char *elfarg, void *entry, void *sp);
+asm (
+    "exec_mem:		\n\t"
+    "push {r1-r12, lr}	\n\t"
+    "mov r3, sp		\n\t"
+    "mov sp, r2		\n\t"
+    "bic sp, sp, #7	\n\t"
+    "push {r3, r4}	\n\t"
+    "mov lr, pc		\n\t"
+    "bx  r1		\n\t"
+    "pop {r3, r4}	\n\t"
+    "mov sp, r3		\n\t"
+    "pop {r1-r12, lr}	\n\t"
+    "bx  lr		\n\t"
+);
+
+#define DEFAULT_ELF_LOAD_ADDR	0xa0080000
+
+int _system(const char *cmdline)
+{
+    void *addr = (void *) DEFAULT_ELF_LOAD_ADDR;
+    void *entry = NULL;
+    int volatile block[3];
+
+    block[0] = (int) addr;
+    block[1] = (int) cmdline;
+    block[2] = (int) &entry;
+    int ret = do_SystemSWI(SWI_ELF_Load, (void *)block);
+    if (ret == -1)
+	return ret;
+
+    size_t stacksize = do_SystemSWI(SWI_ELF_GetStackSize, (void *)block);
+
+    char *elfarg = alloca(strlen(cmdline) + 1);
+    strcpy(elfarg, cmdline);
+
+    errno = exec_mem(elfarg, entry, addr + stacksize);
+
+    return 0;
+}
