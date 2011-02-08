@@ -48,7 +48,7 @@ LPC21ISP_XTAL	 = 12000
 LPC21ISP_OPTIONS = -control -verify
 
 STARTUP_OBJS	 = startup/crt.o startup/system.o startup/main.o startup/uart.o startup/fio.o startup/leds.o startup/interrupts.o startup/irq.o \
-    startup/mci.o startup/swi.o
+    startup/mci.o startup/swi.o startup/loadelf.o
 
 ifeq (efsl, $(USE_LIBFS))
 LIBFS_OBJS	 = efsl/Src/debug.o efsl/Src/dir.o efsl/Src/disc.o efsl/Src/efs.o efsl/Src/extract.o efsl/Src/fat.o efsl/Src/file.o efsl/Src/fs.o \
@@ -60,7 +60,7 @@ LIBFS_OBJS	 = fullfat/src/ff_blk.o fullfat/src/ff_crc.o fullfat/src/ff_dir.o ful
     fullfat/src/ff_time.o fullfat/src/ff_unicode.o startup/blkdev_mci.o
 endif
 
-CMDSHELL_OBJS	 = src/unidos.o src/syscalls.o src/loadelf.o
+CMDSHELL_OBJS	 = src/unidos.o src/syscalls.o
 
 ifeq (yes, $(USE_LCD))
 CFLAGS		+= -DUSE_LCD

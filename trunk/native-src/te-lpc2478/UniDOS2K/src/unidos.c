@@ -5,13 +5,9 @@
 #include <inttypes.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <errno.h>
 
 #include "dirent.h"
-
-#include "loadelf.h"
-
-#define ELF_LOAD_ADDR	0xA0080000
-#define ELF_STACKSIZE	(1024*1024)
 
 int mount_fs(char *fs);
 int umount_fs(char *fs);
@@ -164,22 +160,9 @@ int cmd_cd(int argc, char *argv[])
     return 0;
 }
 
-int cmd_exec(int argc, char *argv[])
-{
-    if (argc < 2) {
-	fprintf(stderr, "No source file!\n");
-	return -1;
-    }
-
-    if (exec_elf((void *)ELF_LOAD_ADDR, ELF_STACKSIZE, argv[1]) == ELF_NO_FILE) {
-	fprintf(stderr, "Error load elf file!\n");
-    }
-    return 0;
-}
-
 int cmd_run(const char *cmdline)
 {
-    return exec_elf((void *)ELF_LOAD_ADDR, ELF_STACKSIZE, (char *)cmdline);
+    return system(cmdline);
 }
 
 int cmd_dump(int argc, char *argv[])
@@ -280,7 +263,6 @@ static const struct commands {
 	{ cmd_del,	"rm",		"<file>",		"Remove file" },
 	{ cmd_rename,	"mv",		"<old dir> <new dir>",	"Move/Rename file" },
 	{ cmd_cd,	"cd",		"<newdir>",		"Change directory" },
-	{ cmd_exec,	"exec",		"file",			"Execute elf file" },
 	{ cmd_dump,	"dump",		"addr offset",		"Show memory dump" },
 	{ cmd_heap,	"heap",		"",			"Show current heap address" },
 	{ cmd_help,	"help",		"[command]",		"Show commands"},
@@ -302,7 +284,7 @@ int cmd_help(int argc, char *argv[])
     return 0;
 }
 
-int system(const char *buf)
+int dos_system(const char *buf)
 {
     int i, j, argc;
     int len = strlen(buf);
@@ -356,7 +338,7 @@ int system(const char *buf)
 	    return commands[i].func(argc, argv);
     }
 
-    if (cmd_run(buf) == ELF_NO_FILE)
+    if (cmd_run(buf) == -1 && errno)
 	printf("Bad command or file name.\n");
 
     return 0;
@@ -374,7 +356,7 @@ int unidos(void)
 	printf("%s$ ", wd);
 	fgets(buf, 128, stdin);
 	buf[strlen(buf) - 1] = 0;
-	system(buf);
+	dos_system(buf);
     }
 
     return 0;

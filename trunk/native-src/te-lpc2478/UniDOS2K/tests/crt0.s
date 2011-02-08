@@ -90,9 +90,11 @@ _start:
 		moveq	r0, r2
 		bleq	main
 
+		push	{r0, r1}
 		ldr	r2, =__libc_fini_array
 		mov	lr, pc
 		bx	r2
+		pop	{r0, r1}
 
 		pop	{r2, lr}
 		mov	sp, r2

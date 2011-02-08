@@ -6,12 +6,17 @@
 //#include "config.h"
 #include "uart.h"
 #include "swi.h"
+#include "loadelf.h"
 
 #ifdef USE_LIBFS_EFSL
 #include "../efsl/filesystem.c"
 #else
 #include "filesystem.c"
 #endif
+
+#define DEFAULT_ELF_STACK_SIZE	(1024*1024)
+
+static size_t elf_stacksize = DEFAULT_ELF_STACK_SIZE;
 
 static int empty_stdio(int c);
 
@@ -234,6 +239,26 @@ static long system_umountfs(uint32_t *argv)
     return (long)wrap_fs_unmountfs(r, (char *)argv[1]);
 }
 
+static long system_elf_load(uint32_t *argv)
+{
+    if (load_elf((void *)argv[0], (char *)argv[1], (void *)argv[2])) {
+	return -1;
+    }
+    return 0;
+}
+
+static long system_elf_setstacksize(uint32_t *argv)
+{
+    elf_stacksize = (size_t) argv[0];
+    return 0;
+}
+
+static long system_elf_getstacksize(uint32_t *argv)
+{
+    return (long) elf_stacksize;
+    argv = argv;
+}
+
 void system_enable_irq(void);
 asm("system_enable_irq:	\n\t"
     "push {r0}		\n\t"
@@ -326,6 +351,15 @@ void syscall_routine(unsigned long number, unsigned long *regs)
 	    break;
 	case SWI_NEWLIB_Getcwd_r:
 	    regs[0] = system_getcwd_r((uint32_t *)regs[1]);
+	    break;
+	case SWI_ELF_Load:
+	    regs[0] = system_elf_load((uint32_t *)regs[1]);
+	    break;
+	case SWI_ELF_SetStackSize:
+	    regs[0] = system_elf_setstacksize((uint32_t *)regs[1]);
+	    break;
+	case SWI_ELF_GetStackSize:
+	    regs[0] = system_elf_getstacksize((uint32_t *)regs[1]);
 	    break;
 	default:
 	    sprintf(buf, "\r\n\r\n\r\n!!! Unknown System SWI %08X !!!\r\n\r\n\r\n", (unsigned int)regs[0]);

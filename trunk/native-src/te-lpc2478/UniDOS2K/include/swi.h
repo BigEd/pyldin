@@ -35,6 +35,10 @@
 #define SWI_MountFS			0xa0
 #define SWI_UmountFS			0xa1
 
+#define SWI_ELF_Load			0xb0
+#define SWI_ELF_SetStackSize		0xb1
+#define SWI_ELF_GetStackSize		0xb2
+
 /* Now the SWI numbers and reason codes for RDI (Angel) monitors.  */
 #define AngelSWI_ARM 			0x123456
 #ifdef __thumb__
