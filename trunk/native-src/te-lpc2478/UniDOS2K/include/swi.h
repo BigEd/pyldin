@@ -15,29 +15,28 @@
 #define SWI_NEWLIB_Lseek_r		0x84
 #define SWI_NEWLIB_Fstat_r		0x85
 #define SWI_NEWLIB_Isatty_r		0x86
+#define SWI_NEWLIB_Ioctl		0x87
 
-#define SWI_NEWLIB_Gettimeofday_r	0x87
-#define SWI_NEWLIB_Exit			0x88
+#define SWI_NEWLIB_Opendir_r		0x8a
+#define SWI_NEWLIB_Readdir_r		0x8b
+#define SWI_NEWLIB_Closedir_r		0x8c
 
-#define SWI_NEWLIB_Mkdir_r		0x89
-#define SWI_NEWLIB_Rmdir_r		0x8a
+#define SWI_NEWLIB_Mkdir_r		0x90
+#define SWI_NEWLIB_Rmdir_r		0x91
+#define SWI_NEWLIB_Unlink_r		0x92
+#define SWI_NEWLIB_Rename_r		0x93
+#define SWI_NEWLIB_Chdir_r		0x94
+#define SWI_NEWLIB_Getcwd_r		0x95
 
-#define SWI_NEWLIB_Opendir_r		0x8b
-#define SWI_NEWLIB_Readdir_r		0x8c
-#define SWI_NEWLIB_Closedir_r		0x8d
+#define SWI_NEWLIB_Exit			0xa0
+#define SWI_NEWLIB_Gettimeofday_r	0xa1
 
-#define SWI_NEWLIB_Unlink_r		0x8e
-#define SWI_NEWLIB_Rename_r		0x8f
+#define SWI_MountFS			0xb0
+#define SWI_UmountFS			0xb1
 
-#define SWI_NEWLIB_Chdir_r		0x90
-#define SWI_NEWLIB_Getcwd_r		0x91
-
-#define SWI_MountFS			0xa0
-#define SWI_UmountFS			0xa1
-
-#define SWI_ELF_Load			0xb0
-#define SWI_ELF_SetStackSize		0xb1
-#define SWI_ELF_GetStackSize		0xb2
+#define SWI_ELF_Load			0xc0
+#define SWI_ELF_SetStackSize		0xc1
+#define SWI_ELF_GetStackSize		0xc2
 
 /* Now the SWI numbers and reason codes for RDI (Angel) monitors.  */
 #define AngelSWI_ARM 			0x123456

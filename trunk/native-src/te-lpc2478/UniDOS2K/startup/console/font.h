@@ -8,8 +8,8 @@ typedef struct {
     short ascent;
     short first;
     short last;
-    unsigned char *bits;
-    unsigned short *offset;
+    const unsigned char *bits;
+    const unsigned short *offset;
     unsigned short fixed_width;
     unsigned short fixed_height;
     unsigned int bits_size;

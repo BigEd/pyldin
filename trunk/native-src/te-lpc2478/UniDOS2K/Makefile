@@ -1,7 +1,7 @@
 CHIP		 = LPC2478
 USE_EMC		 = yes
 USE_LCD		 = yes
-USE_KBD		 = yes
+#USE_KBD		 = yes
 
 #CHIP		 = LPC2378
 #USE_EMC		 = no

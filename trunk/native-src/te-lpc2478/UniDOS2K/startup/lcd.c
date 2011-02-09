@@ -99,6 +99,7 @@ void LCD_Cursor_En(int cursor)
 void LCD_Cursor_Dis(int cursor)
 {
     CRSR_CTRL &= ~(0x1);
+    cursor = cursor;
 }
 
 void LCD_Move_Cursor(int x, int y)

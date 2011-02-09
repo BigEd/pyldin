@@ -16,6 +16,7 @@
 #include <reent.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <sys/ioctl.h>
 #include <errno.h>
 #include <dirent.h>
 #include <setjmp.h>
@@ -106,6 +107,27 @@ int _isatty_r(struct _reent *r, int file)
     block[0] = (int)r;
     block[1] = file;
     return do_SystemSWI(SWI_NEWLIB_Isatty_r, (void *)block);
+}
+
+int _isatty(int file)
+{
+    struct _reent r;
+    int volatile block[2];
+
+    block[0] = (int)&r;
+    block[1] = file;
+    int ret = do_SystemSWI(SWI_NEWLIB_Isatty_r, (void *)block);
+    errno = r._errno;
+    return ret;
+}
+
+int ioctl(int fd, unsigned int request, void *value)
+{
+    int volatile block[3];
+    block[0] = fd;
+    block[1] = (int)request;
+    block[2] = (int)value;
+    return do_SystemSWI(SWI_NEWLIB_Ioctl, (void *)block);
 }
 
 int _gettimeofday_r(struct _reent *r, struct timeval *tp, void *tzp)
@@ -376,7 +398,7 @@ int _system(const char *cmdline)
 
     size_t stacksize = do_SystemSWI(SWI_ELF_GetStackSize, (void *)block);
 
-    char *elfarg = alloca(strlen(cmdline) + 1);
+    char *elfarg = (char *)alloca(strlen(cmdline) + 1);
     strcpy(elfarg, cmdline);
 
     errno = exec_mem(elfarg, entry, addr + stacksize);

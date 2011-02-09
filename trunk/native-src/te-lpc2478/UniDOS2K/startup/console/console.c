@@ -128,20 +128,16 @@ int console_putchar(int c)
 		}
 		break;
 	    case 'A':
-		if (esc_num >= 1)
-		    con_y -= esc_arg[1];
+		con_y -= (esc_num >= 1)?esc_arg[1]:1;
 		break;
 	    case 'B':
-		if (esc_num >= 1)
-		    con_y += esc_arg[1];
+		con_y += (esc_num >= 1)?esc_arg[1]:1;
 		break;
 	    case 'C':
-		if (esc_num >= 1)
-		    con_x += esc_arg[1];
+		con_x += (esc_num >= 1)?esc_arg[1]:1;
 		break;
 	    case 'D':
-		if (esc_num >= 1)
-		    con_x -= esc_arg[1];
+		con_x -= (esc_num >= 1)?esc_arg[1]:1;
 		break;
 	    case 'J':
 		if (esc_num >= 1) {
