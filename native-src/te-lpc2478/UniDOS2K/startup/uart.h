@@ -20,15 +20,6 @@
 #define UART_BAUD(baud) (uint16_t)((PCLK / ((baud) * 16.0)) + 0.5)
 
 ///////////////////////////////////////////////////////////////////////////////
-// Definitions for typical UART 'baud' settings
-#define B1200         UART_BAUD(1200)
-#define B9600         UART_BAUD(9600)
-#define B19200        UART_BAUD(19200)
-#define B38400        UART_BAUD(38400)
-#define B57600        UART_BAUD(57600)
-#define B115200       UART_BAUD(115200)
-
-///////////////////////////////////////////////////////////////////////////////
 // Definitions for typical UART 'mode' settings
 #define UART_8N1      (uint8_t)(ULCR_CHAR_8 + ULCR_PAR_NO   + ULCR_STOP_1)
 #define UART_7N1      (uint8_t)(ULCR_CHAR_7 + ULCR_PAR_NO   + ULCR_STOP_1)

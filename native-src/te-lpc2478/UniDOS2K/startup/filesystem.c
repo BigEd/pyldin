@@ -30,7 +30,7 @@ static int inited = 0;
 
 static char current_path[256];
 
-static void wrap_fs_check_is_inited(void)
+static void wrap_fs_init(void)
 {
     int i;
     if (!inited) {
@@ -156,7 +156,6 @@ static char *normalize_path(char *path)
 
 static int wrap_fs_open(struct _reent *r, const char *pathname, int flags, int mode)
 {
-    wrap_fs_check_is_inited();
     mode = mode;
     int fd = wrap_fs_get_fd();
     if (fd >= 0) {

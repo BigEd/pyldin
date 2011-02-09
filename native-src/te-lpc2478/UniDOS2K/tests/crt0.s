@@ -80,21 +80,24 @@ _start:
 		pop	{r0, r1}
 
 		mov	r2, r0
+		/* set exit return point */
 		ldr	r0, .LC3
 		bl	setjmp
 		cmp	r0, #0
-		/* if return from longjmp exit return code */
-		ldrne	r0, .LC4
-		ldrne	r0, [r0]
-		/* else enter the C code  */
-		moveq	r0, r2
-		bleq	main
-
-		push	{r0, r1}
+		bne	.LC14
+		/* enter the C code  */
+		mov	r0, r2
+		bl	main
+		/* exit */
+		b	exit
+.LC14:
 		ldr	r2, =__libc_fini_array
 		mov	lr, pc
 		bx	r2
-		pop	{r0, r1}
+
+		/* exit return code */
+		ldr	r0, .LC4
+		ldr	r0, [r0]
 
 		pop	{r2, lr}
 		mov	sp, r2

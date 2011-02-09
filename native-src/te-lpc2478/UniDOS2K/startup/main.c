@@ -10,10 +10,13 @@
 
 int unidos(void);
 
+int init_syscalls(void);
 int redirect_stdio(int fd, void * /*int (* func) (int c)*/);
 
 int main(void)
 {
+    init_syscalls();
+
     uart0Init(UART_BAUD(HOST_BAUD_U0), UART_8N1, UART_FIFO_8); // setup the UART
 
     redirect_stdio(0, uart0Getch);

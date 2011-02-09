@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
+#include <sys/termios.h>
 //#include "config.h"
 #include "uart.h"
 #include "swi.h"
@@ -18,9 +19,19 @@
 
 static size_t elf_stacksize = DEFAULT_ELF_STACK_SIZE;
 
+static struct termios termios_stdin;
+
 static int empty_stdio(int c);
 
 int (*stdio_func[3]) (int c) = { empty_stdio, empty_stdio, empty_stdio };
+
+void init_syscalls(void)
+{
+    termios_stdin.c_lflag = (ECHO | ICANON | ISIG | IEXTEN | ECHOE | ECHOKE | ECHOCTL);
+    termios_stdin.c_cc[VMIN] = 255;
+    termios_stdin.c_cc[VTIME] = 255;
+    wrap_fs_init();
+}
 
 static int empty_stdio(int c)
 {
@@ -94,16 +105,21 @@ static long system_read_r(uint32_t *argv)
 	int c;
 	int i;
 	for (i = 0; i < len; i++) {
-	    while((c = system_stdio(0, 0)) < 0) ;
+	    while ((c = system_stdio(0, 0)) < 0) {
+		if (termios_stdin.c_cc[VTIME] == 0)
+		    return 0;
+	    }
 
 	    if (c == 0x0D)
 		c = 0x0A;
 
 	    *ptr++ = c;
-	    system_stdio(1, c);
+	    if (termios_stdin.c_lflag & ECHO)
+		system_stdio(1, c);
 
 	    if (c == 0x0A) {
-		system_stdio(1, 0x0D);
+		if (termios_stdin.c_lflag & ECHO)
+		    system_stdio(1, 0x0D);
 		return i + 1;
 	    }
 	}
@@ -164,6 +180,28 @@ static long system_isatty_r(uint32_t *argv)
     }
 
     return wrap_fs_isatty_r(r, fd);
+}
+
+static long system_ioctl(uint32_t *argv)
+{
+    int fd = argv[0];
+    int cmd = argv[1];
+    void *val = (void *)argv[2];
+    if (fd == 0) {
+	if (cmd == TCGETA) {
+	    memcpy(val, &termios_stdin, sizeof(struct termios));
+	    return 0;
+	} else if (cmd == TCSETA) {
+	    memcpy(&termios_stdin, val, sizeof(struct termios));
+	    return 0;
+	}
+	errno = EINVAL;
+    } else if (fd == 1 || fd == 2)
+	errno = ENOTTY;
+    else
+	errno = EINVAL;
+
+    return -1;
 }
 
 static long system_exit(uint32_t *argv)
@@ -315,6 +353,9 @@ void syscall_routine(unsigned long number, unsigned long *regs)
 	    break;
 	case SWI_NEWLIB_Isatty_r:
 	    regs[0] = system_isatty_r((uint32_t *)regs[1]);
+	    break;
+	case SWI_NEWLIB_Ioctl:
+	    regs[0] = system_ioctl((uint32_t *)regs[1]);
 	    break;
 	case SWI_NEWLIB_Exit:
 	    regs[0] = system_exit((uint32_t *)regs[1]);

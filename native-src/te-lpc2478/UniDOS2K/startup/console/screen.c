@@ -15,7 +15,7 @@ static int screen_height = 240;
 static int max_text_width = 0;
 static int max_text_height = 0;
 
-static DOS_FONT *font;
+static const DOS_FONT *font;
 
 static unsigned short fg_color;
 static unsigned short bg_color;

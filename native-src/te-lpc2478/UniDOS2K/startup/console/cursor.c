@@ -1,6 +1,6 @@
 #include "cursor.h"
 
-const unsigned char Cursor[(CURSOR_H_SIZE/4)*CURSOR_H_SIZE] = 
+const unsigned char Cursor[(CURSOR_H_SIZE/4)*CURSOR_H_SIZE] =
 {
 170, 170, 170, 170, 170, 170, 170, 170,
 170, 170, 170, 170, 170, 170, 170, 170,
