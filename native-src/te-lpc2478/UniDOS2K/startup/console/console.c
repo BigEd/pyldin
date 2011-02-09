@@ -55,9 +55,10 @@ void console_init(void)
 
 #define getcolor(a) (((a % 10) > 7)?7:(a % 10))
 
-static void set_attributes(int c, int *arg)
+static void set_attributes(int n, int *arg)
 {
-    while (c) {
+    int c;
+    for (c = 1; c <= n; c++) {
 	int a = arg[c];
 	if (a >= 40)
 	    screen_bgcolor(colors[getcolor(a)]);
@@ -79,9 +80,10 @@ static void set_attributes(int c, int *arg)
 		break;
 	    }
 	}
-	c--;
     }
 }
+
+#define MAX_ESC_ARGS	16
 
 int console_putchar(int c)
 {
@@ -89,7 +91,7 @@ int console_putchar(int c)
     static short saved_y = 0;
     static int esc_seq = 0;
     static int esc_num = 0;
-    static int esc_arg[9];
+    static int esc_arg[MAX_ESC_ARGS + 1];
 
     c &= 0xff;
 
@@ -103,7 +105,7 @@ int console_putchar(int c)
     } else if (esc_seq) {
 	if (_isdigit(c)) {
 	    if (!esc_num) {
-		esc_num = (esc_num + 1) % 8;
+		esc_num = (esc_num + 1) % MAX_ESC_ARGS;
 		if (esc_num == 0) esc_num++;
 		esc_arg[esc_num] = 0;
 	    }
@@ -111,7 +113,7 @@ int console_putchar(int c)
 	    return 0;
 	} else {
 	    if (c == ';') {
-		esc_num = (esc_num + 1) % 8;
+		esc_num = (esc_num + 1) % MAX_ESC_ARGS;
 		if (esc_num == 0) esc_num++;
 		esc_arg[esc_num] = 0;
 		return 0;
@@ -199,11 +201,36 @@ int console_putstring(char *str)
 }
 
 #ifdef USE_KBD
+static char *keyseq = "\000";
+
+int getkeyseq(void)
+{
+    if (*keyseq == 0)
+	return 0;
+    return *keyseq++;
+}
+
 int console_getchar(void)
 {
-    unsigned int c = keyboard_get_key();
-    if (!(c & KEYB_KEYUP) && (c & 0xffff))
+    unsigned int c = getkeyseq();
+    if (c)
+	return c;
+    c = keyboard_get_key();
+    if (!(c & KEYB_KEYUP) && (c & 0xffff)) {
+	switch (c & 0xffff) {
+	case UP_ARROW: keyseq = "\033[A"; return getkeyseq();
+	case DOWN_ARROW: keyseq = "\033[B"; return getkeyseq();
+	case RIGHT_ARROW: keyseq = "\033[C"; return getkeyseq();
+	case LEFT_ARROW: keyseq = "\033[D"; return getkeyseq();
+	case INSERT: keyseq = "\033[2~"; return getkeyseq();
+	case DEL: keyseq = "\033[3~"; return getkeyseq();
+	case HOME: keyseq = "\033[OH"; return getkeyseq();
+	case END: keyseq = "\033[OF"; return getkeyseq();
+	case PAGE_UP: keyseq = "\033[5~"; return getkeyseq();
+	case PAGE_DOWN: keyseq = "\033[6~"; return getkeyseq();
+	}
 	return c & 0xff;
+    }
     return -1;
 }
 #endif

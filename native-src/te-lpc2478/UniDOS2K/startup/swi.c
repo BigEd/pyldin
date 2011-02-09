@@ -106,8 +106,8 @@ static long system_read_r(uint32_t *argv)
 	int i;
 	for (i = 0; i < len; i++) {
 	    while ((c = system_stdio(0, 0)) < 0) {
-		if (termios_stdin.c_cc[VTIME] == 0)
-		    return 0;
+		if (!termios_stdin.c_cc[VMIN] && !termios_stdin.c_cc[VTIME])
+		    return i;
 	    }
 
 	    if (c == 0x0D)
