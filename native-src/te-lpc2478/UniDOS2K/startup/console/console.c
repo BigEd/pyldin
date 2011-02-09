@@ -91,6 +91,7 @@ int console_putchar(int c)
     static short saved_y = 0;
     static int esc_seq = 0;
     static int esc_num = 0;
+    static int prefix_pit = 0;
     static int esc_arg[MAX_ESC_ARGS + 1];
 
     c &= 0xff;
@@ -99,6 +100,7 @@ int console_putchar(int c)
 	if (c == '[') {
 	    esc_seq++;
 	    esc_num = 0;
+	    prefix_pit = 0;
 	} else
 	    esc_seq = 0;
 	return 0;
@@ -119,6 +121,19 @@ int console_putchar(int c)
 		return 0;
 	    }
 	    switch (c) {
+	    case '?':
+		if (prefix_pit)
+		    break;
+		prefix_pit = 1;
+		return 0;
+	    case 'h':
+		if (prefix_pit && esc_arg[1] == 25)
+		    screen_cursor_enable(1);
+		break;
+	    case 'l':
+		if (prefix_pit && esc_arg[1] == 25)
+		    screen_cursor_enable(0);
+		break;
 	    case 'm':
 		set_attributes(esc_num, esc_arg);
 		break;
