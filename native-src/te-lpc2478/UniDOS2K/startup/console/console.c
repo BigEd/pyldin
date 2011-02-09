@@ -140,8 +140,8 @@ int console_putchar(int c)
 	    case 'H':
 	    case 'f':
 		if (esc_num > 1) {
-		    con_y = esc_arg[1];
-		    con_x = esc_arg[2];
+		    con_y = esc_arg[1] - 1;
+		    con_x = esc_arg[2] - 1;
 		}
 		break;
 	    case 'A':
