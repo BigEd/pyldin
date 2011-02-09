@@ -17,6 +17,7 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/ioctl.h>
+#include <sys/termios.h>
 #include <errno.h>
 #include <dirent.h>
 #include <setjmp.h>
@@ -402,6 +403,17 @@ int _system(const char *cmdline)
     strcpy(elfarg, cmdline);
 
     errno = exec_mem(elfarg, entry, addr + stacksize);
+
+    /* restore stdin */
+    {
+	struct termios raw;
+	if (tcgetattr(0, &raw) != -1) {
+	    raw.c_lflag |=  (ECHO | ICANON | IEXTEN | ISIG);
+	    raw.c_cc[VMIN] = 1;
+	    raw.c_cc[VTIME] = 0;
+	    tcsetattr(0, TCSAFLUSH, &raw);
+	}
+    }
 
     return 0;
 }
