@@ -5,7 +5,9 @@
 #include <inttypes.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <errno.h>
+#include "swi.h"
 
 #include "dirent.h"
 
@@ -246,6 +248,19 @@ int cmd_echo(int argc, char *argv[])
     return 0;
 }
 
+int cmd_estacktop(int argc, char *argv[])
+{
+    int volatile block[1];
+    if (argc < 2) {
+	size_t stacktop = do_SystemSWI(SWI_ELF_GetStackSize, (void *)block);
+	printf("Executable stack top set as %d\n", stacktop);
+    } else {
+	block[0] = strtoul(argv[1], 0, 0);
+	do_SystemSWI(SWI_ELF_SetStackSize, (void *)block);
+    }
+    return 0;
+}
+
 int cmd_help(int argc, char *argv[]);
 
 static const struct commands {
@@ -267,6 +282,7 @@ static const struct commands {
 	{ cmd_heap,	"heap",		"",			"Show current heap address" },
 	{ cmd_help,	"help",		"[command]",		"Show commands"},
 	{ cmd_echo,	"echo",		"[-e][-r]<string>",	"Show string"},
+	{ cmd_estacktop,"estacktop",	"[new size]",		"Show/Set executable stack top"},
 	{ 0, 0, 0, 0 }
 };
 
