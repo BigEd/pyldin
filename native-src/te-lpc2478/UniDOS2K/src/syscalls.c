@@ -27,6 +27,7 @@
 jmp_buf	__exit_jump_buf__;
 int 	__exit_jump_stat__;
 
+#if 0
 static inline int do_SystemSWI (int reason, void *arg)
 {
   int value;
@@ -37,6 +38,7 @@ static inline int do_SystemSWI (int reason, void *arg)
 		/* Clobbers r0 and r1, and lr if in supervisor mode */);
   return value;
 }
+#endif
 
 int _open_r(struct _reent *r, const char *pathname, int flags, int mode)
 {
@@ -99,6 +101,24 @@ int _fstat_r(struct _reent *r, int file, struct stat *st)
     block[1] = file;
     block[2] = (int) st;
     return do_SystemSWI(SWI_NEWLIB_Fstat_r, (void *)block);
+}
+
+int _stat_r(struct _reent *r, const char *name, struct stat *s)
+{
+    int volatile block[3];
+
+    block[0] = (int) &r;
+    block[1] = (int) name;
+    block[2] = (int) s;
+    return do_SystemSWI(SWI_NEWLIB_Stat_r, (void *)block);
+}
+
+int lstat(const char *name, struct stat *s)
+{
+    struct _reent r;
+    int ret = _stat_r(&r, name, s);
+    errno = r._errno;
+    return ret;
 }
 
 int _isatty_r(struct _reent *r, int file)
@@ -416,4 +436,41 @@ int _system(const char *cmdline)
     }
 
     return 0;
+}
+
+int utime(const char *filename, const struct utimbuf *times)
+{
+    errno = EACCES;
+    return -1;
+}
+
+mode_t umask(mode_t __mask)
+{
+    static mode_t mask;
+    mask = __mask;
+    return mask;
+}
+
+int chmod(const char *__path, mode_t __mode)
+{
+    errno = EACCES;
+    return -1;
+}
+
+int chown(const char *__path, uid_t __owner, gid_t __group)
+{
+    errno = EACCES;
+    return -1;
+}
+
+int _fileno(FILE *file)
+{
+    return file->_file;
+}
+
+#warning "_setmode() ?"
+int _setmode (int handle, int mode)
+{
+    errno = EINVAL;
+    return -1;
 }

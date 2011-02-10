@@ -171,6 +171,22 @@ static long system_fstat_r(uint32_t *argv)
     return wrap_fs_fstat(r, fd, st);
 }
 
+static long system_stat_r(uint32_t *argv)
+{
+    struct _reent *r = (struct _reent *) argv[0];
+    char *name = (char *)argv[1];
+    struct stat *st = (struct stat *) argv[2];
+
+    if (!strcmp(name, "/dev/stdin") &&
+	!strcmp(name, "/dev/stdout") &&
+	!strcmp(name, "/dev/stderr")) {
+	st->st_mode = S_IFCHR;
+	return 0;
+    }
+
+    return wrap_fs_stat(r, name, st);
+}
+
 static long system_isatty_r(uint32_t *argv)
 {
     struct _reent *r = (struct _reent *) argv[0];
@@ -350,6 +366,9 @@ void syscall_routine(unsigned long number, unsigned long *regs)
 	    break;
 	case SWI_NEWLIB_Fstat_r:
 	    regs[0] = system_fstat_r((uint32_t *)regs[1]);
+	    break;
+	case SWI_NEWLIB_Stat_r:
+	    regs[0] = system_stat_r((uint32_t *)regs[1]);
 	    break;
 	case SWI_NEWLIB_Isatty_r:
 	    regs[0] = system_isatty_r((uint32_t *)regs[1]);

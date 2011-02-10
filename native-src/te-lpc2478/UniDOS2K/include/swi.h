@@ -14,8 +14,9 @@
 #define SWI_NEWLIB_Close_r		0x83
 #define SWI_NEWLIB_Lseek_r		0x84
 #define SWI_NEWLIB_Fstat_r		0x85
-#define SWI_NEWLIB_Isatty_r		0x86
-#define SWI_NEWLIB_Ioctl		0x87
+#define SWI_NEWLIB_Stat_r		0x86
+#define SWI_NEWLIB_Isatty_r		0x87
+#define SWI_NEWLIB_Ioctl		0x88
 
 #define SWI_NEWLIB_Opendir_r		0x8a
 #define SWI_NEWLIB_Readdir_r		0x8b
@@ -70,5 +71,16 @@
 #define AngelSWI_Reason_ReportException 0x18
 #define ADP_Stopped_ApplicationExit 	((2 << 16) + 38)
 #define ADP_Stopped_RunTimeError 	((2 << 16) + 35)
+
+static inline int do_SystemSWI (int reason, void *arg)
+{
+  int value;
+  asm volatile ("mov r0, %1; mov r1, %2; swi %a3; mov %0, r0"
+       : "=r" (value) /* Outputs */
+       : "r" (reason), "r" (arg), "i" (SystemSWI) /* Inputs */
+       : "r0", "r1", "lr"
+		/* Clobbers r0 and r1, and lr if in supervisor mode */);
+  return value;
+}
 
 #endif

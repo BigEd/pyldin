@@ -275,6 +275,30 @@ static int wrap_fs_fstat(struct _reent *r, int file, struct stat *st)
     return -1;
 }
 
+static int wrap_fs_stat(struct _reent *r, char *name, struct stat *st)
+{
+    FF_ERROR pError;
+    FF_FILE *f = FF_Open(pIoman, name, FF_MODE_READ, &pError);
+    if (f) {
+	st->st_size = f->Filesize;
+	st->st_blksize = 512;
+	st->st_blocks = ((st->st_size - 1) / 512) + 1;
+	st->st_mode = S_IFREG;
+	st->st_mode |= (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+	FF_Close(f);
+	return 0;
+    } else if (pError == FF_ERR_FILE_OBJECT_IS_A_DIR) {
+	st->st_size = 0;
+	st->st_blksize = 512;
+	st->st_blocks = 0;
+	st->st_mode = S_IFDIR;
+	st->st_mode |= (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+	return 0;
+    }
+    r->_errno = EBADF;
+    return -1;
+}
+
 static int wrap_fs_isatty_r(struct _reent *r, int file)
 {
     if (fd_list[file].used) {
