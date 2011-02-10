@@ -27,10 +27,12 @@ LD		:= $(CROSS)g++
 OBJCOPY		:= $(CROSS)objcopy
 OBJDUMP		:= $(CROSS)objdump
 
+CPU_CFLAGS	 = -mcpu=arm7tdmi
+
 CFLAGS		 = -Os
 CFLAGS		+= -fomit-frame-pointer
 CFLAGS		+= -Wall -Wextra -Wundef -Wcast-align
-CFLAGS		+= -mcpu=arm7tdmi
+CFLAGS		+= $(CPU_CFLAGS)
 CFLAGS		+= -D$(CHIP)
 CFLAGS		+= -Iinclude
 CFLAGS		+= -Ifullfat/src
@@ -99,6 +101,31 @@ load program: $(HEX) utils/lpc21isp
 
 loadterm: $(HEX) utils/lpc21isp
 	utils/lpc21isp $(LPC21ISP_OPTIONS) -term $< $(LPC21ISP_PORT) $(LPC21ISP_BAUD) $(LPC21ISP_XTAL)
+
+targetools:
+	@if [ $$TARGET_DIR ]; then \
+	    mkdir -p $${TARGET_DIR}/bin; \
+	    mkdir -p $${TARGET_DIR}/include; \
+	    mkdir -p $${TARGET_DIR}/lib; \
+	    for p in c++ cc cpp g++ gcc; do \
+		echo "#!/bin/sh" > $${TARGET_DIR}/bin/$(TOOLCHAIN)$$p ; \
+		echo "exec $(CROSS)$$p $(CPU_CFLAGS) -specs=$${TARGET_DIR}/lib/specs -T$${TARGET_DIR}/lib/armelf.xbn -pie -N -isystem $${TARGET_DIR}/include -L $${TARGET_DIR}/lib \$${1+\"\$$@\"}" >> $${TARGET_DIR}/bin/$(TOOLCHAIN)$$p ; \
+		chmod +x $${TARGET_DIR}/bin/$(TOOLCHAIN)$$p ; \
+	    done ; \
+	    cp -f tests/specs.unidos $${TARGET_DIR}/lib/specs ; \
+	    sed -i -e "s|@TARGET_DIR@|$${TARGET_DIR}|g" $${TARGET_DIR}/lib/specs ; \
+	    cp -f tests/armelf.xbn $${TARGET_DIR}/lib/armelf.xbn ; \
+	    $(CC) $(CFLAGS) tests/crt0.s -c -o $${TARGET_DIR}/lib/crt0.o ; \
+	    $(CC) $(CFLAGS) src/syscalls.c -c -o $${TARGET_DIR}/lib/syscalls.o ; \
+	    find include -name "*.h" -exec install -D -m 644 {} $${TARGET_DIR}/{} \; ; \
+	    echo ; \
+	    echo "UniDOS cross toolchain installed!"; \
+	    echo "Before use tools, please set variable PATH:"; \
+	    echo "export PATH=\$$PATH:$${TARGET_DIR}/bin:$(TOOLSET)";\
+	    echo ; \
+	else \
+	    echo "Define TARGET_DIR path!"; \
+	fi
 
 clean:
 	rm -f $(OBJS) $(TARGET)

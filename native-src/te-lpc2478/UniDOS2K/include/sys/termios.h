@@ -8,6 +8,7 @@
 
 #define TCSANOW TCSETA
 #define TCSAFLUSH TCSETA
+#define TIOCSETAW TCSETA
 
 #define tcsetattr(fd, cmd, arg) ioctl(fd, cmd, arg)
 
