@@ -319,6 +319,15 @@ char *getcwd(char *buf, size_t size)
     return (char *) do_SystemSWI(SWI_NEWLIB_Getcwd_r, (void *)block);
 }
 
+char *realpath(const char *path, char *resolved_path)
+{
+    int volatile block[2];
+
+    block[0] = (int) path;
+    block[1] = (int) resolved_path;
+    return (char *) do_SystemSWI(SWI_NEWLIB_Realpath, (void *)block);
+}
+
 DIR *opendir(const char *name)
 {
     struct _reent r;
