@@ -263,6 +263,19 @@ static long system_getcwd_r(uint32_t *argv)
     return (long) wrap_fs_getcwd(r, (char *) argv[1], argv[2]);
 }
 
+static long system_realpath(uint32_t *argv)
+{
+    char *path  = (char *) argv[0];
+    char *resolved_path = (char *) argv[1];
+
+    if ((path[0] != '/') && (path[0] != '\\'))
+	snprintf(resolved_path, 256, "%s/%s", current_path, path);
+    else
+	strcpy(resolved_path, path);
+    normalize_path(resolved_path);
+    return (long) resolved_path;
+}
+
 static long system_opendir_r(uint32_t *argv)
 {
     struct _reent *r = (struct _reent *) argv[0];
@@ -411,6 +424,9 @@ void syscall_routine(unsigned long number, unsigned long *regs)
 	    break;
 	case SWI_NEWLIB_Getcwd_r:
 	    regs[0] = system_getcwd_r((uint32_t *)regs[1]);
+	    break;
+	case SWI_NEWLIB_Realpath:
+	    regs[0] = system_realpath((uint32_t *)regs[1]);
 	    break;
 	case SWI_ELF_Load:
 	    regs[0] = system_elf_load((uint32_t *)regs[1]);

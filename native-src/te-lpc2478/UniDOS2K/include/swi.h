@@ -28,6 +28,7 @@
 #define SWI_NEWLIB_Rename_r		0x93
 #define SWI_NEWLIB_Chdir_r		0x94
 #define SWI_NEWLIB_Getcwd_r		0x95
+#define SWI_NEWLIB_Realpath		0x96
 
 #define SWI_NEWLIB_Exit			0xa0
 #define SWI_NEWLIB_Gettimeofday_r	0xa1
