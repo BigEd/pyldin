@@ -80,7 +80,7 @@ int load_elf(void *addr, char *arg, void *entry)
 	ehdr.e_ident[EI_CLASS] != ELFCLASS32 ||
 	ehdr.e_ident[EI_DATA] != ELFDATA2LSB ||
 	ehdr.e_ident[EI_VERSION] != EV_CURRENT ||
-	(/*ehdr.e_type != ET_EXEC &&*/ ehdr.e_type != ET_DYN) ||
+	(ehdr.e_type != ET_EXEC && ehdr.e_type != ET_DYN) ||
 	ehdr.e_machine != EM_ARM ||
 	ehdr.e_version != EV_CURRENT ||
 	ehdr.e_shstrndx >= ehdr.e_shnum ||
@@ -88,6 +88,11 @@ int load_elf(void *addr, char *arg, void *entry)
 	ehdr.e_shentsize != sizeof(Elf32_Shdr)) {
 	    fprintf(stderr, "Not a supported ELF file.\n");
 	    goto fail;
+    }
+
+    if (ehdr.e_type == ET_EXEC) {
+	fprintf(stderr, "\033[41mWarning!\033[0m ELF is not relocatable!\n");
+	ph = 0;
     }
 
 #ifdef DEBUG
