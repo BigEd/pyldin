@@ -183,3 +183,120 @@ void mc6845_drawScreen_lpc24(void *video, int width, int height)
 	}
     }
 }
+
+void mc6845_drawScreen_lpc24_1bpp(void *video, int width, int height)
+{
+    dword c, v, j, i, ofj, ofi;
+    byte *vmem = (byte *) video;
+    byte *mem = mc6800_get_memory();
+    byte *src = mem;
+    byte *crsr = mem;
+
+    byte cur_start = mc6845_readReg(0x0a) & 0x1f;
+    byte cur_start1 = mc6845_readReg(0x0a);
+    byte cB_1 = mc6845_readReg(0x0a) & 0x60;
+    byte cur_end = mc6845_readReg(0x0b) & 0x1f;
+
+    if (cur_end > 7)
+	cur_end = 7;
+    if ((cur_start > cur_end) ||
+	(cur_start1 == 0x20) ||
+	(curBlink > 25 && cB_1 != 0)) {
+	    cur_start = 8;
+	    cur_end = 7;
+    }
+    if (curBlink > 50)
+	curBlink = 0;
+
+    byte rHor = mc6845_readReg(0x01);
+    byte rVer = mc6845_readReg(0x06);
+
+    if ((rHor != old_rHor) ||
+	(rVer != old_rVer))
+	memset(video, 0, width * (height - 24) * 2);
+
+    old_rHor = rHor;
+    old_rVer = rVer;
+
+    if ((rVer == 0) || (rHor == 0))
+	return;
+
+    if (vMode == 0) {
+	src += (word)((mc6845_readReg(0x0c) << 8) + mc6845_readReg(0x0d));
+	crsr += (word)((mc6845_readReg(0x0e) << 8) + mc6845_readReg(0x0f) + txt260);
+
+	if (rHor > 42)
+	    rHor = 42;
+	if (rVer > 29)
+	    rVer = 29;
+
+	ofj = 0; //((width - ((rHor > 40)?40:rHor) * 8) >> 1) + ((height - 24 - rVer * 8) >> 1) * width;
+
+	vmem += 320 * 240 / 8 - 1;
+
+	for (j = 0; j < rVer; j++) {
+	    for (i = 0; i < rHor; i++) {
+		ofi=ofj + i;
+		c = *src++;
+		c = ((c << 1) | (c >> 7)) & 0xff;
+		c = c * 8;
+		if (i < 40) {
+		    for (v = 0; v < 8; v++) {
+			byte t1 = videorom[c + v];
+			byte *vscr1 = vmem - ofi;
+			if (crsr == src)
+			    if (v>=cur_start && v<=cur_end) 
+				t1^=0xff;
+			*vscr1-- = t1;
+			ofi += width / 8;
+		    }
+		}
+		if (src >= mem + 0xffff) 
+		    src = mem + 0xf000;
+	    }
+	    ofj += width;
+	}
+    } else {
+	src += (word)(((mc6845_readReg(0x0c) << 8) + mc6845_readReg(0x0d)) << 3);
+	crsr += (word)(((mc6845_readReg(0x0e) << 8) + mc6845_readReg(0x0f) + grf260) << 3);
+
+	if (rHor > 48)
+	    rHor = 48;
+	if (rVer > 28)
+	    rVer = 28;
+
+	ofj = 0; //((width - ((rHor > 40)?40:rHor) * 8) >> 1) + ((height - 24 - rVer * 8) >> 1) * width;
+
+	vmem += 320 * 240 / 8 - 1;
+
+	for (j = 0; j < rVer; j++) {
+	    for (i = 0; i < rHor; i++) {
+		ofi = ofj + i;
+		if (src >= mem + 0xfff8)
+		    src = mem;
+		if (crsr != src) {
+		    for (v = 0; v < 8; v++) {
+			byte t1 = *src;
+			byte *vscr1 = vmem - ofi;
+			*vscr1-- = t1;
+			ofi += width / 8;
+			src++;
+		    }
+		} else {
+		    for (v = 0; v < 8; v++) {
+			byte t1;
+			if ((v >= cur_start) && (v <= cur_end))
+			    t1 = *src ^ 0xff;
+			else
+			    t1 = *src;
+			byte *vscr1 = vmem - ofi;
+			*vscr1-- = t1;
+			ofi += width / 8;
+			src++;
+		    }
+		}
+	    }
+	    ofj += width;
+	}
+    }
+}

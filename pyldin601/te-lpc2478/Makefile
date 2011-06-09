@@ -35,7 +35,7 @@ MEM = ROM
 
 PROJECT = $(CHIP)_pyldin601
 
-OPTIMIZE = -O3 -fomit-frame-pointer -fno-exceptions -DUSE_USBKEY
+OPTIMIZE = -O3 -fomit-frame-pointer -fno-exceptions -DUSE_USBKEY -DUSE_LCD1BPP
 
 ##############################################################################################
 # Application sources directories

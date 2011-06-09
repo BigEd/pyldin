@@ -283,7 +283,11 @@ void Init_LCD_controller(void)
     LCD_TIMV   = ((15<<24) | (4<<16) | (3<<10) | 240);
     LCD_POL    = ((0<<27) | (0<<26) | (((320/1)-1)<<16) | (1<<14) | (1<<13)| (1<<12) | (1<<11)| (1<<6) | (0<<5) | (2<<0));
 
-    LCD_CTRL   = ((0<<16) | (0<<10) | (0<<9) | (1<<8) | (1<<5) | (4<<1) | (0<<0)); // 100 = 16 bpp. 101 = 24 bpp (TFT panel only). 110 = 16 bpp, 5:6:5 mode. 
+#ifdef USE_LCD1BPP
+    LCD_CTRL   = ((0<<16) | (0<<10) | (0<<9) | (1<<8) | (1<<5) | (0<<1) | (0<<0)); // 000 = 1 bpp. 100 = 16 bpp. 101 = 24 bpp (TFT panel only). 110 = 16 bpp, 5:6:5 mode. 
+#else
+    LCD_CTRL   = ((0<<16) | (0<<10) | (0<<9) | (1<<8) | (1<<5) | (4<<1) | (0<<0)); // 000 = 1 bpp. 100 = 16 bpp. 101 = 24 bpp (TFT panel only). 110 = 16 bpp, 5:6:5 mode. 
+#endif
 
     LCD_UPBASE = LCD_BUFFER_ADDR;
     LCD_LPBASE = LCD_BUFFER_ADDR;
@@ -291,6 +295,14 @@ void Init_LCD_controller(void)
     int i;
     for(i=0; i < 50000; i++)
 	NOP;
+
+#ifdef USE_LCD1BPP
+    // Init Green/Black palette
+    unsigned int *Ptr32 = (unsigned int *) 0xFFE10200;
+    for (i = 0; i < 128; i++) {
+	Ptr32[i] = (0x001f << 5) << 16;
+    }
+#endif
 
     LCD_CTRL |= 1;
 
