@@ -18,8 +18,8 @@
 
 #define MCI_ENABLE_DMA
 
-/* DMA Accessible memory buffer (USB memory) */
-#define DMA_DATA_BUFFER 0x7FD00000
+/* DMA Accessible memory buffer (USB memory + offset 0x3000) */
+#define DMA_DATA_BUFFER 0x7FD03000
 
 /* Wait timeouts, in multiples of 6 byte send over MCI (for 1 bit mode)      */
 #define WR_TOUT           100000     /* ~ 200 ms with MCI clk 24MHz */
