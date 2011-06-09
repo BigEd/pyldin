@@ -288,13 +288,24 @@ int main(void)
     SPEAKER_CONTROL(PYLDIN_SPEAKER_FIO, PYLDIN_SPEAKER_MASK, 0);
 
     timer_init(20);
+
+#ifndef USE_USBKEY
     keyboard_init();
+#endif
 
     clrScr();
 
     uart0Init(UART_BAUD(HOST_BAUD_U0), UART_8N1, UART_FIFO_8); // setup the UART
 
     uart0Puts("Pyldin-601 emulator system\r\n");
+
+#ifdef USE_USBKEY
+    Host_Init();
+    if (Host_EnumDev()) {
+	uart0Puts("USB Keyboard inited\n");
+    }
+#endif
+
 #ifdef MEMINFO
     {
     char buf[128];
@@ -317,6 +328,9 @@ int main(void)
 	scounter += takt;
 
 	if (vcounter >= 20000) {
+#ifdef USE_USBKEY
+	    HID_InputKeyboard();
+#endif
 	    if ((cnt % 3) == 2)
 		mc6845_drawScreen_lpc24(pixels, vscr_width, vscr_height);
 

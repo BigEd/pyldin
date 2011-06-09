@@ -89,8 +89,10 @@ void floppy_power_timeout(void)
 {
     if (mmc_inited) {
 	mmc_inited--;
-	if (!mmc_inited)
+	if (!mmc_inited) {
+	    xprintf("Poweroff mmc\n");
 	    mmc_fini();
+	}
     }
 }
 

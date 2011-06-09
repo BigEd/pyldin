@@ -9,10 +9,10 @@
 
 # vim: sw=8:ts=8:si:noexpandtab
 
-TOOLSET = /opt/arm-2010.09/bin
+#TOOLSET = /opt/arm-2010.09/bin
 TARGET  = arm-none-eabi-
 
-PATH=$(TOOLSET):/usr/bin:/bin:/usr/local/bin
+#PATH=$(TOOLSET):/usr/bin:/bin:/usr/local/bin
 
 CC   = $(TARGET)gcc
 CXX  = $(TARGET)g++
@@ -35,7 +35,7 @@ MEM = ROM
 
 PROJECT = $(CHIP)_pyldin601
 
-OPTIMIZE = -O3 -fomit-frame-pointer -fno-exceptions
+OPTIMIZE = -O3 -fomit-frame-pointer -fno-exceptions -DUSE_USBKEY
 
 ##############################################################################################
 # Application sources directories
@@ -78,6 +78,8 @@ SRC_ARM_C += diskovod.c
 #SRC_ARM_C +=
 SRC_ARM_C += interrupts.c
 SRC_ARM_C += system.c
+
+SRC_ARM_C += usbhost_lpc2468.c usbhost_new.c usbhid.c
 
 ############################
 #  ARM .cpp sources
