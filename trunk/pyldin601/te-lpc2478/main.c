@@ -332,8 +332,11 @@ int main(void)
 	    HID_InputKeyboard();
 #endif
 	    if ((cnt % 3) == 2)
+#ifdef USE_LCD1BPP
+		mc6845_drawScreen_lpc24_1bpp(pixels, vscr_width, vscr_height);
+#else
 		mc6845_drawScreen_lpc24(pixels, vscr_width, vscr_height);
-
+#endif
 	    vcounter = 0;
 
 	    cnt++;
