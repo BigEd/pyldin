@@ -270,6 +270,18 @@ int uart0Write(const char *buffer, uint16_t count)
   return (count ? -2 : 0);
 }
 
+void  uart0Printf (const char *format, ...)
+{
+    static  char buffer[40 + 1];
+            va_list     vArgs;
+
+
+    va_start(vArgs, format);
+    vsprintf((char *)buffer, (char const *)format, vArgs);
+    va_end(vArgs);
+    uart0Puts(buffer);
+}
+
 /******************************************************************************
  *
  * Function Name: uart0TxEmpty()

@@ -15,6 +15,7 @@
 
 #include "config.h"
 #include <inttypes.h>
+#include <stdarg.h>
 #include <LPC_UTIL_DEFS.h>
 
 /*
@@ -192,6 +193,8 @@ const char *uart0Puts_block(const char *string);
  *
  *****************************************************************************/
 int uart0Write(const char *buffer, uint16_t count);
+
+void  uart0Printf (const char *format, ...);
 
 /******************************************************************************
  *
