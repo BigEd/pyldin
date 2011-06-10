@@ -149,14 +149,15 @@ static INLINE void TestWord(word w)
 	n = 0;
 }
 
-static INLINE void Bcpx(int a, int b)
+static INLINE void Bcpx(word a, word b)
 {
-    int wans = a - b;
-    int ans = wans & 0xffff;
+    int ans = (((a >> 8) - (b >> 8)) << 8) | ((a - b) & 255);
+    //int wans = a - b;
+    //int ans = wans & 0xffff;
 
     TestWord(ans);
 
-    if (((a ^ b) & (a ^ ans) & 0x8000) != 0 ) 
+    if (((a ^ b) & (a ^ ans) & 0x8000) != 0 )
 	v = 1; 
     else 
 	v = 0;
