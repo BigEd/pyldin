@@ -324,6 +324,11 @@ loadterm: $(HEX) utils/lpc21isp
 	@echo Upload over 
 	utils/lpc21isp $(LPC21ISP_OPTIONS) -term $< $(LPC21ISP_PORT) $(LPC21ISP_BAUD) $(LPC21ISP_XTAL)
 
+term: $(HEX) utils/lpc21isp
+	@echo
+	@echo Upload over 
+	utils/lpc21isp $(LPC21ISP_OPTIONS) -termonly $< $(LPC21ISP_PORT) $(LPC21ISP_BAUD) $(LPC21ISP_XTAL)
+
 debug: $(ELF)
 	$(GDB) -x debug.gdb $<
 
