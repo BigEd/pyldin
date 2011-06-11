@@ -301,9 +301,9 @@ int main(void)
 
 #ifdef USE_USBKEY
     Host_Init();
-    if (Host_EnumDev()) {
-	uart0Puts("USB Keyboard inited\n");
-    }
+//    if (Host_EnumDev()) {
+//	uart0Puts("USB Keyboard inited\n");
+//    }
 #endif
 
 #ifdef MEMINFO

@@ -825,6 +825,8 @@ static U8 scan_table[] = {
 static U8 old_scan = 0;
 static U8 old_mode = 0;
 
+static int hid_kbd_inited = 0;
+
 void HID_InputKeyboard(void)
 {
     int i;
@@ -832,6 +834,19 @@ void HID_InputKeyboard(void)
     U8 *pD;
     volatile  HCTD       *td;
     volatile  HCED       *ed;
+
+    if (!HOST_RhscIntr) {
+	if (hid_kbd_inited) {
+	    hid_kbd_inited = 0;
+	    Host_Init();
+	}
+	return;
+    } else if (!hid_kbd_inited) {
+	if (Host_EnumDev()) {
+	    uart0Puts("USB Keyboard inited\n");
+	    hid_kbd_inited = 1;
+	}
+    }
 
     if (!HOST_WdhIntr)
 	return;
@@ -844,10 +859,10 @@ void HID_InputKeyboard(void)
 
     td->wRxCount = cnt;
 
-    PRINT_Log("\nInput Report: ");
+//    PRINT_Log("\nInput Report: ");
     pD = (U8*) p_TDHead->InitBufPtr;
-    for (i=0; i< cnt; i++)
-	PRINT_Log("%X, ", pD[i]);
+//    for (i=0; i< cnt; i++)
+//	PRINT_Log("%X, ", pD[i]);
 
     if (pD[0] == 0x44 && pD[2] == 0x48)
 	resetRequested();
@@ -872,7 +887,7 @@ void HID_InputKeyboard(void)
     old_mode = pD[0];
 
     U8 scan = scan_table[pD[2]];
-    PRINT_Log(" [%02X - %02X]", pD[2], scan);
+//    PRINT_Log(" [%02X - %02X]", pD[2], scan);
     if (scan != old_scan) {
 	if (pD[2] == 0)
 	    jkeybUp();
