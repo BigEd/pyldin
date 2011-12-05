@@ -9,7 +9,7 @@ USE_KBD		 = yes
 #USE_KBD		 = no
 #USE_LIBFS	 = efsl
 
-TOOLSET		:= /opt/arm-2010.09/bin
+TOOLSET		:= /opt/CodeSourcery/Sourcery_G++_Lite/bin/
 TOOLCHAIN	:= arm-none-eabi-
 
 CROSS		:= $(TOOLSET)/$(TOOLCHAIN)

@@ -181,16 +181,22 @@ void printer_put_char(byte data)
     data = data;
 }
 
+void DAC_Init(void)
+{
+    PINSEL1 |= (1<<21); // Enable AOUT
+}
+
 void Covox_Set(int val, int ticks)
 {
-    val = val;
     ticks = ticks;
+    DACR = val << 8;
 }
 
 void Speaker_Set(int val, int ticks)
 {
     ticks = ticks;
-    SPEAKER_CONTROL(PYLDIN_SPEAKER_FIO, PYLDIN_SPEAKER_MASK, val);
+    //SPEAKER_CONTROL(PYLDIN_SPEAKER_FIO, PYLDIN_SPEAKER_MASK, val);
+    DACR = val?(0x7f << 8):0;
 }
 
 //
@@ -287,6 +293,8 @@ int main(void)
     FIOInit(PYLDIN_SPEAKER_PORT, DIR_OUT, PYLDIN_SPEAKER_MASK);
     SPEAKER_CONTROL(PYLDIN_SPEAKER_FIO, PYLDIN_SPEAKER_MASK, 0);
 
+    DAC_Init();
+
     timer_init(20);
 
 #ifndef USE_USBKEY
@@ -315,6 +323,8 @@ int main(void)
 #endif
     mc6800_init();
     mc6800_reset();
+
+    printer_init(PRINTER_COVOX);
 
     int vcounter = 0;		//
     int scounter = 0;		// syncro counter
