@@ -55,8 +55,6 @@ signal rombios_data_out : std_logic_vector(7 downto 0);
 signal ram_wr				: std_logic; -- memory write enable
 signal ram_oe				: std_logic; -- memory output enable
 signal ram_cs          	: std_logic; -- memory chip select
-signal ram_wrl         	: std_logic; -- memory write lower
-signal ram_wru         	: std_logic; -- memory write upper
 signal ram_data_out    	: std_logic_vector(7 downto 0);
 
 -- hardware debugger
@@ -116,7 +114,7 @@ begin
 	segdisptrace : process (cpu_addr, cpu_rw, cpu_data_in, cpu_data_out)
 	begin
 		led_data(31 downto 16) <= cpu_addr;
---		led_data(15 downto 8 ) <= x"00";
+		led_data(15 downto 8 ) <= x"00";
 		if (cpu_rw = '1') then
 			led_data(7 downto 0) <= cpu_data_in;
 		else
@@ -153,44 +151,42 @@ begin
 	end process;
 
 	sram: process( sys_clk, rst, cpu_addr, cpu_rw, cpu_data_out,
-                  ram_cs, ram_wrl, ram_wru, ram_data_out, sram_dq )
+                  ram_cs, ram_wr, ram_data_out, sram_dq )
 	begin
-		led_data(8 ) <= not(ram_cs and rst); -- ce
-		led_data(9 ) <= not(cpu_rw and ram_cs and rst); -- oe
-		led_data(10) <= not(ram_cs and (not cpu_rw)); -- wr
-		led_data(11) <= '0';
-		led_data(12) <= cpu_addr(0) and (not cpu_rw) and sys_clk; -- lb
-		led_data(13) <= (not cpu_addr(0)) and (not cpu_rw) and sys_clk; -- ub
-		led_data(14) <= '0';
-		led_data(15) <= '0';
+--		led_data(8 ) <= '0'; -- not(ram_cs and rst); -- ce
+--		led_data(9 ) <= not(cpu_rw and ram_cs and rst); -- oe
+--		led_data(10) <= not(ram_cs and (not cpu_rw)); -- wr
+--		led_data(11) <= '0';
+--		led_data(12) <= '0'; -- cpu_addr(0) and (not cpu_rw) and sys_clk; -- lb
+--		led_data(13) <= '0'; -- (not cpu_addr(0)) and (not cpu_rw) and sys_clk; -- ub
+--		led_data(14) <= '0';
+--		led_data(15) <= '0';
 		
+		sram_ce_n <= not(ram_cs and rst); -- put '0' to enable chip all time (no powersave mode)
 		sram_oe_n <= not(cpu_rw and ram_cs and rst);
-		sram_ce_n <= not(ram_cs and rst);
-		sram_we_n <= not(ram_cs and (not cpu_rw));
-		ram_wrl   <= cpu_addr(0) and (not cpu_rw) and sys_clk;
-		sram_lb_n <= not ram_wrl;
-		ram_wru   <= (not cpu_addr(0)) and (not cpu_rw) and sys_clk;
-		sram_ub_n <= not ram_wru;
---		ram_addr(16 downto 12) <= dat_addr(5 downto 1);
+		ram_wr    <= not(ram_cs and (not cpu_rw) and sys_clk);
+		sram_we_n <= ram_wr;
+		sram_lb_n <= cpu_addr(0); -- not ram_wrl;
+		sram_ub_n <= not cpu_addr(0); -- not ram_wru;
 		sram_addr(17 downto 16) <= "00";
 		sram_addr(15 downto 0 ) <= cpu_addr(15 downto 0);
 
-		if ram_wrl = '1' then
+		if (ram_wr = '0' and cpu_addr(0) = '0') then
 			sram_dq(7 downto 0) <= cpu_data_out;
 		else
 			sram_dq(7 downto 0)  <= "ZZZZZZZZ";
 		end if;
 
-		if ram_wru = '1' then
+		if (ram_wr = '0' and cpu_addr(0) = '1') then
 			sram_dq(15 downto 8) <= cpu_data_out;
 		else
 			sram_dq(15 downto 8)  <= "ZZZZZZZZ";
 		end if;
 
-		if cpu_addr(0) = '0' then
-			ram_data_out <= sram_dq(15 downto 8);
-		else
+		if (cpu_addr(0) = '0') then
 			ram_data_out <= sram_dq(7 downto 0);
+		else
+			ram_data_out <= sram_dq(15 downto 8);
 		end if;
 	end process;
 
