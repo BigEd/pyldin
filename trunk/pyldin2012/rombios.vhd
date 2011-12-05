@@ -48,7 +48,7 @@ constant rom_data : rom_array := (
 --x"86", x"10", x"ce", x"00", x"00", x"a7", x"00", x"08", x"4a", x"26", x"fa", x"01", x"01", x"86", x"10", x"ce", 
 --x"00", x"00", x"e6", x"00", x"08", x"4a", x"26", x"fa", x"01", x"01", x"20", x"fe", x"ff", x"ff", x"ff", x"ff", 
 --x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", 
-x"96", x"00", x"96", x"01", x"96", x"02", x"96", x"03", x"01", x"86", x"80", x"97", x"00", x"4c", x"97", x"01", 
+x"96", x"00", x"96", x"01", x"96", x"02", x"96", x"03", x"01", x"86", x"40", x"97", x"00", x"4c", x"97", x"01", 
 x"4c", x"97", x"02", x"4c", x"97", x"03", x"01", x"96", x"00", x"96", x"01", x"96", x"02", x"96", x"03", x"20", 
 x"fe", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", 
 x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", 

@@ -166,27 +166,27 @@ begin
 		sram_oe_n <= not(cpu_rw and ram_cs and rst);
 		ram_wr    <= not(ram_cs and (not cpu_rw) and sys_clk);
 		sram_we_n <= ram_wr;
-		sram_lb_n <= cpu_addr(0); -- not ram_wrl;
-		sram_ub_n <= not cpu_addr(0); -- not ram_wru;
+		sram_lb_n <= not cpu_addr(0);
+		sram_ub_n <= cpu_addr(0);
 		sram_addr(17 downto 16) <= "00";
 		sram_addr(15 downto 0 ) <= cpu_addr(15 downto 0);
 
 		if (ram_wr = '0' and cpu_addr(0) = '0') then
-			sram_dq(7 downto 0) <= cpu_data_out;
-		else
-			sram_dq(7 downto 0)  <= "ZZZZZZZZ";
-		end if;
-
-		if (ram_wr = '0' and cpu_addr(0) = '1') then
 			sram_dq(15 downto 8) <= cpu_data_out;
 		else
 			sram_dq(15 downto 8)  <= "ZZZZZZZZ";
 		end if;
 
-		if (cpu_addr(0) = '0') then
-			ram_data_out <= sram_dq(7 downto 0);
+		if (ram_wr = '0' and cpu_addr(0) = '1') then
+			sram_dq(7 downto 0) <= cpu_data_out;
 		else
+			sram_dq(7 downto 0)  <= "ZZZZZZZZ";
+		end if;
+
+		if (cpu_addr(0) = '0') then
 			ram_data_out <= sram_dq(15 downto 8);
+		else
+			ram_data_out <= sram_dq(7 downto 0);
 		end if;
 	end process;
 
