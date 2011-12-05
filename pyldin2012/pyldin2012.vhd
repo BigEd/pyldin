@@ -8,9 +8,9 @@ port(
 	clk						: in std_logic;
 	rst						: in std_logic;
 
---	vga_r               	: out std_logic_vector(2 downto 0);
---	vga_g               	: out std_logic_vector(2 downto 0);
---	vga_b               	: out std_logic_vector(1 downto 0);
+	vga_r               	: out std_logic_vector(2 downto 0);
+	vga_g               	: out std_logic_vector(2 downto 0);
+	vga_b               	: out std_logic_vector(1 downto 0);
 	vga_hs              	: out std_logic;
 	vga_vs              	: out std_logic;
 		
@@ -62,6 +62,9 @@ signal video_clk25		: std_logic;
 signal video_row			: std_logic_vector(9 downto 0);
 signal video_column		: std_logic_vector(9 downto 0);
 signal video_en			: std_logic;
+signal video_r				: std_logic_vector(2 downto 0);
+signal video_g				: std_logic_vector(2 downto 0);
+signal video_b				: std_logic_vector(1 downto 0);
 
 -- hardware debugger
 signal led_data			: std_logic_vector(31 downto 0);
@@ -213,6 +216,26 @@ begin
 		cpu_irq   <= '0'; -- uart_irq or timer_irq;
 		cpu_nmi   <= '0'; -- trap_irq;
 		cpu_reset <= not rst; -- CPU reset is active high
+	end process;
+
+	videoout: process(video_clk25, video_en, video_row, video_column, video_r, video_g, video_b)
+	begin
+		if (video_clk25'event and video_clk25 = '1') then
+			if ((video_row >= 0) and (video_row <= 479)) then
+				video_r <= "010";
+				video_g <= "010";
+				video_b <= "01";
+			end if;
+		end if;
+		if (video_en = '1') then
+			vga_r <= video_r;
+			vga_g <= video_g;
+			vga_b <= video_b;
+		else
+			vga_r <= "000";
+			vga_g <= "000";
+			vga_b <= "00";
+		end if;
 	end process;
 	
 end pyldin_arch;
