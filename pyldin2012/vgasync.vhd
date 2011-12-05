@@ -6,6 +6,7 @@ use ieee.std_logic_unsigned.all;
 entity vgasync is
 port(
 	clk						: in std_logic;
+	vga_clk25				: out std_logic;
 	vga_hs              	: out std_logic;
 	vga_vs              	: out std_logic;
 
@@ -25,7 +26,8 @@ signal h_cnt				: std_logic_vector(9 downto 0);
 signal v_cnt				: std_logic_vector(9 downto 0);
 begin
 	enable <= horizontal_en and vertical_en;
-
+	vga_clk25 <= clk25;
+	
 	--Generate 25Mhz Clock
 	process (clk)
 	begin

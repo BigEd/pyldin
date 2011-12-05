@@ -58,6 +58,7 @@ signal ram_cs          	: std_logic; -- memory chip select
 signal ram_data_out    	: std_logic_vector(7 downto 0);
 
 -- video
+signal video_clk25		: std_logic;
 signal video_row			: std_logic_vector(9 downto 0);
 signal video_column		: std_logic_vector(9 downto 0);
 signal video_en			: std_logic;
@@ -88,6 +89,7 @@ begin
 
 	videosync: entity work.vgasync port map(
 		clk		=> clk,
+		vga_clk25=> video_clk25,
 		vga_hs	=> vga_hs,
 		vga_vs	=> vga_vs,
 		row		=> video_row,
