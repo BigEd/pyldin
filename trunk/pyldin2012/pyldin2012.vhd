@@ -116,7 +116,7 @@ begin
 	segdisptrace : process (cpu_addr, cpu_rw, cpu_data_in, cpu_data_out)
 	begin
 		led_data(31 downto 16) <= cpu_addr;
-		led_data(15 downto 8 ) <= x"00";
+--		led_data(15 downto 8 ) <= x"00";
 		if (cpu_rw = '1') then
 			led_data(7 downto 0) <= cpu_data_in;
 		else
@@ -155,8 +155,17 @@ begin
 	sram: process( sys_clk, rst, cpu_addr, cpu_rw, cpu_data_out,
                   ram_cs, ram_wrl, ram_wru, ram_data_out, sram_dq )
 	begin
-		sram_oe_n <= not( cpu_rw and ram_cs and rst);
-		sram_ce_n <= not( ram_cs and rst);
+		led_data(8 ) <= not(ram_cs and rst); -- ce
+		led_data(9 ) <= not(cpu_rw and ram_cs and rst); -- oe
+		led_data(10) <= not(ram_cs and (not cpu_rw)); -- wr
+		led_data(11) <= '0';
+		led_data(12) <= cpu_addr(0) and (not cpu_rw) and sys_clk; -- lb
+		led_data(13) <= (not cpu_addr(0)) and (not cpu_rw) and sys_clk; -- ub
+		led_data(14) <= '0';
+		led_data(15) <= '0';
+		
+		sram_oe_n <= not(cpu_rw and ram_cs and rst);
+		sram_ce_n <= not(ram_cs and rst);
 		sram_we_n <= not(ram_cs and (not cpu_rw));
 		ram_wrl   <= cpu_addr(0) and (not cpu_rw) and sys_clk;
 		sram_lb_n <= not ram_wrl;
