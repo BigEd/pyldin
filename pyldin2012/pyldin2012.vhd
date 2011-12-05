@@ -11,8 +11,8 @@ port(
 --	vga_r               	: out std_logic_vector(2 downto 0);
 --	vga_g               	: out std_logic_vector(2 downto 0);
 --	vga_b               	: out std_logic_vector(1 downto 0);
---	vga_hs              	: out std_logic;
---	vga_vs              	: out std_logic;
+	vga_hs              	: out std_logic;
+	vga_vs              	: out std_logic;
 		
 	sram_addr           	: out   std_logic_vector(17 downto 0);
 	sram_dq             	: inout std_logic_vector(15 downto 0);
@@ -57,6 +57,11 @@ signal ram_oe				: std_logic; -- memory output enable
 signal ram_cs          	: std_logic; -- memory chip select
 signal ram_data_out    	: std_logic_vector(7 downto 0);
 
+-- video
+signal video_row			: std_logic_vector(9 downto 0);
+signal video_column		: std_logic_vector(9 downto 0);
+signal video_en			: std_logic;
+
 -- hardware debugger
 signal led_data			: std_logic_vector(31 downto 0);
 signal step_debouncer	: std_logic_vector(24 downto 0);
@@ -81,6 +86,15 @@ begin
 		end if;
 	end process;
 
+	videosync: entity work.vgasync port map(
+		clk		=> clk,
+		vga_hs	=> vga_hs,
+		vga_vs	=> vga_vs,
+		row		=> video_row,
+		column	=> video_column,
+		enable	=>	video_en
+	);
+	
 	mc6800 : entity work.cpu68 port map(
 		clk		=> sys_clk,
 		rst		=> cpu_reset,
@@ -198,5 +212,5 @@ begin
 		cpu_nmi   <= '0'; -- trap_irq;
 		cpu_reset <= not rst; -- CPU reset is active high
 	end process;
-
+	
 end pyldin_arch;
