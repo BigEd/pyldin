@@ -135,4 +135,5 @@ set_global_assignment -name VHDL_FILE rombios.vhd
 set_global_assignment -name VHDL_FILE cpu68.vhd
 set_global_assignment -name VHDL_FILE pyldin2012.vhd
 set_location_assignment PIN_86 -to swt
+set_global_assignment -name VHDL_FILE SRAM.vhd
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

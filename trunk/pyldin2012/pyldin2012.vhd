@@ -55,10 +55,12 @@ signal rombios_cs       : std_logic;
 signal rombios_data_out : std_logic_vector(7 downto 0);
 
 -- ram
-signal ram_wr				: std_logic; -- memory write enable
-signal ram_oe				: std_logic; -- memory output enable
 signal ram_cs          	: std_logic; -- memory chip select
 signal ram_data_out    	: std_logic_vector(7 downto 0);
+signal vram_base_addr	: std_logic_vector(15 downto 0);
+signal vram_addr			: std_logic_vector(15 downto 0);
+signal vram_data			: std_logic_vector(7 downto 0);
+signal vram_read			: std_logic;
 
 -- IO selector
 signal ds0_cs				: std_logic;
@@ -78,6 +80,8 @@ signal video_en			: std_logic;
 signal video_r				: std_logic_vector(2 downto 0);
 signal video_g				: std_logic_vector(2 downto 0);
 signal video_b				: std_logic_vector(1 downto 0);
+signal video_addr			: std_logic_vector(17 downto 0);
+signal video_pixel		: std_logic;
 
 -- hex display
 signal led_data			: std_logic_vector(31 downto 0);
@@ -122,12 +126,22 @@ begin
 			end if;
 		end if;
 	end process;
+	
+	interrupts : process( rst )
+	begin
+		cpu_halt  <= '0';
+		cpu_hold  <= '0';
+		cpu_irq   <= '0'; -- uart_irq or timer_irq;
+		cpu_nmi   <= '0'; -- trap_irq;
+		cpu_reset <= not rst; -- CPU reset is active high
+	end process;
 
 	videosync: entity work.vgasync port map(
 		clk		=> clk,
 		vga_clk25=> video_clk25,
 		vga_hs	=> vga_hs,
 		vga_vs	=> vga_vs,
+		addr		=> video_addr,
 		row		=> video_row,
 		column	=> video_column,
 		enable	=>	video_en
@@ -153,6 +167,23 @@ begin
 		cs			=> rombios_cs,
 		addr		=> cpu_addr(11 downto 0),
 		data		=> rombios_data_out
+	);
+
+	ram: entity work.SRAM port map (
+		clk => sys_clk,
+		rst => rst,
+		sram_addr => sram_addr,
+		sram_dq => sram_dq,
+		sram_ce_n => sram_ce_n,
+		sram_oe_n => sram_oe_n,
+		sram_we_n => sram_we_n,
+		sram_ub_n => sram_ub_n,
+		sram_lb_n => sram_lb_n,
+		cs => ram_cs,
+		rw => cpu_rw,
+		addr => cpu_addr,
+		data_in => cpu_data_out,
+		data_out => ram_data_out
 	);
 
 	segdisplay : entity work.segleds port map(
@@ -224,7 +255,6 @@ begin
 					rombios_cs  <= '0';
 					ram_cs      <= cpu_vma;
 				end if;
---				ds_cs		   <= '0';
 				ds0_cs <= '0'; ds1_cs <= '0'; ds2_cs <= '0'; ds3_cs <= '0'; ds4_cs <= '0'; ds5_cs <= '0'; ds6_cs <= '0'; ds7_cs <= '0';
 			when "1110" =>											-- $Exxx
 				if (cpu_addr(11 downto 8) = "0110") then	-- IO $E6Xxx selector
@@ -261,74 +291,38 @@ begin
 					cpu_data_in <= ram_data_out;
 					rombios_cs  <= '0';
 					ram_cs      <= cpu_vma;
---					ds_cs       <= '0';
 					ds0_cs <= '0'; ds1_cs <= '0'; ds2_cs <= '0'; ds3_cs <= '0'; ds4_cs <= '0'; ds5_cs <= '0'; ds6_cs <= '0'; ds7_cs <= '0';
 				end if;
 			when others =>											-- RAM
 				cpu_data_in <= ram_data_out;
 				rombios_cs  <= '0';
 				ram_cs      <= cpu_vma;
---				ds_cs       <= '0';
 				ds0_cs <= '0'; ds1_cs <= '0'; ds2_cs <= '0'; ds3_cs <= '0'; ds4_cs <= '0'; ds5_cs <= '0'; ds6_cs <= '0'; ds7_cs <= '0';
 		end case;
 	end process;
 	
-	sram: process( sys_clk, rst, cpu_addr, cpu_rw, cpu_data_out,
-                  ram_cs, ram_wr, ram_data_out, sram_dq )
-	begin
---		led_data(8 ) <= '0'; -- not(ram_cs and rst); -- ce
---		led_data(9 ) <= not(cpu_rw and ram_cs and rst); -- oe
---		led_data(10) <= not(ram_cs and (not cpu_rw)); -- wr
---		led_data(11) <= '0';
---		led_data(12) <= '0'; -- cpu_addr(0) and (not cpu_rw) and sys_clk; -- lb
---		led_data(13) <= '0'; -- (not cpu_addr(0)) and (not cpu_rw) and sys_clk; -- ub
---		led_data(14) <= '0';
---		led_data(15) <= '0';
-		
-		sram_ce_n <= not(ram_cs and rst); -- put '0' to enable chip all time (no powersave mode)
-		sram_oe_n <= not(cpu_rw and ram_cs and rst);
-		ram_wr    <= not(ram_cs and (not cpu_rw) and sys_clk);
-		sram_we_n <= ram_wr;
-		sram_lb_n <= not cpu_addr(0);
-		sram_ub_n <= cpu_addr(0);
-		sram_addr(17 downto 16) <= "00";
-		sram_addr(15 downto 0 ) <= cpu_addr(15 downto 0);
-
-		if (ram_wr = '0' and cpu_addr(0) = '0') then
-			sram_dq(15 downto 8) <= cpu_data_out;
-		else
-			sram_dq(15 downto 8)  <= "ZZZZZZZZ";
-		end if;
-
-		if (ram_wr = '0' and cpu_addr(0) = '1') then
-			sram_dq(7 downto 0) <= cpu_data_out;
-		else
-			sram_dq(7 downto 0)  <= "ZZZZZZZZ";
-		end if;
-
-		if (cpu_addr(0) = '0') then
-			ram_data_out <= sram_dq(15 downto 8);
-		else
-			ram_data_out <= sram_dq(7 downto 0);
-		end if;
-	end process;
-
-	interrupts : process( rst )
-	begin
-		cpu_halt  <= '0';
-		cpu_hold  <= '0';
-		cpu_irq   <= '0'; -- uart_irq or timer_irq;
-		cpu_nmi   <= '0'; -- trap_irq;
-		cpu_reset <= not rst; -- CPU reset is active high
-	end process;
-
 	videoout: process(video_clk25, video_en, video_row, video_column, video_r, video_g, video_b)
 	begin
-		if (video_clk25'event and video_clk25 = '1') then
-			if ((video_row >= 0) and (video_row <= 479)) then
-				video_r <= "010";
-				video_g <= "010";
+		if (video_clk25'event and video_clk25 = '0') then
+				vram_addr <= vram_base_addr + video_addr(17 downto 3);
+			case video_addr(2 downto 0) is
+				when "000" => video_pixel <= vram_data(7); vram_read <= '1';
+				when "001" => video_pixel <= vram_data(6); vram_read <= '0';
+				when "010" => video_pixel <= vram_data(5); vram_read <= '0';
+				when "011" => video_pixel <= vram_data(4); vram_read <= '0';
+				when "100" => video_pixel <= vram_data(3); vram_read <= '0';
+				when "101" => video_pixel <= vram_data(2); vram_read <= '0';
+				when "110" => video_pixel <= vram_data(1); vram_read <= '0';
+				when "111" => video_pixel <= vram_data(0); vram_read <= '0';
+			end case;
+			if (video_pixel = '1') then
+				video_r <= "100";
+				video_g <= "001";
 				video_b <= "01";
+			else
+				video_r <= "000";
+				video_g <= "000";
+				video_b <= "00";
 			end if;
 		end if;
 		if (video_en = '1') then
