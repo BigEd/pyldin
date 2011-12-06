@@ -31,7 +31,9 @@ port(
 end pyldin2012;
 
 architecture pyldin_arch of pyldin2012 is
+signal clk25				: std_logic;
 signal sys_clk				: std_logic;
+
 -- cpu interface signals
 signal cpu_reset       	: std_logic;
 signal cpu_rw          	: std_logic;
@@ -85,25 +87,38 @@ signal ds5_data_in		: std_logic_vector(31 downto 0);
 signal ds5_data_out		: std_logic_vector(7 downto 0);
 
 -- hardware debugger
+signal step_clk			: std_logic;
 signal step_display		: std_logic_vector(31 downto 0);
 signal step_debouncer	: std_logic_vector(24 downto 0);
 begin
+
+	cpuclock: process (clk)
+	begin
+		if clk'event and clk='1' then
+			if (clk25 = '0')then
+				clk25 <= '1';
+			else
+				clk25 <= '0';
+			end if;
+		end if;
+	end process;	
+
 	stepone: process(clk, step)
 	begin
 		if (clk'event and clk = '1') then
 			if (step = '0') then
 				if (step_debouncer = "0010000000000000000000000") then
-					sys_clk <= '1';
+					step_clk <= '1';
 					step_debouncer <= step_debouncer + 1;
 				elsif (step_debouncer = "1100000000000000000000000") then
 					step_debouncer <= "0000000000000000000000000";
-					sys_clk <= '0';
+					step_clk <= '0';
 				else
 					step_debouncer <= step_debouncer + 1;
 				end if;
 			else
 				step_debouncer <= "0000000000000000000000000";
-				sys_clk <= '0';
+				step_clk <= '0';
 			end if;
 		end if;
 	end process;
@@ -148,12 +163,14 @@ begin
 		data		=> led_data
 	);
 
-	hexdispmode: process(swt, ds5_data_in, step_display)
+	debugmode: process(swt, ds5_data_in, step_display, step_clk, clk25)
 	begin
 		if (swt = '0') then
 			led_data <= ds5_data_in;
+			sys_clk  <= clk25;
 		else
-			led_data <= step_display;			
+			led_data <= step_display;
+			sys_clk  <= step_clk;
 		end if;
 	end process;
 	
