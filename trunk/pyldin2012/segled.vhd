@@ -14,7 +14,7 @@ port(
 end segleds;
 
 architecture segleds_arch of segleds is
-signal div_cnt			: std_logic_vector(24 downto 0);
+signal div_cnt			: std_logic_vector(18 downto 0);
 signal data4			: std_logic_vector(3 downto 0);
 signal ledseg_xhdl	: std_logic_vector(7 downto 0);
 signal ledcom_xhdl	: std_logic_vector(7 downto 0);
@@ -24,7 +24,7 @@ begin
 	process(clk,rst)
 	begin
 		if(rst = '0')then 
-			div_cnt <= "0000000000000000000000000";
+			div_cnt <= "0000000000000000000";
 		elsif (clk'event and clk = '1') then
 			div_cnt <= div_cnt + 1;
 		end if;
@@ -35,7 +35,7 @@ begin
 		if(rst = '0') then
 			ledcom_xhdl <= "11111110";
 		elsif (clk'event and clk = '1') then
-			case div_cnt(19 downto 17) is
+			case div_cnt(18 downto 16) is
 				when"000" => ledcom_xhdl <= "11111110";
 				when"001" => ledcom_xhdl <= "11111101";
 				when"010" => ledcom_xhdl <= "11111011";
