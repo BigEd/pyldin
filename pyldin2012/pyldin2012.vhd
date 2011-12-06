@@ -22,6 +22,7 @@ port(
 	sram_ub_n           	: out   std_logic;
 	sram_lb_n           	: out   std_logic;
 	
+	swt						: in std_logic;
 	step						: in std_logic;
 	ledseg					: out std_logic_vector(7 downto 0);
 	ledcom					: out std_logic_vector(7 downto 0)
@@ -57,6 +58,16 @@ signal ram_oe				: std_logic; -- memory output enable
 signal ram_cs          	: std_logic; -- memory chip select
 signal ram_data_out    	: std_logic_vector(7 downto 0);
 
+-- IO selector
+signal ds0_cs				: std_logic;
+signal ds1_cs				: std_logic;
+signal ds2_cs				: std_logic;
+signal ds3_cs				: std_logic;
+signal ds4_cs				: std_logic;
+signal ds5_cs				: std_logic;
+signal ds6_cs				: std_logic;
+signal ds7_cs				: std_logic;
+
 -- video
 signal video_clk25		: std_logic;
 signal video_row			: std_logic_vector(9 downto 0);
@@ -66,8 +77,15 @@ signal video_r				: std_logic_vector(2 downto 0);
 signal video_g				: std_logic_vector(2 downto 0);
 signal video_b				: std_logic_vector(1 downto 0);
 
--- hardware debugger
+-- hex display
 signal led_data			: std_logic_vector(31 downto 0);
+
+-- DS5
+signal ds5_data_in		: std_logic_vector(31 downto 0);
+signal ds5_data_out		: std_logic_vector(7 downto 0);
+
+-- hardware debugger
+signal step_display		: std_logic_vector(31 downto 0);
 signal step_debouncer	: std_logic_vector(24 downto 0);
 begin
 	stepone: process(clk, step)
@@ -130,45 +148,114 @@ begin
 		data		=> led_data
 	);
 
-	segdisptrace : process (cpu_addr, cpu_rw, cpu_data_in, cpu_data_out)
+	hexdispmode: process(swt, ds5_data_in, step_display)
 	begin
-		led_data(31 downto 16) <= cpu_addr;
-		led_data(15 downto 8 ) <= x"00";
-		if (cpu_rw = '1') then
-			led_data(7 downto 0) <= cpu_data_in;
+		if (swt = '0') then
+			led_data <= ds5_data_in;
 		else
-			led_data(7 downto 0) <= cpu_data_out;
+			led_data <= step_display;			
+		end if;
+	end process;
+	
+	segdisptrace : process (cpu_addr, cpu_rw, cpu_data_in, cpu_data_out, swt, led_data)
+	begin
+		step_display(31 downto 16) <= cpu_addr;
+		step_display(15 downto 8 ) <= x"00";
+		if (cpu_rw = '1') then
+			step_display(7 downto 0) <= cpu_data_in;
+		else
+			step_display(7 downto 0) <= cpu_data_out;
+		end if;
+	end process;
+
+	ds5hexout : process (cpu_addr, cpu_rw, cpu_data_out, ds5_cs, ds5_data_in, sys_clk)
+	begin
+		if (sys_clk'event and sys_clk = '1') then
+			if (ds5_cs = '1') then
+				if (cpu_rw = '0') then
+					case (cpu_addr(1 downto 0)) is
+						when "00" => ds5_data_in(31 downto 24) <= cpu_data_out;
+						when "01" => ds5_data_in(23 downto 16) <= cpu_data_out;
+						when "10" => ds5_data_in(15 downto 8 ) <= cpu_data_out;
+						when "11" => ds5_data_in( 7 downto 0 ) <= cpu_data_out;
+					end case;
+				else
+					case (cpu_addr(1 downto 0)) is
+						when "00" => ds5_data_out <= ds5_data_in(31 downto 24);
+						when "01" => ds5_data_out <= ds5_data_in(23 downto 16);
+						when "10" => ds5_data_out <= ds5_data_in(15 downto 8 );
+						when "11" => ds5_data_out <= ds5_data_in( 7 downto 0 );
+					end case;
+				end if;
+			end if;
 		end if;
 	end process;
 	
 	decode: process( cpu_addr, cpu_rw, cpu_vma, cpu_data_in,
 					  rombios_cs, rombios_data_out,
-				     ram_cs, ram_data_out
---				     uart_cs, uart_data_out,
---				     cf_cs, cf_data_out,
---				     timer_cs, timer_data_out,
+				     ram_cs, ram_data_out,
+					   ds5_data_out
 					  )
 	begin
       case cpu_addr(15 downto 12) is
-			when "1111" => -- $F000
-				cpu_data_in <= rombios_data_out;            -- read ROM
-				rombios_cs <= cpu_vma;
-				ram_cs     <= '0';
---				uart_cs    <= '0';
---				cf_cs      <= '0';
---				timer_cs   <= '0';
---				ioport_cs  <= '0';
-			when others =>
+			when "1111" =>											-- $Fxxx
+				cpu_data_in <= rombios_data_out;				-- read ROM
+				if (cpu_rw = '1') then
+					rombios_cs  <= cpu_vma;
+					ram_cs      <= '0';
+				else
+					rombios_cs  <= '0';
+					ram_cs      <= cpu_vma;
+				end if;
+--				ds_cs		   <= '0';
+				ds0_cs <= '0'; ds1_cs <= '0'; ds2_cs <= '0'; ds3_cs <= '0'; ds4_cs <= '0'; ds5_cs <= '0'; ds6_cs <= '0'; ds7_cs <= '0';
+			when "1110" =>											-- $Exxx
+				if (cpu_addr(11 downto 8) = "0110") then	-- IO $E6Xxx selector
+					case (cpu_addr(7 downto 5)) is
+					when "000" =>
+						ds0_cs <= cpu_vma; ds1_cs <= '0'; ds2_cs <= '0'; ds3_cs <= '0'; ds4_cs <= '0'; ds5_cs <= '0'; ds6_cs <= '0'; ds7_cs <= '0';
+						cpu_data_in <= x"ff";
+					when "001" =>
+						ds0_cs <= '0'; ds1_cs <= cpu_vma; ds2_cs <= '0'; ds3_cs <= '0'; ds4_cs <= '0'; ds5_cs <= '0'; ds6_cs <= '0'; ds7_cs <= '0';
+						cpu_data_in <= x"ff";
+					when "010" =>
+						ds0_cs <= '0'; ds1_cs <= '0'; ds2_cs <= cpu_vma; ds3_cs <= '0'; ds4_cs <= '0'; ds5_cs <= '0'; ds6_cs <= '0'; ds7_cs <= '0';
+						cpu_data_in <= x"ff";
+					when "011" =>
+						ds0_cs <= '0'; ds1_cs <= '0'; ds2_cs <= '0'; ds3_cs <= cpu_vma; ds4_cs <= '0'; ds5_cs <= '0'; ds6_cs <= '0'; ds7_cs <= '0';
+						cpu_data_in <= x"ff";
+					when "100" =>
+						ds0_cs <= '0'; ds1_cs <= '0'; ds2_cs <= '0'; ds3_cs <= '0'; ds4_cs <= cpu_vma; ds5_cs <= '0'; ds6_cs <= '0'; ds7_cs <= '0';
+						cpu_data_in <= x"ff";
+					when "101" =>
+						ds0_cs <= '0'; ds1_cs <= '0'; ds2_cs <= '0'; ds3_cs <= '0'; ds4_cs <= '0'; ds5_cs <= cpu_vma; ds6_cs <= '0'; ds7_cs <= '0';
+						cpu_data_in <= ds5_data_out;
+					when "110" =>
+						ds0_cs <= '0'; ds1_cs <= '0'; ds2_cs <= '0'; ds3_cs <= '0'; ds4_cs <= '0'; ds5_cs <= '0'; ds6_cs <= cpu_vma; ds7_cs <= '0';
+						cpu_data_in <= x"ff";
+					when "111" =>
+						ds0_cs <= '0'; ds1_cs <= '0'; ds2_cs <= '0'; ds3_cs <= '0'; ds4_cs <= '0'; ds5_cs <= '0'; ds6_cs <= '0'; ds7_cs <= cpu_vma;
+						cpu_data_in <= x"ff";
+					end case;
+
+					rombios_cs <= '0';
+					ram_cs     <= '0';
+				else													-- RAM
+					cpu_data_in <= ram_data_out;
+					rombios_cs  <= '0';
+					ram_cs      <= cpu_vma;
+--					ds_cs       <= '0';
+					ds0_cs <= '0'; ds1_cs <= '0'; ds2_cs <= '0'; ds3_cs <= '0'; ds4_cs <= '0'; ds5_cs <= '0'; ds6_cs <= '0'; ds7_cs <= '0';
+				end if;
+			when others =>											-- RAM
 				cpu_data_in <= ram_data_out;
-				rombios_cs <= '0';
-				ram_cs     <= cpu_vma;
---				uart_cs    <= '0';
---				cf_cs      <= '0';
---				timer_cs   <= '0';
---				ioport_cs  <= '0';
+				rombios_cs  <= '0';
+				ram_cs      <= cpu_vma;
+--				ds_cs       <= '0';
+				ds0_cs <= '0'; ds1_cs <= '0'; ds2_cs <= '0'; ds3_cs <= '0'; ds4_cs <= '0'; ds5_cs <= '0'; ds6_cs <= '0'; ds7_cs <= '0';
 		end case;
 	end process;
-
+	
 	sram: process( sys_clk, rst, cpu_addr, cpu_rw, cpu_data_out,
                   ram_cs, ram_wr, ram_data_out, sram_dq )
 	begin
