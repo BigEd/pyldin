@@ -31,8 +31,10 @@ port(
 end pyldin2012;
 
 architecture pyldin_arch of pyldin2012 is
+signal clk_cnt				: std_logic_vector(3 downto 0);
 signal clk25				: std_logic;
 signal sys_clk				: std_logic;
+signal vram_clk			: std_logic;
 
 -- cpu interface signals
 signal cpu_reset       	: std_logic;
@@ -57,10 +59,21 @@ signal rombios_data_out : std_logic_vector(7 downto 0);
 -- ram
 signal ram_cs          	: std_logic; -- memory chip select
 signal ram_data_out    	: std_logic_vector(7 downto 0);
+
+-- video ram
+signal vram_cs				: std_logic;
+signal vram_rw				: std_logic;
 signal vram_base_addr	: std_logic_vector(15 downto 0);
 signal vram_addr			: std_logic_vector(15 downto 0);
-signal vram_data			: std_logic_vector(7 downto 0);
-signal vram_read			: std_logic;
+signal vram_data_out		: std_logic_vector( 7 downto 0);
+signal vram_data_in		: std_logic_vector( 7 downto 0);
+
+-- ram mux
+signal mux_ram_cs			: std_logic;
+signal mux_ram_rw			: std_logic;
+signal mux_ram_addr		: std_logic_vector(15 downto 0);
+signal mux_ram_data_in	: std_logic_vector( 7 downto 0);
+signal mux_ram_data_out	: std_logic_vector( 7 downto 0);
 
 -- IO selector
 signal ds0_cs				: std_logic;
@@ -80,7 +93,7 @@ signal video_en			: std_logic;
 signal video_r				: std_logic_vector(2 downto 0);
 signal video_g				: std_logic_vector(2 downto 0);
 signal video_b				: std_logic_vector(1 downto 0);
-signal video_addr			: std_logic_vector(17 downto 0);
+signal video_addr			: std_logic_vector(16 downto 0);
 signal video_pixel		: std_logic;
 
 -- hex display
@@ -100,10 +113,11 @@ begin
 	begin
 		if clk'event and clk='1' then
 			if (clk25 = '0')then
-				clk25 <= '1';
+				clk25 <= '1';				
 			else
 				clk25 <= '0';
 			end if;
+			clk_cnt <= clk_cnt + 1;
 		end if;
 	end process;	
 
@@ -127,10 +141,10 @@ begin
 		end if;
 	end process;
 	
-	interrupts : process( rst )
+	interrupts : process( rst, vram_clk )
 	begin
 		cpu_halt  <= '0';
-		cpu_hold  <= '0';
+		cpu_hold  <= vram_clk; --'0';
 		cpu_irq   <= '0'; -- uart_irq or timer_irq;
 		cpu_nmi   <= '0'; -- trap_irq;
 		cpu_reset <= not rst; -- CPU reset is active high
@@ -170,22 +184,42 @@ begin
 	);
 
 	ram: entity work.SRAM port map (
-		clk => sys_clk,
-		rst => rst,
-		sram_addr => sram_addr,
-		sram_dq => sram_dq,
-		sram_ce_n => sram_ce_n,
-		sram_oe_n => sram_oe_n,
-		sram_we_n => sram_we_n,
-		sram_ub_n => sram_ub_n,
-		sram_lb_n => sram_lb_n,
-		cs => ram_cs,
-		rw => cpu_rw,
-		addr => cpu_addr,
-		data_in => cpu_data_out,
-		data_out => ram_data_out
+		clk 			=> sys_clk,
+		rst 			=> rst,
+		sram_addr 	=> sram_addr,
+		sram_dq 		=> sram_dq,
+		sram_ce_n 	=> sram_ce_n,
+		sram_oe_n 	=> sram_oe_n,
+		sram_we_n 	=> sram_we_n,
+		sram_ub_n 	=> sram_ub_n,
+		sram_lb_n 	=> sram_lb_n,
+		cs 			=> mux_ram_cs,
+		rw 			=> mux_ram_rw,
+		addr 			=> mux_ram_addr,
+		data_in 		=> mux_ram_data_in,
+		data_out 	=> mux_ram_data_out
 	);
 
+	
+--	rammux: process(clk, clk25)
+--	begin
+--		if (vram_clk'event and vram_clk='1') then
+--			if (clk = '0')then
+--				mux_ram_cs <= vram_cs;
+--				mux_ram_rw <= '1'; -- vram_rw; -- read-only
+--				mux_ram_addr <= vram_addr;
+--				mux_ram_data_in <= vram_data_in;
+--				vram_data_out <= mux_ram_data_out;
+--			else
+--				mux_ram_cs <= ram_cs;
+--				mux_ram_rw <= cpu_rw;
+--				mux_ram_addr <= cpu_addr;
+--				mux_ram_data_in <= cpu_data_out;
+--				ram_data_out <= mux_ram_data_out;
+--			end if;
+--		end if;
+--	end process;
+	
 	segdisplay : entity work.segleds port map(
 		clk		=> clk,
 		rst		=> rst,
@@ -300,39 +334,64 @@ begin
 				ds0_cs <= '0'; ds1_cs <= '0'; ds2_cs <= '0'; ds3_cs <= '0'; ds4_cs <= '0'; ds5_cs <= '0'; ds6_cs <= '0'; ds7_cs <= '0';
 		end case;
 	end process;
-	
-	videoout: process(video_clk25, video_en, video_row, video_column, video_r, video_g, video_b)
+
+	vramclock: process (clk, clk25)
 	begin
-		if (video_clk25'event and video_clk25 = '0') then
-				vram_addr <= vram_base_addr + video_addr(17 downto 3);
-			case video_addr(2 downto 0) is
-				when "000" => video_pixel <= vram_data(7); vram_read <= '1';
-				when "001" => video_pixel <= vram_data(6); vram_read <= '0';
-				when "010" => video_pixel <= vram_data(5); vram_read <= '0';
-				when "011" => video_pixel <= vram_data(4); vram_read <= '0';
-				when "100" => video_pixel <= vram_data(3); vram_read <= '0';
-				when "101" => video_pixel <= vram_data(2); vram_read <= '0';
-				when "110" => video_pixel <= vram_data(1); vram_read <= '0';
-				when "111" => video_pixel <= vram_data(0); vram_read <= '0';
-			end case;
-			if (video_pixel = '1') then
-				video_r <= "100";
-				video_g <= "001";
-				video_b <= "01";
+		if clk'event and clk = '0' then
+			if (clk_cnt(1 downto 0) = "11") then
+				vram_clk <= '1';
 			else
-				video_r <= "000";
-				video_g <= "000";
-				video_b <= "00";
+				vram_clk <= '0';
+			end if;
+			if ((vram_clk = '1') and (vram_cs = '1')) then
+				mux_ram_cs <= vram_cs;
+				mux_ram_rw <= '1'; -- vram_rw; -- read-only
+				mux_ram_addr(1 downto 0) <= vram_addr(1 downto 0);
+				mux_ram_addr(15 downto 2) <= "00000000000000";
+--				mux_ram_addr <= vram_addr;
+				mux_ram_data_in <= vram_data_in;
+			else
+				mux_ram_cs <= ram_cs;
+				mux_ram_rw <= cpu_rw;
+				mux_ram_addr <= cpu_addr;
+				mux_ram_data_in <= cpu_data_out;
+				ram_data_out <= mux_ram_data_out;
 			end if;
 		end if;
-		if (video_en = '1') then
-			vga_r <= video_r;
-			vga_g <= video_g;
-			vga_b <= video_b;
-		else
-			vga_r <= "000";
-			vga_g <= "000";
-			vga_b <= "00";
+	end process;	
+	
+	vram_base_addr <= "0000000000000000";
+	vram_cs <= video_en;
+	
+	videoout: process(video_clk25, vram_clk, video_en, video_row, video_column, video_r, video_g, video_b, 
+							video_addr, vram_base_addr, video_pixel)
+	begin
+		-- vram_addr <= vram_base_addr + video_addr(17 downto 3);
+		vram_addr <= vram_base_addr + video_addr(16 downto 3);
+
+		if (vram_clk'event and vram_clk = '0') then
+			if (video_addr(2 downto 0) = "000") then
+				vram_data_out <= mux_ram_data_out;
+			end if;
+			case video_addr(2 downto 0) is
+					when "000" => video_pixel <= vram_data_out(7);
+					when "001" => video_pixel <= vram_data_out(6);
+					when "010" => video_pixel <= vram_data_out(5);
+					when "011" => video_pixel <= vram_data_out(4);
+					when "100" => video_pixel <= vram_data_out(3);
+					when "101" => video_pixel <= vram_data_out(2);
+					when "110" => video_pixel <= vram_data_out(1);
+					when "111" => video_pixel <= vram_data_out(0);
+			end case;
+			if (video_en = '1') then
+				vga_r(2) <= video_pixel; 
+				vga_g(2) <= video_pixel;
+				vga_b(1) <= video_pixel;
+			else
+				vga_r <= "000"; 
+				vga_g <= "000";
+				vga_b <= "00";
+			end if;
 		end if;
 	end process;
 	
