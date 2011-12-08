@@ -2,6 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
 use ieee.std_logic_unsigned.all;
+use ieee.numeric_std.all;
 
 entity vgasync is
 port(
@@ -10,7 +11,7 @@ port(
 	vga_hs              	: out std_logic;
 	vga_vs              	: out std_logic;
 
-	addr						: out std_logic_vector(17 downto 0);
+	addr						: out std_logic_vector(16 downto 0);
 	row						: out std_logic_vector(9 downto 0);
 	column					: out std_logic_vector(9 downto 0);	
 	enable					: out std_logic
@@ -25,7 +26,6 @@ signal horizontal_en		: std_logic;
 signal vertical_en		: std_logic;
 signal h_cnt				: std_logic_vector(9 downto 0);
 signal v_cnt				: std_logic_vector(9 downto 0);
-signal v_addr				: std_logic_vector(18 downto 0);
 begin
 	enable <= horizontal_en and vertical_en;
 	vga_clk25 <= clk25;
@@ -71,7 +71,6 @@ begin
 			v_cnt <= "0000000000";
 		elsif (h_cnt = 699) then
 			v_cnt <= v_cnt + 1;
-			v_addr <= v_addr + 640;
 		end if;
 	
 		-- generate vertical sync
@@ -91,12 +90,15 @@ begin
 	
 		-- generate vertical data
 		if (v_cnt <= 479) then
+	if (v_cnt = 16) then
 			vertical_en <= '1';
+	else
+	vertical_en <= '0';
+	end if;
 			row <= v_cnt;
-			addr <= v_addr(18 downto 1) + h_cnt(9 downto 1);
+			addr <= std_logic_vector("101000000"*v_cnt(8 downto 1) + h_cnt(9 downto 1));
 		else
 			vertical_en <= '0';
-			v_addr <= "0000000000000000000";
 		end if;
 		
 		vga_hs <= h_sync;
