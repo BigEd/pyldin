@@ -343,7 +343,7 @@ begin
 			else
 				vram_clk <= '0';
 			end if;
-			if ((vram_clk = '1') and (vram_cs = '1')) then
+			if ((vram_clk = '1') and (vram_cs = '1') and (video_addr(2 downto 0) = "000")) then
 				mux_ram_cs <= vram_cs;
 				mux_ram_rw <= '1'; -- vram_rw; -- read-only
 				mux_ram_addr(1 downto 0) <= vram_addr(1 downto 0);
