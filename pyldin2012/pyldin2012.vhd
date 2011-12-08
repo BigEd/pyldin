@@ -86,13 +86,9 @@ signal ds6_cs				: std_logic;
 signal ds7_cs				: std_logic;
 
 -- video
-signal video_clk25		: std_logic;
 signal video_row			: std_logic_vector(9 downto 0);
 signal video_column		: std_logic_vector(9 downto 0);
 signal video_en			: std_logic;
-signal video_r				: std_logic_vector(2 downto 0);
-signal video_g				: std_logic_vector(2 downto 0);
-signal video_b				: std_logic_vector(1 downto 0);
 signal video_addr			: std_logic_vector(16 downto 0);
 signal video_pixel		: std_logic;
 
@@ -151,8 +147,7 @@ begin
 	end process;
 
 	videosync: entity work.vgasync port map(
-		clk		=> clk,
-		vga_clk25=> video_clk25,
+		clk		=> clk25,
 		vga_hs	=> vga_hs,
 		vga_vs	=> vga_vs,
 		addr		=> video_addr,
@@ -199,26 +194,6 @@ begin
 		data_in 		=> mux_ram_data_in,
 		data_out 	=> mux_ram_data_out
 	);
-
-	
---	rammux: process(clk, clk25)
---	begin
---		if (vram_clk'event and vram_clk='1') then
---			if (clk = '0')then
---				mux_ram_cs <= vram_cs;
---				mux_ram_rw <= '1'; -- vram_rw; -- read-only
---				mux_ram_addr <= vram_addr;
---				mux_ram_data_in <= vram_data_in;
---				vram_data_out <= mux_ram_data_out;
---			else
---				mux_ram_cs <= ram_cs;
---				mux_ram_rw <= cpu_rw;
---				mux_ram_addr <= cpu_addr;
---				mux_ram_data_in <= cpu_data_out;
---				ram_data_out <= mux_ram_data_out;
---			end if;
---		end if;
---	end process;
 	
 	segdisplay : entity work.segleds port map(
 		clk		=> clk,
@@ -363,10 +338,9 @@ begin
 	vram_base_addr <= "0000000000000000";
 	vram_cs <= video_en;
 	
-	videoout: process(video_clk25, vram_clk, video_en, video_row, video_column, video_r, video_g, video_b, 
+	videoout: process(vram_clk, video_en, video_row, video_column, 
 							video_addr, vram_base_addr, video_pixel)
 	begin
-		-- vram_addr <= vram_base_addr + video_addr(17 downto 3);
 		vram_addr <= vram_base_addr + video_addr(16 downto 3);
 
 		if (vram_clk'event and vram_clk = '0') then

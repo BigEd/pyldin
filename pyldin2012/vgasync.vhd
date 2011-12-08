@@ -7,7 +7,6 @@ use ieee.numeric_std.all;
 entity vgasync is
 port(
 	clk						: in std_logic;
-	vga_clk25				: out std_logic;
 	vga_hs              	: out std_logic;
 	vga_vs              	: out std_logic;
 
@@ -19,7 +18,6 @@ port(
 end vgasync;
 
 architecture behavior of vgasync is
-signal clk25				: std_logic;
 signal h_sync				: std_logic;
 signal v_sync				: std_logic;
 signal horizontal_en		: std_logic;
@@ -28,29 +26,10 @@ signal h_cnt				: std_logic_vector(9 downto 0);
 signal v_cnt				: std_logic_vector(9 downto 0);
 begin
 	enable <= horizontal_en and vertical_en;
-	vga_clk25 <= clk25;
 	
-	--Generate 25Mhz Clock
-	process (clk)
-	begin
-		if clk'event and clk='1' then
-			if (clk25 = '0')then
-				clk25 <= '1' after 2 ns;
-			else
-				clk25 <= '0' after 2 ns;
-			end if;
-		end if;
-	end process;	
-
 	process
-	variable cnt: integer range 0 to 25000000;
 	begin
-		wait until(clk25'event) and (clk25 = '1');
-		if (cnt = 25000000) then
-			cnt := 0;
-		else
-			cnt := cnt  + 1;
-		end if;
+		wait until(clk'event) and (clk = '1');
 
 		-- reset horisontal counter
 		if (h_cnt = 799) then
@@ -90,11 +69,7 @@ begin
 	
 		-- generate vertical data
 		if (v_cnt <= 479) then
-	if (v_cnt = 16) then
 			vertical_en <= '1';
-	else
-	vertical_en <= '0';
-	end if;
 			row <= v_cnt;
 			addr <= std_logic_vector("101000000"*v_cnt(8 downto 1) + h_cnt(9 downto 1));
 		else
