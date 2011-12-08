@@ -321,9 +321,9 @@ begin
 			if ((vram_clk = '1') and (vram_cs = '1') and (video_addr(2 downto 0) = "000")) then
 				mux_ram_cs <= vram_cs;
 				mux_ram_rw <= '1'; -- vram_rw; -- read-only
-				mux_ram_addr(1 downto 0) <= vram_addr(1 downto 0);
-				mux_ram_addr(15 downto 2) <= "00000000000000";
---				mux_ram_addr <= vram_addr;
+--				mux_ram_addr(1 downto 0) <= vram_addr(1 downto 0);
+--				mux_ram_addr(15 downto 2) <= "00000000000000";
+				mux_ram_addr <= vram_addr;
 				mux_ram_data_in <= vram_data_in;
 			else
 				mux_ram_cs <= ram_cs;
@@ -346,17 +346,10 @@ begin
 		if (vram_clk'event and vram_clk = '0') then
 			if (video_addr(2 downto 0) = "000") then
 				vram_data_out <= mux_ram_data_out;
+			else
+				vram_data_out(7 downto 1) <= vram_data_out(6 downto 0);
 			end if;
-			case video_addr(2 downto 0) is
-					when "000" => video_pixel <= vram_data_out(7);
-					when "001" => video_pixel <= vram_data_out(6);
-					when "010" => video_pixel <= vram_data_out(5);
-					when "011" => video_pixel <= vram_data_out(4);
-					when "100" => video_pixel <= vram_data_out(3);
-					when "101" => video_pixel <= vram_data_out(2);
-					when "110" => video_pixel <= vram_data_out(1);
-					when "111" => video_pixel <= vram_data_out(0);
-			end case;
+			video_pixel <= vram_data_out(7);
 			if (video_en = '1') then
 				vga_r(2) <= video_pixel; 
 				vga_g(2) <= video_pixel;
