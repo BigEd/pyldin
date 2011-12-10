@@ -26,19 +26,31 @@ architecture vgaframebuffer_arch of vgaframebuffer is
 signal video_addr			: std_logic_vector(16 downto 0);
 signal data					: std_logic_vector( 7 downto 0);
 signal pixel				: std_logic;
+signal char_addr			: std_logic_vector(10 downto 0);
+signal char_data			: std_logic_vector( 7 downto 0);
 begin
-	process(clk, addr_base, video_addr, row, column)
+	chargen: entity work.vgachargen port map (addr => char_addr, data => char_data);
+
+	process(clk, addr_base, video_addr, row, column, mode)
 	begin
---		if (mode = '1') then
+		if (mode = '1') then
 			video_addr <= std_logic_vector("101000000"*row(8 downto 1) + column(9 downto 1));
 			addr_out <= addr_base + video_addr(16 downto 3);
---		else
---			addr_out <= addr_base + addr_in();
---		end if;
+		else
+			video_addr <= "00000000000000000" + std_logic_vector("000101000"*row(8 downto 4) + column(9 downto 4));
+			addr_out <= addr_base + video_addr(15 downto 0);
+		end if;
 
 		if (clk'event and clk = '0') then
-			if (video_addr(2 downto 0) = "000") then
-				data <= data_in;
+			if (column(3 downto 1) = "000") then
+				if (mode = '1') then
+					data <= data_in;
+				else
+					char_addr( 2 downto 0) <= row(3 downto 1);
+					char_addr( 3) <= data_in(7);
+					char_addr(10 downto 4) <= data_in(6 downto 0);
+					data <= char_data;
+				end if;
 			else
 				data(7 downto 1) <= data(6 downto 0);
 			end if;
