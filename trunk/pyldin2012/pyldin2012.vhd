@@ -318,12 +318,8 @@ begin
 			else
 				vram_clk <= '0';
 			end if;
-			if (video_addr(2 downto 0) = "000") then
-				vram_cs <= video_en;
-			else
-				vram_cs <= '0';
-			end if;
-			if ((vram_clk = '1') and (vram_cs = '1')) or (clk_cnt(1 downto 0) = "00") then
+
+			if (((clk_cnt(1 downto 0) = "11") or (clk_cnt(1 downto 0) = "00")) and (video_addr(2 downto 0) = "000")) then
 				mux_ram_cs <= vram_cs;
 				mux_ram_rw <= '1'; -- vram_rw; -- read-only
 --				mux_ram_addr(1 downto 0) <= vram_addr(1 downto 0);
@@ -341,6 +337,7 @@ begin
 	end process;	
 	
 	vram_base_addr <= "0000000000000000";
+	vram_cs <= video_en;
 	
 	videoout: process(vram_clk, video_en, video_row, video_column, 
 							video_addr, vram_base_addr, video_pixel)
