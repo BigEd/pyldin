@@ -34,7 +34,7 @@ architecture pyldin_arch of pyldin2012 is
 signal clk_cnt				: std_logic_vector(3 downto 0);
 signal clk25				: std_logic;
 signal sys_clk				: std_logic;
-signal vram_clk			: std_logic;
+signal pixel_clk			: std_logic;
 
 -- cpu interface signals
 signal cpu_reset       	: std_logic;
@@ -137,10 +137,10 @@ begin
 		end if;
 	end process;
 	
-	interrupts : process( rst, vram_clk )
+	interrupts : process( rst, pixel_clk )
 	begin
 		cpu_halt  <= '0';
-		cpu_hold  <= vram_clk; --'0';
+		cpu_hold  <= pixel_clk; --'0';
 		cpu_irq   <= '0'; -- uart_irq or timer_irq;
 		cpu_nmi   <= '0'; -- trap_irq;
 		cpu_reset <= not rst; -- CPU reset is active high
@@ -314,9 +314,9 @@ begin
 	begin
 		if clk'event and clk = '0' then
 			if (clk_cnt(1 downto 0) = "11") then
-				vram_clk <= '1';
+				pixel_clk <= '1';
 			else
-				vram_clk <= '0';
+				pixel_clk <= '0';
 			end if;
 
 			if (((clk_cnt(1 downto 0) = "11") or (clk_cnt(1 downto 0) = "00")) and (video_addr(2 downto 0) = "000")) then
@@ -339,12 +339,12 @@ begin
 	vram_base_addr <= "0000000000000000";
 	vram_cs <= video_en;
 	
-	videoout: process(vram_clk, video_en, video_row, video_column, 
+	videoout: process(pixel_clk, video_en, video_row, video_column, 
 							video_addr, vram_base_addr, video_pixel)
 	begin
 		vram_addr <= vram_base_addr + video_addr(16 downto 3);
 
-		if (vram_clk'event and vram_clk = '0') then
+		if (pixel_clk'event and pixel_clk = '0') then
 			if (video_addr(2 downto 0) = "000") then
 				vram_data_out <= mux_ram_data_out;
 			else
