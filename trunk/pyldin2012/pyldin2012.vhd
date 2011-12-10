@@ -90,7 +90,7 @@ signal video_row			: std_logic_vector(9 downto 0);
 signal video_column		: std_logic_vector(9 downto 0);
 signal video_en			: std_logic;
 signal video_addr			: std_logic_vector(16 downto 0);
-signal video_pixel		: std_logic;
+signal video_mode			: std_logic;
 
 -- hex display
 signal led_data			: std_logic_vector(31 downto 0);
@@ -322,8 +322,6 @@ begin
 			if (((clk_cnt(1 downto 0) = "11") or (clk_cnt(1 downto 0) = "00")) and (video_addr(2 downto 0) = "000")) then
 				mux_ram_cs <= vram_cs;
 				mux_ram_rw <= '1'; -- vram_rw; -- read-only
---				mux_ram_addr(1 downto 0) <= vram_addr(1 downto 0);
---				mux_ram_addr(15 downto 2) <= "00000000000000";
 				mux_ram_addr <= vram_addr;
 				mux_ram_data_in <= vram_data_in;
 			else
@@ -338,29 +336,19 @@ begin
 	
 	vram_base_addr <= "0000000000000000";
 	vram_cs <= video_en;
-	
-	videoout: process(pixel_clk, video_en, video_row, video_column, 
-							video_addr, vram_base_addr, video_pixel)
-	begin
-		vram_addr <= vram_base_addr + video_addr(16 downto 3);
+	video_mode <= '0';
 
-		if (pixel_clk'event and pixel_clk = '0') then
-			if (video_addr(2 downto 0) = "000") then
-				vram_data_out <= mux_ram_data_out;
-			else
-				vram_data_out(7 downto 1) <= vram_data_out(6 downto 0);
-			end if;
-			video_pixel <= vram_data_out(7);
-			if (video_en = '1') then
-				vga_r(2) <= video_pixel; 
-				vga_g(2) <= video_pixel;
-				vga_b(1) <= video_pixel;
-			else
-				vga_r <= "000"; 
-				vga_g <= "000";
-				vga_b <= "00";
-			end if;
-		end if;
-	end process;
+	vgafb: entity work.vgaframebuffer port map (
+		clk		=> pixel_clk,
+		enable	=> video_en,
+		mode		=> video_mode,
+		addr_in	=> video_addr,
+		addr_base=> vram_base_addr,
+		addr_out	=> vram_addr,
+		data_in	=> mux_ram_data_out,
+		vga_r		=> vga_r,
+		vga_g		=> vga_g,
+		vga_b		=> vga_b
+	);
 	
 end pyldin_arch;
