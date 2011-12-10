@@ -150,7 +150,6 @@ begin
 		clk		=> clk25,
 		vga_hs	=> vga_hs,
 		vga_vs	=> vga_vs,
-		addr		=> video_addr,
 		row		=> video_row,
 		column	=> video_column,
 		enable	=>	video_en
@@ -319,7 +318,7 @@ begin
 				pixel_clk <= '0';
 			end if;
 
-			if (((clk_cnt(1 downto 0) = "11") or (clk_cnt(1 downto 0) = "00")) and (video_addr(2 downto 0) = "000")) then
+			if (((clk_cnt(1 downto 0) = "11") or (clk_cnt(1 downto 0) = "00"))) then
 				mux_ram_cs <= vram_cs;
 				mux_ram_rw <= '1'; -- vram_rw; -- read-only
 				mux_ram_addr <= vram_addr;
@@ -342,7 +341,8 @@ begin
 		clk		=> pixel_clk,
 		enable	=> video_en,
 		mode		=> video_mode,
-		addr_in	=> video_addr,
+		row		=> video_row,
+		column	=> video_column,
 		addr_base=> vram_base_addr,
 		addr_out	=> vram_addr,
 		data_in	=> mux_ram_data_out,

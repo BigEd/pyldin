@@ -10,7 +10,6 @@ port(
 	vga_hs              	: out std_logic;
 	vga_vs              	: out std_logic;
 
-	addr						: out std_logic_vector(16 downto 0);
 	row						: out std_logic_vector(9 downto 0);
 	column					: out std_logic_vector(9 downto 0);	
 	enable					: out std_logic
@@ -68,7 +67,6 @@ begin
 		if (v_cnt <= 479) then
 			vertical_en <= '1';
 			row <= v_cnt;
-			addr <= std_logic_vector("101000000"*v_cnt(8 downto 1) + h_cnt(9 downto 1));
 		else
 			vertical_en <= '0';
 		end if;
