@@ -31,34 +31,31 @@ begin
 	begin
 		wait until(clk'event) and (clk = '1');
 
-		-- reset horisontal counter
 		if (h_cnt = 799) then
 			h_cnt <= "0000000000";
+			if (v_cnt = 520) then
+				v_cnt <= "0000000000";
+			else
+				v_cnt <= v_cnt + 1;
+			end if;
 		else
 			h_cnt <= h_cnt + 1;
 		end if;
 
 		-- generate horisontal sync
-		if ((h_cnt <= 755) and (h_cnt >= 659)) then
+		if ((h_cnt > 663) and (h_cnt < 757)) then
 			h_sync <= '0';
 		else
 			h_sync <= '1';
 		end if;
-		
-		-- reset vertical counter
-		if ((v_cnt >= 524) and (h_cnt >= 699)) then
-			v_cnt <= "0000000000";
-		elsif (h_cnt = 699) then
-			v_cnt <= v_cnt + 1;
-		end if;
 	
 		-- generate vertical sync
-		if ((v_cnt <= 494) and (v_cnt >= 493)) then
+		if ((v_cnt > 499) and (v_cnt < 502)) then
 			v_sync <= '0';	
 		else
 			v_sync <= '1';
 		end if;
-	
+			
 		-- generate horizontal data
 		if (h_cnt <= 639) then
 			horizontal_en <= '1';
