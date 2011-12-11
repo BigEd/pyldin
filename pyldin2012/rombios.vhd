@@ -32,7 +32,6 @@ use ieee.std_logic_unsigned.all;
 
 entity rombios_rom is
 port (
-	cs			: in  std_logic;
 	addr   	: in  std_logic_vector(11 downto 0);
 	data		: out std_logic_vector(7 downto 0)
 );
@@ -45,11 +44,8 @@ constant memsize : integer := 4096;
 type rom_array is array(0 to memsize-1) of std_logic_vector(width-1 downto 0);
 
 constant rom_data : rom_array := (
---x"86", x"10", x"ce", x"00", x"00", x"a7", x"00", x"08", x"4a", x"26", x"fa", x"01", x"01", x"86", x"10", x"ce", 
---x"00", x"00", x"e6", x"00", x"08", x"4a", x"26", x"fa", x"01", x"01", x"20", x"fe", x"ff", x"ff", x"ff", x"ff", 
---x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", 
 x"ce", x"00", x"00", x"86", x"00", x"a7", x"00", x"08", x"8c", x"25", x"80", x"26", x"f8", x"01", x"ce", x"00", 
-x"00", x"86", x"aa", x"a7", x"00", x"08", x"8c", x"01", x"40", x"26", x"f8", x"01", x"20", x"fe", x"ff", x"ff", 
+x"00", x"86", x"00", x"a7", x"00", x"4c", x"08", x"8c", x"02", x"00", x"26", x"f7", x"01", x"20", x"fe", x"ff", 
 x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", 
 x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", 
 x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", x"ff", 
