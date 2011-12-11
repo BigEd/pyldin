@@ -4,6 +4,9 @@ use ieee.std_logic_arith.all;
 use ieee.std_logic_unsigned.all;
 
 entity vgaframebuffer is
+generic(
+	READ_DELAY				: natural :=36
+	);
 port(
 	rst						: in std_logic;
 	clk						: in std_logic;
@@ -57,14 +60,14 @@ begin
 				h_cnt <= h_cnt + 1;
 			end if;
 
-			if ((h_cnt <= 755) and (h_cnt >= 659)) then
---			if ((h_cnt <= 786) and (h_cnt >= 691)) then
+			if ((h_cnt <= (755 + READ_DELAY)) and (h_cnt >= (659 + READ_DELAY))) then
+--			if ((h_cnt <= 787) and (h_cnt >= 691)) then
 				h_sync <= '0';
 			else
 				h_sync <= '1';
 			end if;
 			
-			if (h_cnt <= 639) then
+			if ((h_cnt >= (0 + READ_DELAY)) and (h_cnt <= (639 + READ_DELAY))) then
 				horizontal_en <= '1';
 			else
 				horizontal_en <= '0';
@@ -120,12 +123,7 @@ begin
 					char_addr( 2 downto 0) <= v_cnt(3 downto 1);
 					char_addr( 3) <= data_in(7);
 					char_addr(10 downto 4) <= data_in(6 downto 0);
---if (row(8 downto 4) = "00000") and (column(9 downto 4)= "000000") then
---if (video_addr = "0000000000000000") then
---data <= "11111111";
---else
 					data <= char_data;
---end if;
 				end if;
 			else
 				data(7 downto 1) <= data(6 downto 0);

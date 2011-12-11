@@ -323,7 +323,7 @@ begin
 	begin
 		if clk'event and clk = '0' then
 			if (vram_access = '1') then
-				mux_ram_cs <= vram_cs;
+				mux_ram_cs <= '1'; -- vram_cs;
 				mux_ram_rw <= '1'; -- vram_rw; -- read-only
 				mux_ram_addr <= vram_addr;
 				mux_ram_data_in <= vram_data_in;
