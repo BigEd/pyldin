@@ -11,7 +11,7 @@ port(
 	vga_vs              	: out std_logic;
 
 	row						: out std_logic_vector(9 downto 0);
-	column					: out std_logic_vector(9 downto 0);	
+	column					: out std_logic_vector(10 downto 0);	
 	enable					: out std_logic
 );		
 end vgasync;
@@ -21,7 +21,7 @@ signal h_sync				: std_logic;
 signal v_sync				: std_logic;
 signal horizontal_en		: std_logic;
 signal vertical_en		: std_logic;
-signal h_cnt				: std_logic_vector(9 downto 0);
+signal h_cnt				: std_logic_vector(10 downto 0);
 signal v_cnt				: std_logic_vector(9 downto 0);
 begin
 	enable <= horizontal_en and vertical_en;
@@ -39,7 +39,12 @@ begin
 		-- h_cnt  0                                    640   659  755     799
 		-- 
 		if (h_cnt = 799) then
-			h_cnt <= "0000000000";
+			h_cnt <= "00000000000";
+			if (v_cnt >= 524) then
+				v_cnt <= "0000000000";
+			else
+				v_cnt <= v_cnt + 1;
+			end if;
 		else
 			h_cnt <= h_cnt + 1;
 		end if;
@@ -59,11 +64,11 @@ begin
 		-- v_cnt  0                               480     493-494         524
 		--	
 
-		if ((v_cnt >= 524) and (h_cnt >= 699)) then
-			v_cnt <= "0000000000";
-		elsif (h_cnt = 699) then
-			v_cnt <= v_cnt + 1;
-		end if;
+--		if ((v_cnt >= 524) and (h_cnt >= 699)) then
+--			v_cnt <= "0000000000";
+--		elsif (h_cnt = 699) then
+--			v_cnt <= v_cnt + 1;
+--		end if;
 	
 		--
 		-- Generate Vertical Sync Signal using v_cnt 
@@ -79,18 +84,19 @@ begin
 		--
 		if (h_cnt <= 639) then
 			horizontal_en <= '1';
+			column <= h_cnt;
 		else
 			horizontal_en <= '0';
+			column <= "00000000000";
 		end if;
 
 		if (v_cnt <= 479) then
 			vertical_en <= '1';
+			row <= v_cnt;
 		else
 			vertical_en <= '0';
 		end if;
 
-		column <= h_cnt;
-		row <= v_cnt;
 		
 		vga_hs <= h_sync;
 		vga_vs <= v_sync;

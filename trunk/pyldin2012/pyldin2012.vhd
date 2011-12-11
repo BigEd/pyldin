@@ -34,6 +34,7 @@ architecture pyldin_arch of pyldin2012 is
 signal clk_cnt				: std_logic_vector(3 downto 0);
 signal clk25				: std_logic;
 signal sys_clk				: std_logic;
+signal vram_access		: std_logic;
 signal pixel_clk			: std_logic;
 
 -- cpu interface signals
@@ -87,7 +88,7 @@ signal ds7_cs				: std_logic;
 
 -- video
 signal video_row			: std_logic_vector(9 downto 0);
-signal video_column		: std_logic_vector(9 downto 0);
+signal video_column		: std_logic_vector(10 downto 0);
 signal video_en			: std_logic;
 signal video_addr			: std_logic_vector(16 downto 0);
 signal video_mode			: std_logic;
@@ -105,9 +106,12 @@ signal step_display		: std_logic_vector(31 downto 0);
 signal step_debouncer	: std_logic_vector(24 downto 0);
 begin
 
-	cpuclock: process (clk)
+	cpuclock: process (clk, rst)
 	begin
-		if clk'event and clk='1' then
+		if (rst = '0') then
+			clk25 <= '0';
+			clk_cnt <= "0000";
+		elsif (clk'event and clk='1') then
 			if (clk25 = '0')then
 				clk25 <= '1';				
 			else
@@ -115,7 +119,23 @@ begin
 			end if;
 			clk_cnt <= clk_cnt + 1;
 		end if;
-	end process;	
+	end process;
+	
+	vramaccess: process (clk, clk25)
+	begin
+		if (clk'event and clk = '0') then
+			if (clk_cnt(1 downto 0) = "11") then
+				pixel_clk <= '1';
+			else
+				pixel_clk <= '0';
+			end if;
+			if (clk_cnt(1 downto 0) = "11") or (clk_cnt(1 downto 0) = "00") then
+				vram_access <= '1';
+			else
+				vram_access <= '0';
+			end if;
+		end if;
+	end process;
 
 	stepone: process(clk, step)
 	begin
@@ -145,15 +165,6 @@ begin
 		cpu_nmi   <= '0'; -- trap_irq;
 		cpu_reset <= not rst; -- CPU reset is active high
 	end process;
-
-	videosync: entity work.vgasync port map(
-		clk		=> clk25,
-		vga_hs	=> vga_hs,
-		vga_vs	=> vga_vs,
-		row		=> video_row,
-		column	=> video_column,
-		enable	=>	video_en
-	);
 	
 	mc6800 : entity work.cpu68 port map(
 		clk		=> sys_clk,
@@ -172,7 +183,6 @@ begin
 	);
 
 	rombios : entity work.rombios_rom port map (
-		cs			=> rombios_cs,
 		addr		=> cpu_addr(11 downto 0),
 		data		=> rombios_data_out
 	);
@@ -309,16 +319,10 @@ begin
 		end case;
 	end process;
 
-	vramclock: process (clk, clk25)
+	vramclock: process (clk)
 	begin
 		if clk'event and clk = '0' then
-			if (clk_cnt(1 downto 0) = "11") then
-				pixel_clk <= '1';
-			else
-				pixel_clk <= '0';
-			end if;
-
-			if (((clk_cnt(1 downto 0) = "11") or (clk_cnt(1 downto 0) = "00"))) then
+			if (vram_access = '1') then
 				mux_ram_cs <= vram_cs;
 				mux_ram_rw <= '1'; -- vram_rw; -- read-only
 				mux_ram_addr <= vram_addr;
@@ -332,23 +336,34 @@ begin
 			end if;
 		end if;
 	end process;	
+
+--	videosync: entity work.vgasync port map(
+--		clk		=> clk25,
+--		vga_hs	=> vga_hs,
+--		vga_vs	=> vga_vs,
+--		row		=> video_row,
+--		column	=> video_column,
+--		enable	=>	video_en
+--	);
 	
 	vram_base_addr <= "0000000000000000";
 	vram_cs <= video_en;
 	video_mode <= '0';
 
 	vgafb: entity work.vgaframebuffer port map (
-		clk		=> pixel_clk,
+		rst		=> rst,
+		clk		=> clk25,
+		pixel_clk=> pixel_clk,
 		enable	=> video_en,
 		mode		=> video_mode,
-		row		=> video_row,
-		column	=> video_column,
 		addr_base=> vram_base_addr,
 		addr_out	=> vram_addr,
 		data_in	=> mux_ram_data_out,
 		vga_r		=> vga_r,
 		vga_g		=> vga_g,
-		vga_b		=> vga_b
+		vga_b		=> vga_b,
+		vga_hs	=> vga_hs,
+		vga_vs	=> vga_vs
 	);
 	
 end pyldin_arch;
