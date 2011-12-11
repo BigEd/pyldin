@@ -30,46 +30,67 @@ begin
 	begin
 		wait until(clk'event) and (clk = '1');
 
+		-- Generate Horizontal and Vertical Timing Signals for Video Signal
+
+		--
+		-- h_cnt counts pixels (640 + extra time for sync signals)
+		--
+		-- h_sync -------------------------------------------________-------- 
+		-- h_cnt  0                                    640   659  755     799
+		-- 
 		if (h_cnt = 799) then
 			h_cnt <= "0000000000";
-			if (v_cnt = 520) then
-				v_cnt <= "0000000000";
-			else
-				v_cnt <= v_cnt + 1;
-			end if;
 		else
 			h_cnt <= h_cnt + 1;
 		end if;
-
-		-- generate horisontal sync
-		if ((h_cnt > 663) and (h_cnt < 757)) then
+		
+		--
+		-- Generate Horizontal Sync Signal using h_cnt 
+		--
+		if ((h_cnt <= 755) and (h_cnt >= 659)) then
 			h_sync <= '0';
 		else
 			h_sync <= '1';
 		end if;
+
+		--
+		-- v_cnt counts rows of pixels (480 + extra time for sync signals)
+		-- v_sync ----------------------------------------_______------------ 
+		-- v_cnt  0                               480     493-494         524
+		--	
+
+		if ((v_cnt >= 524) and (h_cnt >= 699)) then
+			v_cnt <= "0000000000";
+		elsif (h_cnt = 699) then
+			v_cnt <= v_cnt + 1;
+		end if;
 	
-		-- generate vertical sync
-		if ((v_cnt > 499) and (v_cnt < 502)) then
+		--
+		-- Generate Vertical Sync Signal using v_cnt 
+		--
+		if ((v_cnt <= 494) and (v_cnt >= 493)) then
 			v_sync <= '0';	
 		else
 			v_sync <= '1';
 		end if;
-			
-		-- generate horizontal data
+		
+		--
+		-- Generate Video on Screen Signals for Pixel Data 
+		--
 		if (h_cnt <= 639) then
 			horizontal_en <= '1';
-			column <= h_cnt;
 		else
 			horizontal_en <= '0';
 		end if;
-	
-		-- generate vertical data
+
 		if (v_cnt <= 479) then
 			vertical_en <= '1';
-			row <= v_cnt;
 		else
 			vertical_en <= '0';
 		end if;
+
+		column <= h_cnt;
+		row <= v_cnt;
 		
 		vga_hs <= h_sync;
 		vga_vs <= v_sync;
