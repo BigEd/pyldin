@@ -33,6 +33,10 @@ end pyldin2012;
 architecture pyldin_arch of pyldin2012 is
 signal clk_cnt				: std_logic_vector(3 downto 0);
 signal clk25				: std_logic;
+signal clk125				: std_logic;
+signal clk625				: std_logic;
+signal rst_cnt				: std_logic_vector(3 downto 0);
+signal sys_rst				: std_logic;
 signal sys_clk				: std_logic;
 signal vram_access		: std_logic;
 signal pixel_clk			: std_logic;
@@ -106,22 +110,33 @@ signal step_display		: std_logic_vector(31 downto 0);
 signal step_debouncer	: std_logic_vector(24 downto 0);
 begin
 
-	cpuclock: process (clk, rst)
+	clock25: process (clk, rst)
 	begin
 		if (rst = '0') then
-			clk25 <= '0';
 			clk_cnt <= "0000";
 		elsif (clk'event and clk='1') then
-			if (clk25 = '0')then
-				clk25 <= '1';				
-			else
-				clk25 <= '0';
-			end if;
+			clk25 <= clk_cnt(0);
+			clk125 <= clk_cnt(1);
+			clk625 <= clk_cnt(2);
 			clk_cnt <= clk_cnt + 1;
 		end if;
 	end process;
+
+	resetcycle: process(clk625, rst)
+	begin
+		if (rst = '0') then
+			rst_cnt <= "0010";
+			sys_rst <= '1';
+		elsif (clk625'event and clk625 = '1') then
+			if (rst_cnt > 0) then
+				rst_cnt <= rst_cnt - 1;
+			else
+				sys_rst <= '0';
+			end if;
+		end if;
+	end process;
 	
-	vramaccess: process (clk, clk25)
+	videocycle: process(clk)
 	begin
 		if (clk'event and clk = '0') then
 			if (clk_cnt(1 downto 0) = "11") then
@@ -136,34 +151,25 @@ begin
 			end if;
 		end if;
 	end process;
-
-	stepone: process(clk, step)
-	begin
-		if (clk'event and clk = '1') then
-			if (step = '0') then
-				if (step_debouncer = "0010000000000000000000000") then
-					step_clk <= '1';
-					step_debouncer <= step_debouncer + 1;
-				elsif (step_debouncer = "1100000000000000000000000") then
-					step_debouncer <= "0000000000000000000000000";
-					step_clk <= '0';
-				else
-					step_debouncer <= step_debouncer + 1;
-				end if;
-			else
-				step_debouncer <= "0000000000000000000000000";
-				step_clk <= '0';
-			end if;
-		end if;
-	end process;
 	
-	interrupts : process( rst, pixel_clk )
+	debugmode: process(swt, ds5_data_in, step_display, step_clk, clk25, clk625, vram_access)
+	begin
+--		if (vram_access = '0') then
+			led_data <= ds5_data_in;
+			sys_clk  <= clk625;
+--		else
+--			led_data <= step_display;
+--			sys_clk  <= '0'; --step_clk;
+--		end if;
+	end process;
+
+	interrupts : process(rst, pixel_clk, vram_access, sys_rst)
 	begin
 		cpu_halt  <= '0';
 		cpu_hold  <= pixel_clk; --'0';
 		cpu_irq   <= '0'; -- uart_irq or timer_irq;
 		cpu_nmi   <= '0'; -- trap_irq;
-		cpu_reset <= not rst; -- CPU reset is active high
+		cpu_reset <= sys_rst; -- CPU reset is active high
 	end process;
 	
 	mc6800 : entity work.cpu68 port map(
@@ -188,7 +194,7 @@ begin
 	);
 
 	ram: entity work.SRAM port map (
-		clk 			=> sys_clk,
+		clk 			=> clk25,
 		rst 			=> rst,
 		sram_addr 	=> sram_addr,
 		sram_dq 		=> sram_dq,
@@ -211,28 +217,6 @@ begin
 		ledcom	=> ledcom,
 		data		=> led_data
 	);
-
-	debugmode: process(swt, ds5_data_in, step_display, step_clk, clk25)
-	begin
-		if (swt = '0') then
-			led_data <= ds5_data_in;
-			sys_clk  <= clk25;
-		else
-			led_data <= step_display;
-			sys_clk  <= step_clk;
-		end if;
-	end process;
-	
-	segdisptrace : process (cpu_addr, cpu_rw, cpu_data_in, cpu_data_out, swt, led_data)
-	begin
-		step_display(31 downto 16) <= cpu_addr;
-		step_display(15 downto 8 ) <= x"00";
-		if (cpu_rw = '1') then
-			step_display(7 downto 0) <= cpu_data_in;
-		else
-			step_display(7 downto 0) <= cpu_data_out;
-		end if;
-	end process;
 
 	ds5hexout : process (cpu_addr, cpu_rw, cpu_data_out, ds5_cs, ds5_data_in, sys_clk)
 	begin
@@ -319,13 +303,13 @@ begin
 		end case;
 	end process;
 
-	vramclock: process (clk)
+	vramclock: process (clk, ram_cs, cpu_rw, cpu_addr, cpu_data_out, mux_ram_data_out)
 	begin
 		if clk'event and clk = '0' then
-			if (vram_access = '1') then
-				mux_ram_cs <= '1'; -- vram_cs;
+			if ((vram_access = '1') and (ram_cs = '0')) then
+				mux_ram_cs <= '0'; -- vram_cs;
 				mux_ram_rw <= '1'; -- vram_rw; -- read-only
-				mux_ram_addr <= vram_addr;
+				mux_ram_addr <= x"f0f0";--vram_addr;
 				mux_ram_data_in <= vram_data_in;
 			else
 				mux_ram_cs <= ram_cs;
@@ -336,22 +320,13 @@ begin
 			end if;
 		end if;
 	end process;	
-
---	videosync: entity work.vgasync port map(
---		clk		=> clk25,
---		vga_hs	=> vga_hs,
---		vga_vs	=> vga_vs,
---		row		=> video_row,
---		column	=> video_column,
---		enable	=>	video_en
---	);
 	
 	vram_base_addr <= "0000000000000000";
 	vram_cs <= video_en;
 	video_mode <= '0';
 
 	vgafb: entity work.vgaframebuffer port map (
-		rst		=> rst,
+		rst		=> sys_rst,
 		clk		=> clk25,
 		pixel_clk=> pixel_clk,
 		enable	=> video_en,

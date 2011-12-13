@@ -29,7 +29,7 @@ signal ram_wr				: std_logic; -- memory write enable
 begin
 	process( clk, rst, addr, rw, data_in, cs, ram_wr, sram_dq )
 	begin
-		sram_ce_n <= not(cs and rst); -- put '0' to enable chip all time (no powersave mode)
+		sram_ce_n <= '0'; -- not(cs and rst); -- put '0' to enable chip all time (no powersave mode)
 		sram_oe_n <= not(rw and cs and rst);
 		ram_wr    <= not(cs and (not rw) and clk);
 		sram_we_n <= ram_wr;

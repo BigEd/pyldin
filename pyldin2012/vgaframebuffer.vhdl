@@ -51,7 +51,7 @@ begin
 
 	hsync: process (clk, rst)
 	begin
-		if (rst = '0') then
+		if (rst = '1') then
 			h_cnt <= "0000000000";
 		elsif (clk'event and clk = '1') then
 			if (h_cnt = 799) then
@@ -77,7 +77,7 @@ begin
 	
 	vsync: process (h_sync, rst)
 	begin
-		if (rst = '0') then
+		if (rst = '1') then
 			v_cnt <= "0000000000";
 		elsif (h_sync'event and h_sync = '1') then
 			if (v_cnt >= 524) then
