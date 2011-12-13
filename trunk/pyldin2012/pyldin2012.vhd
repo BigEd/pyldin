@@ -65,6 +65,10 @@ signal rombios_data_out : std_logic_vector(7 downto 0);
 signal ram_cs          	: std_logic; -- memory chip select
 signal ram_data_out    	: std_logic_vector(7 downto 0);
 
+-- mc6845
+signal mc6845_addr		: std_logic_vector(7 downto 0);
+signal mc6845_data_out	: std_logic_vector(7 downto 0);
+
 -- video ram
 signal vram_cs				: std_logic;
 signal vram_rw				: std_logic;
@@ -112,9 +116,7 @@ begin
 
 	clock25: process (clk, rst)
 	begin
-		if (rst = '0') then
-			clk_cnt <= "0000";
-		elsif (clk'event and clk='1') then
+		if (clk'event and clk='1') then
 			clk25 <= clk_cnt(0);
 			clk125 <= clk_cnt(1);
 			clk625 <= clk_cnt(2);
@@ -125,13 +127,13 @@ begin
 	resetcycle: process(clk625, rst)
 	begin
 		if (rst = '0') then
-			rst_cnt <= "0010";
+			rst_cnt <= "0100";
 			sys_rst <= '1';
 		elsif (clk625'event and clk625 = '1') then
-			if (rst_cnt > 0) then
-				rst_cnt <= rst_cnt - 1;
-			else
+			if (rst_cnt = "0000") then
 				sys_rst <= '0';
+			else
+				rst_cnt <= rst_cnt - 1;
 			end if;
 		end if;
 	end process;
@@ -217,7 +219,7 @@ begin
 		ledcom	=> ledcom,
 		data		=> led_data
 	);
-
+	
 	ds5hexout : process (cpu_addr, cpu_rw, cpu_data_out, ds5_cs, ds5_data_in, sys_clk)
 	begin
 		if (sys_clk'event and sys_clk = '1') then
@@ -244,7 +246,8 @@ begin
 	decode: process( cpu_addr, cpu_rw, cpu_vma, cpu_data_in,
 					  rombios_cs, rombios_data_out,
 				     ram_cs, ram_data_out,
-					   ds5_data_out
+					  mc6845_data_out,
+					  ds5_data_out
 					  )
 	begin
       case cpu_addr(15 downto 12) is
@@ -263,7 +266,7 @@ begin
 					case (cpu_addr(7 downto 5)) is
 					when "000" =>
 						ds0_cs <= cpu_vma; ds1_cs <= '0'; ds2_cs <= '0'; ds3_cs <= '0'; ds4_cs <= '0'; ds5_cs <= '0'; ds6_cs <= '0'; ds7_cs <= '0';
-						cpu_data_in <= x"ff";
+						cpu_data_in <= mc6845_data_out;
 					when "001" =>
 						ds0_cs <= '0'; ds1_cs <= cpu_vma; ds2_cs <= '0'; ds3_cs <= '0'; ds4_cs <= '0'; ds5_cs <= '0'; ds6_cs <= '0'; ds7_cs <= '0';
 						cpu_data_in <= x"ff";
@@ -306,10 +309,11 @@ begin
 	vramclock: process (clk, ram_cs, cpu_rw, cpu_addr, cpu_data_out, mux_ram_data_out)
 	begin
 		if clk'event and clk = '0' then
+--			if (vram_access = '1') then
 			if ((vram_access = '1') and (ram_cs = '0')) then
-				mux_ram_cs <= '0'; -- vram_cs;
+				mux_ram_cs <= '1'; -- vram_cs;
 				mux_ram_rw <= '1'; -- vram_rw; -- read-only
-				mux_ram_addr <= x"f0f0";--vram_addr;
+				mux_ram_addr <= vram_addr;
 				mux_ram_data_in <= vram_data_in;
 			else
 				mux_ram_cs <= ram_cs;
@@ -320,11 +324,40 @@ begin
 			end if;
 		end if;
 	end process;	
+
+	mc6845: process (cpu_addr, cpu_rw, cpu_data_out, ds0_cs, sys_clk)
+	begin
+		if (sys_clk'event and sys_clk = '1') then
+			if (ds0_cs = '1') then
+				if (cpu_rw = '0') then
+					if (cpu_addr(0) = '0') then
+						mc6845_addr <= cpu_data_out;
+					else
+						case (mc6845_addr(3 downto 0)) is
+--							when x"c"	=> vram_base_addr(15 downto 8) <= cpu_data_out;
+--							when x"d"	=> vram_base_addr( 7 downto 0) <= cpu_data_out;
+							when others	=>	null;
+						end case;
+					end if;
+				else
+					if (cpu_addr(0) = '0') then
+						mc6845_data_out <= mc6845_addr;
+					else
+						case (mc6845_addr(3 downto 0)) is
+							when x"c"	=> mc6845_data_out <= vram_base_addr(15 downto 8);
+							when x"d"	=> mc6845_data_out <= vram_base_addr( 7 downto 0);
+							when others	=>	null;
+						end case;
+					end if;
+				end if;
+			end if;
+		end if;
+	end process;
 	
-	vram_base_addr <= "0000000000000000";
 	vram_cs <= video_en;
 	video_mode <= '0';
-
+	vram_base_addr <= x"0000";
+	
 	vgafb: entity work.vgaframebuffer port map (
 		rst		=> sys_rst,
 		clk		=> clk25,
