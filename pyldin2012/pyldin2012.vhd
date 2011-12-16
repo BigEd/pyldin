@@ -35,8 +35,8 @@ signal clk_cnt				: std_logic_vector(3 downto 0);
 signal clk25				: std_logic;
 signal clk125				: std_logic;
 signal clk625				: std_logic;
-signal rst_cnt				: std_logic_vector(3 downto 0);
-signal sys_rst				: std_logic;
+signal rst_cnt				: std_logic_vector(3 downto 0) := "1111";
+signal sys_rst				: std_logic := '1';
 signal sys_clk				: std_logic;
 signal vram_access		: std_logic;
 signal pixel_clk			: std_logic;
@@ -63,6 +63,7 @@ signal rombios_data_out : std_logic_vector(7 downto 0);
 
 -- ram
 signal ram_cs          	: std_logic; -- memory chip select
+signal ram_hold			: std_logic;
 signal ram_data_out    	: std_logic_vector(7 downto 0);
 
 -- mc6845
@@ -83,6 +84,8 @@ signal mux_ram_rw			: std_logic;
 signal mux_ram_addr		: std_logic_vector(15 downto 0);
 signal mux_ram_data_in	: std_logic_vector( 7 downto 0);
 signal mux_ram_data_out	: std_logic_vector( 7 downto 0);
+type type_states	is (Idle, Addr, Read, Write, WrtEnd);
+signal ram_state			: type_states;
 
 -- IO selector
 signal ds0_cs				: std_logic;
@@ -114,26 +117,26 @@ signal step_display		: std_logic_vector(31 downto 0);
 signal step_debouncer	: std_logic_vector(24 downto 0);
 begin
 
+	cpu_hold <= ram_hold;
+
 	clock25: process (clk, rst)
 	begin
 		if (clk'event and clk='1') then
-			clk25 <= clk_cnt(0);
-			clk125 <= clk_cnt(1);
-			clk625 <= clk_cnt(2);
-			clk_cnt <= clk_cnt + 1;
-		end if;
-	end process;
-
-	resetcycle: process(clk625, rst)
-	begin
-		if (rst = '0') then
-			rst_cnt <= "0100";
-			sys_rst <= '1';
-		elsif (clk625'event and clk625 = '1') then
-			if (rst_cnt = "0000") then
-				sys_rst <= '0';
+			if (rst = '0') then
+				rst_cnt <= "0100";
+				sys_rst <= '1';
 			else
-				rst_cnt <= rst_cnt - 1;
+				clk25 <= clk_cnt(0);
+				clk125 <= clk_cnt(1);
+				clk625 <= clk_cnt(2);
+				clk_cnt <= clk_cnt + 1;
+				if (clk625 = '1') then
+					if (rst_cnt = "0000") then
+						sys_rst <= '0';
+					else
+						rst_cnt <= rst_cnt - 1;
+					end if;
+				end if;
 			end if;
 		end if;
 	end process;
@@ -154,21 +157,16 @@ begin
 		end if;
 	end process;
 	
-	debugmode: process(swt, ds5_data_in, step_display, step_clk, clk25, clk625, vram_access)
+	debugmode: process(swt, ds5_data_in, step_display, step_clk, clk25, clk125, clk625, vram_access)
 	begin
---		if (vram_access = '0') then
-			led_data <= ds5_data_in;
-			sys_clk  <= clk625;
---		else
---			led_data <= step_display;
---			sys_clk  <= '0'; --step_clk;
---		end if;
+		led_data <= ds5_data_in;
+		sys_clk  <= clk25;
 	end process;
 
-	interrupts : process(rst, pixel_clk, vram_access, sys_rst)
+	interrupts : process(rst, pixel_clk, vram_access, sys_rst, cpu_vma)
 	begin
 		cpu_halt  <= '0';
-		cpu_hold  <= pixel_clk; --'0';
+--		cpu_hold  <= '0'; -- cpu_vma and pixel_clk; --'0';
 		cpu_irq   <= '0'; -- uart_irq or timer_irq;
 		cpu_nmi   <= '0'; -- trap_irq;
 		cpu_reset <= sys_rst; -- CPU reset is active high
@@ -197,7 +195,7 @@ begin
 
 	ram: entity work.SRAM port map (
 		clk 			=> clk25,
-		rst 			=> rst,
+		rst 			=> not cpu_reset,
 		sram_addr 	=> sram_addr,
 		sram_dq 		=> sram_dq,
 		sram_ce_n 	=> sram_ce_n,
@@ -214,7 +212,7 @@ begin
 	
 	segdisplay : entity work.segleds port map(
 		clk		=> clk,
-		rst		=> rst,
+		rst		=> not cpu_reset,
 		ledseg	=> ledseg,
 		ledcom	=> ledcom,
 		data		=> led_data
@@ -306,21 +304,46 @@ begin
 		end case;
 	end process;
 
-	vramclock: process (clk, ram_cs, cpu_rw, cpu_addr, cpu_data_out, mux_ram_data_out)
+	vramclock: process (clk, sys_clk, ram_cs, cpu_rw, cpu_addr, cpu_data_out, mux_ram_data_out)
 	begin
-		if clk'event and clk = '0' then
---			if (vram_access = '1') then
-			if ((vram_access = '1') and (ram_cs = '0')) then
-				mux_ram_cs <= '1'; -- vram_cs;
-				mux_ram_rw <= '1'; -- vram_rw; -- read-only
-				mux_ram_addr <= vram_addr;
-				mux_ram_data_in <= vram_data_in;
+		if sys_clk'event and sys_clk = '1' then
+			if (rst = '0') then
+				ram_state <= Idle;
+				ram_hold <= '0';
+--			if ((vram_access = '1') and (ram_cs = '0')) then
+--				mux_ram_cs <= '1'; -- vram_cs;
+--				mux_ram_rw <= '1'; -- vram_rw; -- read-only
+--				mux_ram_addr <= vram_addr;
+--				mux_ram_data_in <= vram_data_in;
 			else
 				mux_ram_cs <= ram_cs;
-				mux_ram_rw <= cpu_rw;
+--				mux_ram_rw <= cpu_rw;
 				mux_ram_addr <= cpu_addr;
 				mux_ram_data_in <= cpu_data_out;
 				ram_data_out <= mux_ram_data_out;
+				case ram_state is
+					when Idle =>
+						if ((ram_cs = '1') and (cpu_rw = '1')) then
+							ram_hold <= '1';
+							ram_state <= Read;
+						elsif ((ram_cs = '1') and (cpu_rw = '0')) then
+							ram_hold <= '1';
+							mux_ram_rw <= '0';
+							ram_state <= Write;
+--						else
+--							ram_state <= Idle;
+						end if;
+					when Read =>
+						ram_hold <= '0';
+						ram_state <= Idle;
+					when Write =>
+						ram_hold <= '0';
+						mux_ram_rw <= '1';
+--						ram_state <= WrtEnd;
+--					when WrtEnd =>
+						ram_state <= Idle;
+					when others =>
+				end case;
 			end if;
 		end if;
 	end process;	
@@ -334,8 +357,8 @@ begin
 						mc6845_addr <= cpu_data_out;
 					else
 						case (mc6845_addr(3 downto 0)) is
---							when x"c"	=> vram_base_addr(15 downto 8) <= cpu_data_out;
---							when x"d"	=> vram_base_addr( 7 downto 0) <= cpu_data_out;
+							when x"c"	=> vram_base_addr(15 downto 8) <= cpu_data_out;
+							when x"d"	=> vram_base_addr( 7 downto 0) <= cpu_data_out;
 							when others	=>	null;
 						end case;
 					end if;
@@ -356,7 +379,7 @@ begin
 	
 	vram_cs <= video_en;
 	video_mode <= '0';
-	vram_base_addr <= x"0000";
+--	vram_base_addr <= x"0000";
 	
 	vgafb: entity work.vgaframebuffer port map (
 		rst		=> sys_rst,
