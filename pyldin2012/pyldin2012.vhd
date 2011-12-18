@@ -86,6 +86,7 @@ signal mux_ram_data_in	: std_logic_vector( 7 downto 0);
 signal mux_ram_data_out	: std_logic_vector( 7 downto 0);
 type type_states	is (Idle, Addr, Read, Write, WrtEnd);
 signal ram_state			: type_states;
+signal mux_ram_rw_tmp	: std_logic;
 
 -- IO selector
 signal ds0_cs				: std_logic;
@@ -100,8 +101,6 @@ signal ds7_cs				: std_logic;
 -- video
 signal video_row			: std_logic_vector(9 downto 0);
 signal video_column		: std_logic_vector(10 downto 0);
-signal video_en			: std_logic;
-signal video_addr			: std_logic_vector(16 downto 0);
 signal video_mode			: std_logic;
 
 -- hex display
@@ -130,7 +129,7 @@ begin
 				clk125 <= clk_cnt(1);
 				clk625 <= clk_cnt(2);
 				clk_cnt <= clk_cnt + 1;
-				if (clk625 = '1') then
+				if (sys_clk = '1') then
 					if (rst_cnt = "0000") then
 						sys_rst <= '0';
 					else
@@ -140,23 +139,7 @@ begin
 			end if;
 		end if;
 	end process;
-	
-	videocycle: process(clk)
-	begin
-		if (clk'event and clk = '0') then
-			if (clk_cnt(1 downto 0) = "11") then
-				pixel_clk <= '1';
-			else
-				pixel_clk <= '0';
-			end if;
-			if (clk_cnt(1 downto 0) = "11") or (clk_cnt(1 downto 0) = "00") then
-				vram_access <= '1';
-			else
-				vram_access <= '0';
-			end if;
-		end if;
-	end process;
-	
+		
 	debugmode: process(swt, ds5_data_in, step_display, step_clk, clk25, clk125, clk625, vram_access)
 	begin
 		led_data <= ds5_data_in;
@@ -166,7 +149,6 @@ begin
 	interrupts : process(rst, pixel_clk, vram_access, sys_rst, cpu_vma)
 	begin
 		cpu_halt  <= '0';
---		cpu_hold  <= '0'; -- cpu_vma and pixel_clk; --'0';
 		cpu_irq   <= '0'; -- uart_irq or timer_irq;
 		cpu_nmi   <= '0'; -- trap_irq;
 		cpu_reset <= sys_rst; -- CPU reset is active high
@@ -310,11 +292,15 @@ begin
 			if (rst = '0') then
 				ram_state <= Idle;
 				ram_hold <= '0';
---			if ((vram_access = '1') and (ram_cs = '0')) then
---				mux_ram_cs <= '1'; -- vram_cs;
---				mux_ram_rw <= '1'; -- vram_rw; -- read-only
---				mux_ram_addr <= vram_addr;
---				mux_ram_data_in <= vram_data_in;
+			elsif (vram_cs = '1') then
+				if (ram_cs = '1') then
+					ram_hold <= '1';
+					ram_state <= Idle;
+				end if;
+				mux_ram_cs <= '1'; -- vram_cs;
+				mux_ram_rw <= '1'; -- vram_rw; -- read-only
+				mux_ram_addr <= vram_addr;
+				mux_ram_data_in <= vram_data_in;
 			else
 				mux_ram_cs <= ram_cs;
 --				mux_ram_rw <= cpu_rw;
@@ -325,6 +311,7 @@ begin
 					when Idle =>
 						if ((ram_cs = '1') and (cpu_rw = '1')) then
 							ram_hold <= '1';
+							mux_ram_rw <= '1';
 							ram_state <= Read;
 						elsif ((ram_cs = '1') and (cpu_rw = '0')) then
 							ram_hold <= '1';
@@ -377,19 +364,16 @@ begin
 		end if;
 	end process;
 	
-	vram_cs <= video_en;
 	video_mode <= '0';
---	vram_base_addr <= x"0000";
 	
 	vgafb: entity work.vgaframebuffer port map (
 		rst		=> sys_rst,
 		clk		=> clk25,
-		pixel_clk=> pixel_clk,
-		enable	=> video_en,
 		mode		=> video_mode,
 		addr_base=> vram_base_addr,
 		addr_out	=> vram_addr,
 		data_in	=> mux_ram_data_out,
+		data_en	=> vram_cs,
 		vga_r		=> vga_r,
 		vga_g		=> vga_g,
 		vga_b		=> vga_b,
