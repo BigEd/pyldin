@@ -146,7 +146,7 @@ begin
 		sys_clk  <= clk25;
 	end process;
 
-	interrupts : process(rst, pixel_clk, vram_access, sys_rst, cpu_vma)
+	interrupts : process(sys_rst)
 	begin
 		cpu_halt  <= '0';
 		cpu_irq   <= '0'; -- uart_irq or timer_irq;
@@ -177,7 +177,7 @@ begin
 
 	ram: entity work.SRAM port map (
 		clk 			=> clk25,
-		rst 			=> not cpu_reset,
+		rst 			=> not sys_rst,
 		sram_addr 	=> sram_addr,
 		sram_dq 		=> sram_dq,
 		sram_ce_n 	=> sram_ce_n,
@@ -194,7 +194,7 @@ begin
 	
 	segdisplay : entity work.segleds port map(
 		clk		=> clk,
-		rst		=> not cpu_reset,
+		rst		=> not sys_rst,
 		ledseg	=> ledseg,
 		ledcom	=> ledcom,
 		data		=> led_data
@@ -289,7 +289,7 @@ begin
 	vramclock: process (clk, sys_clk, ram_cs, cpu_rw, cpu_addr, cpu_data_out, mux_ram_data_out)
 	begin
 		if sys_clk'event and sys_clk = '1' then
-			if (rst = '0') then
+			if (sys_rst = '1') then
 				ram_state <= Idle;
 				ram_hold <= '0';
 			elsif (vram_cs = '1') then
