@@ -128,9 +128,11 @@ begin
 			end if;
 			pixel <= data(7);
 			if (video_enable = '1') then
-				vga_r(2) <= pixel; 
+--				vga_r(2) <= pixel; 
 				vga_g(2) <= pixel;
-				vga_b(1) <= pixel;
+				vga_g(1) <= pixel;
+				vga_g(0) <= pixel;
+--				vga_b(1) <= pixel;
 			else
 				vga_r <= "000"; 
 				vga_g <= "000";

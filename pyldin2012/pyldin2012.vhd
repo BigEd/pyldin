@@ -139,11 +139,47 @@ begin
 			end if;
 		end if;
 	end process;
-		
+
+	debugstep: process(clk, step)
+	begin
+		if (clk'event and clk = '1') then
+			if (step = '0') then
+				if (step_debouncer = "0010000000000000000000000") then
+					step_clk <= '1';
+					step_debouncer <= step_debouncer + 1;
+				elsif (step_debouncer = "1100000000000000000000000") then
+					step_debouncer <= "0000000000000000000000000";
+					step_clk <= '0';
+				else
+					step_debouncer <= step_debouncer + 1;
+				end if;
+			else
+				step_debouncer <= "0000000000000000000000000";
+				step_clk <= '0';
+			end if;
+		end if;
+	end process;
+
 	debugmode: process(swt, ds5_data_in, step_display, step_clk, clk25, clk125, clk625, vram_access)
 	begin
-		led_data <= ds5_data_in;
-		sys_clk  <= clk25;
+		if (swt = '0') then
+			led_data <= ds5_data_in;
+			sys_clk  <= clk25;
+		else
+			led_data <= step_display;
+			sys_clk  <= step_clk;
+		end if;
+	end process;
+
+	debugtrace : process (cpu_addr, cpu_rw, cpu_data_in, cpu_data_out, swt, led_data)
+	begin
+		step_display(31 downto 16) <= cpu_addr;
+		step_display(15 downto 8 ) <= x"00";
+		if (cpu_rw = '1') then
+			step_display(7 downto 0) <= cpu_data_in;
+		else
+			step_display(7 downto 0) <= cpu_data_out;
+		end if;
 	end process;
 
 	interrupts : process(sys_rst)
@@ -176,7 +212,7 @@ begin
 	);
 
 	ram: entity work.SRAM port map (
-		clk 			=> clk25,
+		clk 			=> sys_clk,
 		rst 			=> not sys_rst,
 		sram_addr 	=> sram_addr,
 		sram_dq 		=> sram_dq,
@@ -292,7 +328,7 @@ begin
 			if (sys_rst = '1') then
 				ram_state <= Idle;
 				ram_hold <= '0';
-			elsif (vram_cs = '1') then
+			elsif ((vram_cs = '1') and (swt = '0')) then
 				if (ram_cs = '1') then
 					ram_hold <= '1';
 					ram_state <= Idle;
