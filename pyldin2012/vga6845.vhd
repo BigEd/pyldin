@@ -3,7 +3,7 @@ use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
 use ieee.std_logic_unsigned.all;
 
-entity vgaframebuffer is
+entity vga6845 is
 generic(
 	READ_DELAY				: natural := 36
 	);
@@ -29,9 +29,9 @@ port(
 	vga_hs              	: out std_logic;
 	vga_vs              	: out std_logic
 );
-end vgaframebuffer;
+end vga6845;
 
-architecture vgaframebuffer_arch of vgaframebuffer is
+architecture vga6845_arch of vga6845 is
 signal pix_clk				: std_logic;
 signal vaddr_base			: std_logic_vector(15 downto 0);
 signal video_addr			: std_logic_vector(16 downto 0);
@@ -119,9 +119,9 @@ begin
 		end if;
 	end process;
 	
-	vdataout: process(pix_clk)
+	vdataout: process(clk, pix_clk)
 	begin
-		if (pix_clk'event and pix_clk = '1') then
+		if (clk'event and clk = '0' and pix_clk = '0') then
 			if (h_cnt(3 downto 1) = "000") then
 				if (vmode = '1') then
 					data <= vdata_in;
@@ -178,4 +178,4 @@ begin
 		end if;
 	end process;
 		
-end vgaframebuffer_arch;
+end vga6845_arch;

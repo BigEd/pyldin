@@ -372,7 +372,7 @@ begin
 
 	video_mode <= '0';
 	
-	vgafb: entity work.vgaframebuffer port map (
+	mc6845: entity work.vga6845 port map (
 		rst		=> sys_rst,
 		clk		=> clk25,
 		cs			=> ds0_cs,
