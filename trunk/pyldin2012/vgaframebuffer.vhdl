@@ -10,12 +10,17 @@ generic(
 port(
 	rst						: in std_logic;
 	clk						: in std_logic;
-	mode						: in std_logic;
+	cs							: in std_logic;
+	rw							: in std_logic;
 
-	addr_base				: in std_logic_vector(15 downto 0);
-	addr_out					: out std_logic_vector(15 downto 0);
+	rs							: in std_logic;
 	data_in					: in std_logic_vector( 7 downto 0);
-	data_en					: out std_logic;
+	data_out					: out std_logic_vector( 7 downto 0);
+	
+	vmode						: in std_logic;
+	vaddr_out				: out std_logic_vector(15 downto 0);
+	vdata_in					: in std_logic_vector( 7 downto 0);
+	vdata_en					: out std_logic;
 
 	vga_r               	: out std_logic_vector(2 downto 0);
 	vga_g               	: out std_logic_vector(2 downto 0);
@@ -28,6 +33,7 @@ end vgaframebuffer;
 
 architecture vgaframebuffer_arch of vgaframebuffer is
 signal pix_clk				: std_logic;
+signal vaddr_base			: std_logic_vector(15 downto 0);
 signal video_addr			: std_logic_vector(16 downto 0);
 signal data					: std_logic_vector( 7 downto 0);
 signal pixel				: std_logic;
@@ -41,11 +47,13 @@ signal vertical_en		: std_logic;
 signal video_enable		: std_logic;
 signal h_cnt				: std_logic_vector(9 downto 0);
 signal v_cnt				: std_logic_vector(9 downto 0);
+-- mc6845 control logic
+signal reg_addr			: std_logic_vector(7 downto 0);
 begin
 	chargen: entity work.vgachargen port map (addr => char_addr, data => char_data);
 
 	video_enable <= horizontal_en and vertical_en and (not v_cnt(0));
-	data_en <= not v_cnt(0);
+	vdata_en <= not v_cnt(0);
 	vga_hs <= h_sync;
 	vga_vs <= v_sync;
 
@@ -63,12 +71,12 @@ begin
 			pix_clk <= h_cnt(0);
 
 			if (h_cnt(0) = '0') then
-				if (mode = '1') then
+				if (vmode = '1') then
 					video_addr <= std_logic_vector("101000000"*v_cnt(8 downto 1) + h_cnt(9 downto 1));
-					addr_out <= addr_base + video_addr(16 downto 3);
+					vaddr_out <= vaddr_base + video_addr(16 downto 3);
 				else
 					video_addr <= std_logic_vector("00000101000"*v_cnt(9 downto 4) + h_cnt(9 downto 4));
-					addr_out <= addr_base + video_addr(15 downto 0);
+					vaddr_out <= vaddr_base + video_addr(15 downto 0);
 				end if;
 			end if;
 			
@@ -111,16 +119,16 @@ begin
 		end if;
 	end process;
 	
-	vdataout: process(clk, pix_clk, addr_base, video_addr, v_cnt, h_cnt, mode)
+	vdataout: process(pix_clk)
 	begin
 		if (pix_clk'event and pix_clk = '1') then
 			if (h_cnt(3 downto 1) = "000") then
-				if (mode = '1') then
-					data <= data_in;
+				if (vmode = '1') then
+					data <= vdata_in;
 				else
 					char_addr( 2 downto 0) <= v_cnt(3 downto 1);
-					char_addr( 3) <= data_in(7);
-					char_addr(10 downto 4) <= data_in(6 downto 0);
+					char_addr( 3) <= vdata_in(7);
+					char_addr(10 downto 4) <= vdata_in(6 downto 0);
 					data <= char_data;
 				end if;
 			else
@@ -140,4 +148,34 @@ begin
 			end if;
 		end if;
 	end process;
+
+	ctrlogic: process (clk)
+	begin
+		if (clk'event and clk = '1') then
+			if (cs = '1') then
+				if (rw = '0') then
+					if (rs = '0') then
+						reg_addr <= data_in;
+					else
+						case (reg_addr(3 downto 0)) is
+							when x"c"	=> vaddr_base(15 downto 8) <= data_in;
+							when x"d"	=> vaddr_base( 7 downto 0) <= data_in;
+							when others	=>	null;
+						end case;
+					end if;
+				else
+					if (rs = '0') then
+						data_out <= reg_addr;
+					else
+						case (reg_addr(3 downto 0)) is
+							when x"c"	=> data_out <= vaddr_base(15 downto 8);
+							when x"d"	=> data_out <= vaddr_base( 7 downto 0);
+							when others	=>	null;
+						end case;
+					end if;
+				end if;
+			end if;
+		end if;
+	end process;
+		
 end vgaframebuffer_arch;
