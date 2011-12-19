@@ -66,10 +66,6 @@ signal ram_cs          	: std_logic; -- memory chip select
 signal ram_hold			: std_logic;
 signal ram_data_out    	: std_logic_vector(7 downto 0);
 
--- mc6845
-signal mc6845_addr		: std_logic_vector(7 downto 0);
-signal mc6845_data_out	: std_logic_vector(7 downto 0);
-
 -- video ram
 signal vram_cs				: std_logic;
 signal vram_rw				: std_logic;
@@ -105,6 +101,9 @@ signal video_mode			: std_logic;
 
 -- hex display
 signal led_data			: std_logic_vector(31 downto 0);
+
+-- DS0
+signal ds0_data_out		: std_logic_vector(7 downto 0);
 
 -- DS5
 signal ds5_data_in		: std_logic_vector(31 downto 0);
@@ -262,7 +261,7 @@ begin
 	decode: process( cpu_addr, cpu_rw, cpu_vma, cpu_data_in,
 					  rombios_cs, rombios_data_out,
 				     ram_cs, ram_data_out,
-					  mc6845_data_out,
+					  ds0_data_out,
 					  ds5_data_out
 					  )
 	begin
@@ -282,7 +281,7 @@ begin
 					case (cpu_addr(7 downto 5)) is
 					when "000" =>
 						ds0_cs <= cpu_vma; ds1_cs <= '0'; ds2_cs <= '0'; ds3_cs <= '0'; ds4_cs <= '0'; ds5_cs <= '0'; ds6_cs <= '0'; ds7_cs <= '0';
-						cpu_data_in <= mc6845_data_out;
+						cpu_data_in <= ds0_data_out;
 					when "001" =>
 						ds0_cs <= '0'; ds1_cs <= cpu_vma; ds2_cs <= '0'; ds3_cs <= '0'; ds4_cs <= '0'; ds5_cs <= '0'; ds6_cs <= '0'; ds7_cs <= '0';
 						cpu_data_in <= x"ff";
@@ -371,45 +370,20 @@ begin
 		end if;
 	end process;	
 
-	mc6845: process (cpu_addr, cpu_rw, cpu_data_out, ds0_cs, sys_clk)
-	begin
-		if (sys_clk'event and sys_clk = '1') then
-			if (ds0_cs = '1') then
-				if (cpu_rw = '0') then
-					if (cpu_addr(0) = '0') then
-						mc6845_addr <= cpu_data_out;
-					else
-						case (mc6845_addr(3 downto 0)) is
-							when x"c"	=> vram_base_addr(15 downto 8) <= cpu_data_out;
-							when x"d"	=> vram_base_addr( 7 downto 0) <= cpu_data_out;
-							when others	=>	null;
-						end case;
-					end if;
-				else
-					if (cpu_addr(0) = '0') then
-						mc6845_data_out <= mc6845_addr;
-					else
-						case (mc6845_addr(3 downto 0)) is
-							when x"c"	=> mc6845_data_out <= vram_base_addr(15 downto 8);
-							when x"d"	=> mc6845_data_out <= vram_base_addr( 7 downto 0);
-							when others	=>	null;
-						end case;
-					end if;
-				end if;
-			end if;
-		end if;
-	end process;
-	
 	video_mode <= '0';
 	
 	vgafb: entity work.vgaframebuffer port map (
 		rst		=> sys_rst,
 		clk		=> clk25,
-		mode		=> video_mode,
-		addr_base=> vram_base_addr,
-		addr_out	=> vram_addr,
-		data_in	=> mux_ram_data_out,
-		data_en	=> vram_cs,
+		cs			=> ds0_cs,
+		rw			=> cpu_rw,
+		rs  		=> cpu_addr(0),
+		data_in	=> cpu_data_out,
+		data_out	=> ds0_data_out,
+		vmode		=> video_mode,
+		vaddr_out=> vram_addr,
+		vdata_in	=> mux_ram_data_out,
+		vdata_en	=> vram_cs,
 		vga_r		=> vga_r,
 		vga_g		=> vga_g,
 		vga_b		=> vga_b,
