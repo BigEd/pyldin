@@ -5,14 +5,14 @@ use ieee.std_logic_unsigned.all;
 
 entity pyldin2012 is
 port(
-	clk						: in std_logic;
-	rst						: in std_logic;
+	clk						: in    std_logic;
+	rst						: in    std_logic;
 
-	vga_r               	: out std_logic_vector(2 downto 0);
-	vga_g               	: out std_logic_vector(2 downto 0);
-	vga_b               	: out std_logic_vector(1 downto 0);
-	vga_hs              	: out std_logic;
-	vga_vs              	: out std_logic;
+	vga_r               	: out   std_logic_vector(2 downto 0);
+	vga_g               	: out   std_logic_vector(2 downto 0);
+	vga_b               	: out   std_logic_vector(1 downto 0);
+	vga_hs              	: out   std_logic;
+	vga_vs              	: out   std_logic;
 		
 	sram_addr           	: out   std_logic_vector(17 downto 0);
 	sram_dq             	: inout std_logic_vector(15 downto 0);
@@ -21,11 +21,15 @@ port(
 	sram_we_n           	: out   std_logic;
 	sram_ub_n           	: out   std_logic;
 	sram_lb_n           	: out   std_logic;
+
+	led_capslock			: out	  std_logic;
+	led_latkir				: out   std_logic;
+	speaker_port			: out   std_logic;
 	
-	swt						: in std_logic;
-	step						: in std_logic;
-	ledseg					: out std_logic_vector(7 downto 0);
-	ledcom					: out std_logic_vector(7 downto 0)
+	swt						: in    std_logic;
+	step						: in    std_logic;
+	ledseg					: out   std_logic_vector(7 downto 0);
+	ledcom					: out   std_logic_vector(7 downto 0)
 --	keys						: in std_logic_vector(2 downto 0)
 );
 end pyldin2012;
@@ -40,6 +44,9 @@ signal sys_rst				: std_logic := '1';
 signal sys_clk				: std_logic;
 signal vram_access		: std_logic;
 signal pixel_clk			: std_logic;
+signal div50Hz				: integer range 0 to 500010; -- 25MHz / 50Hz
+signal int50Hz				: std_logic;
+signal intKeyb				: std_logic;
 
 -- cpu interface signals
 signal cpu_reset       	: std_logic;
@@ -72,7 +79,6 @@ signal vram_rw				: std_logic;
 signal vram_base_addr	: std_logic_vector(15 downto 0);
 signal vram_addr			: std_logic_vector(15 downto 0);
 signal vram_data_out		: std_logic_vector( 7 downto 0);
-signal vram_data_in		: std_logic_vector( 7 downto 0);
 
 -- ram mux
 signal mux_ram_cs			: std_logic;
@@ -102,8 +108,15 @@ signal video_mode			: std_logic;
 -- hex display
 signal led_data			: std_logic_vector(31 downto 0);
 
--- DS0
+-- DS0 Video controller
 signal ds0_data_out		: std_logic_vector(7 downto 0);
+
+-- DS1 System port
+signal ds1_data_out		: std_logic_vector(7 downto 0);
+signal sysport_dra		: std_logic_vector(7 downto 0);
+signal sysport_drb		: std_logic_vector(7 downto 0);
+signal sysport_cra		: std_logic_vector(7 downto 0);
+signal sysport_crb		: std_logic_vector(7 downto 0);
 
 -- DS5
 signal ds5_data_in		: std_logic_vector(31 downto 0);
@@ -181,12 +194,12 @@ begin
 		end if;
 	end process;
 
-	interrupts : process(sys_rst)
+	interrupts : process(sys_rst, int50Hz, intKeyb)
 	begin
 		cpu_halt  <= '0';
-		cpu_irq   <= '0'; -- uart_irq or timer_irq;
-		cpu_nmi   <= '0'; -- trap_irq;
-		cpu_reset <= sys_rst; -- CPU reset is active high
+		cpu_irq   <= int50Hz; -- or intKeyb;	-- Interrupt is active high
+		cpu_nmi   <= '0';
+		cpu_reset <= sys_rst; 				-- CPU reset is active high
 	end process;
 	
 	mc6800 : entity work.cpu68 port map(
@@ -227,6 +240,25 @@ begin
 		data_out 	=> mux_ram_data_out
 	);
 	
+	mc6845: entity work.vga6845 port map (
+		rst		=> sys_rst,
+		clk		=> clk25,
+		cs			=> ds0_cs,
+		rw			=> cpu_rw,
+		rs  		=> cpu_addr(0),
+		data_in	=> cpu_data_out,
+		data_out	=> ds0_data_out,
+		vmode		=> video_mode,
+		vaddr_out=> vram_addr,
+		vdata_in	=> mux_ram_data_out,
+		vdata_en	=> vram_cs,
+		vga_r		=> vga_r,
+		vga_g		=> vga_g,
+		vga_b		=> vga_b,
+		vga_hs	=> vga_hs,
+		vga_vs	=> vga_vs
+	);
+	
 	segdisplay : entity work.segleds port map(
 		clk		=> clk,
 		rst		=> not sys_rst,
@@ -262,6 +294,7 @@ begin
 					  rombios_cs, rombios_data_out,
 				     ram_cs, ram_data_out,
 					  ds0_data_out,
+					  ds1_data_out,
 					  ds5_data_out
 					  )
 	begin
@@ -284,7 +317,7 @@ begin
 						cpu_data_in <= ds0_data_out;
 					when "001" =>
 						ds0_cs <= '0'; ds1_cs <= cpu_vma; ds2_cs <= '0'; ds3_cs <= '0'; ds4_cs <= '0'; ds5_cs <= '0'; ds6_cs <= '0'; ds7_cs <= '0';
-						cpu_data_in <= x"ff";
+						cpu_data_in <= ds1_data_out;
 					when "010" =>
 						ds0_cs <= '0'; ds1_cs <= '0'; ds2_cs <= cpu_vma; ds3_cs <= '0'; ds4_cs <= '0'; ds5_cs <= '0'; ds6_cs <= '0'; ds7_cs <= '0';
 						cpu_data_in <= x"ff";
@@ -335,10 +368,8 @@ begin
 				mux_ram_cs <= '1'; -- vram_cs;
 				mux_ram_rw <= '1'; -- vram_rw; -- read-only
 				mux_ram_addr <= vram_addr;
-				mux_ram_data_in <= vram_data_in;
 			else
 				mux_ram_cs <= ram_cs;
---				mux_ram_rw <= cpu_rw;
 				mux_ram_addr <= cpu_addr;
 				mux_ram_data_in <= cpu_data_out;
 				ram_data_out <= mux_ram_data_out;
@@ -352,8 +383,6 @@ begin
 							ram_hold <= '1';
 							mux_ram_rw <= '0';
 							ram_state <= Write;
---						else
---							ram_state <= Idle;
 						end if;
 					when Read =>
 						ram_hold <= '0';
@@ -361,8 +390,6 @@ begin
 					when Write =>
 						ram_hold <= '0';
 						mux_ram_rw <= '1';
---						ram_state <= WrtEnd;
---					when WrtEnd =>
 						ram_state <= Idle;
 					when others =>
 				end case;
@@ -370,25 +397,78 @@ begin
 		end if;
 	end process;	
 
-	video_mode <= '0';
+	led_latkir <= not sysport_drb(0);
+	video_mode <= sysport_drb(5);
+	led_capslock <= not sysport_cra(3);
+	speaker_port <= not sysport_crb(3);
+
+--	led_data(31 downto 24) <= sysport_dra;
+--	led_data(23 downto 16) <= sysport_drb;
+--	led_data(15 downto 8 ) <= sysport_cra;
+--	led_data( 7 downto 0 ) <= sysport_crb;
 	
-	mc6845: entity work.vga6845 port map (
-		rst		=> sys_rst,
-		clk		=> clk25,
-		cs			=> ds0_cs,
-		rw			=> cpu_rw,
-		rs  		=> cpu_addr(0),
-		data_in	=> cpu_data_out,
-		data_out	=> ds0_data_out,
-		vmode		=> video_mode,
-		vaddr_out=> vram_addr,
-		vdata_in	=> mux_ram_data_out,
-		vdata_en	=> vram_cs,
-		vga_r		=> vga_r,
-		vga_g		=> vga_g,
-		vga_b		=> vga_b,
-		vga_hs	=> vga_hs,
-		vga_vs	=> vga_vs
-	);
+	systemport: process (sys_clk)
+	begin
+		if (sys_clk'event and sys_clk = '1') then
+			if (sys_rst = '1') then
+				sysport_dra <= "00000000";
+				sysport_drb <= "00000000";
+				sysport_cra <= "00000000";
+				sysport_crb <= "00000000";
+			elsif ((ds1_cs = '1') and (cpu_addr(4) = '0')) then
+				if (cpu_rw = '0') then
+					case (cpu_addr(1 downto 0)) is
+						when "00" => null;
+						when "01" => sysport_drb(6 downto 0) <= cpu_data_out(6 downto 0);
+						when "10" => sysport_cra(6 downto 0) <= cpu_data_out(6 downto 0);
+						when "11" => sysport_crb(6 downto 0) <= cpu_data_out(6 downto 0);
+					end case;
+				else
+					case (cpu_addr(1 downto 0)) is
+						when "00" => ds1_data_out <= sysport_dra;
+						when "01" => ds1_data_out(6 downto 0) <= sysport_drb(6 downto 0);
+						when "10" =>
+							ds1_data_out(6 downto 0) <= sysport_cra(6 downto 0);
+							if (intKeyb = '1') then
+								ds1_data_out(7) <= '1';
+								sysport_cra(7)  <= '1';
+							else
+								ds1_data_out(7) <= '0';
+								sysport_cra(7)  <= '0';
+							end if;
+						when "11" => 
+							ds1_data_out(6 downto 0) <= sysport_crb(6 downto 0);
+							if (int50Hz = '1') then
+								ds1_data_out(7) <= '1';
+								sysport_crb(7)  <= '1';
+							else
+								ds1_data_out(7) <= '0';
+								sysport_crb(7)  <= '0';
+							end if;
+					end case;
+				end if;
+--			elsif ((ds1_cs = '1') and (cpu_addr(4) = '1')) then
+--			Printer/Covox port IO here
+			end if;
+		end if;
+	end process;
+
+	sys50hz: process(sys_clk, sys_rst)
+	begin
+		if (sys_clk'event and sys_clk = '1') then
+			if (sys_rst = '1') then
+				div50Hz <= 0;
+				int50Hz <= '0';
+			elsif (div50Hz = 499999) then
+				div50Hz <= 0;
+				int50Hz <= '1';
+			else
+				if (sysport_crb(7) = '1') then
+					int50Hz <= '0';
+				end if;
+				div50Hz <= div50Hz + 1;
+			end if;
+		end if;
+	end process;
 	
 end pyldin_arch;
