@@ -25,6 +25,11 @@ port(
 	led_capslock			: out	  std_logic;
 	led_latkir				: out   std_logic;
 	speaker_port			: out   std_logic;
+
+	mmc_cs					: out std_logic;
+	mmc_ck					: out std_logic;
+	mmc_di					: out std_logic;
+	mmc_do					: in  std_logic;
 	
 	swt						: in    std_logic;
 	step						: in    std_logic;
@@ -121,6 +126,9 @@ signal sysport_crb		: std_logic_vector(7 downto 0);
 -- DS5
 signal ds5_data_in		: std_logic_vector(31 downto 0);
 signal ds5_data_out		: std_logic_vector(7 downto 0);
+
+-- DS6 MMC/SD card controller
+signal ds6_data_out		: std_logic_vector(7 downto 0);
 
 -- hardware debugger
 signal step_clk			: std_logic;
@@ -258,6 +266,20 @@ begin
 		vga_hs	=> vga_hs,
 		vga_vs	=> vga_vs
 	);
+
+	mmcspi: entity work.mmcspi port map (
+		rst		=> sys_rst,
+		clk		=> sys_clk,
+		cs			=> ds6_cs,
+		rw			=> cpu_rw,
+		address	=> cpu_addr(1 downto 0),
+		data_in	=> cpu_data_out,
+		data_out	=> ds6_data_out,
+		mmc_cs	=> mmc_cs,
+		mmc_ck	=> mmc_ck,
+		mmc_di	=> mmc_di,
+		mmc_do	=> mmc_do
+	);
 	
 	segdisplay : entity work.segleds port map(
 		clk		=> clk,
@@ -295,7 +317,8 @@ begin
 				     ram_cs, ram_data_out,
 					  ds0_data_out,
 					  ds1_data_out,
-					  ds5_data_out
+					  ds5_data_out,
+					  ds6_data_out
 					  )
 	begin
       case cpu_addr(15 downto 12) is
@@ -332,7 +355,7 @@ begin
 						cpu_data_in <= ds5_data_out;
 					when "110" =>
 						ds0_cs <= '0'; ds1_cs <= '0'; ds2_cs <= '0'; ds3_cs <= '0'; ds4_cs <= '0'; ds5_cs <= '0'; ds6_cs <= cpu_vma; ds7_cs <= '0';
-						cpu_data_in <= x"ff";
+						cpu_data_in <= ds6_data_out;
 					when "111" =>
 						ds0_cs <= '0'; ds1_cs <= '0'; ds2_cs <= '0'; ds3_cs <= '0'; ds4_cs <= '0'; ds5_cs <= '0'; ds6_cs <= '0'; ds7_cs <= cpu_vma;
 						cpu_data_in <= x"ff";
