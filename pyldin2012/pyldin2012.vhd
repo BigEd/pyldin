@@ -267,12 +267,12 @@ begin
 		vga_vs	=> vga_vs
 	);
 
-	mmcspi: entity work.mmcspi port map (
-		rst		=> sys_rst,
+	sdcard: entity work.sd_controller port map (
+		reset		=> sys_rst,
 		clk		=> sys_clk,
 		cs			=> ds6_cs,
 		rw			=> cpu_rw,
-		address	=> cpu_addr(1 downto 0),
+		addr		=> cpu_addr(2 downto 0),
 		data_in	=> cpu_data_out,
 		data_out	=> ds6_data_out,
 		mmc_cs	=> mmc_cs,
