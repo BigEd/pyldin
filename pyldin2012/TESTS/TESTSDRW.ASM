@@ -25,7 +25,7 @@ start
 	ldx	#sec2
 	jsr	sdreadsec
 
-	jsr	sdinit
+;	jsr	sdinit
 
 	ldx	#sec3
 	jsr	sdwritesec
@@ -36,10 +36,10 @@ stop
 sec1	db	0, 0, 0, 0
 	dw	$f000
 
-sec2	db	0, 0, 0, 0
+sec2	db	0, 0, 0, 1
 	dw	$f230
 
-sec3	db	0, 0, 0, 1
+sec3	db	0, 0, 0, 2
 	dw	$f000
 
 ; init SD controller
