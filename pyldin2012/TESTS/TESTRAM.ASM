@@ -1,6 +1,7 @@
 	org	$f000
 
 start
+	sei
 	ldaa	#$0c
 	staa	$e600
 	ldab	#$f0
