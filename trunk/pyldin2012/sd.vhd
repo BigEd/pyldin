@@ -42,6 +42,7 @@ type states is (
 	READ_BLOCK_WAIT,
 	READ_BLOCK_DATA,
 	READ_BLOCK_CRC,
+	TX_IDLE,
 	SEND_CMD,
 	RECEIVE_BYTE_WAIT,
 	RECEIVE_BYTE,
@@ -49,7 +50,8 @@ type states is (
 	WRITE_BLOCK_INIT,		-- initialise write command
 	WRITE_BLOCK_DATA,		-- loop through all data bytes
 	WRITE_BLOCK_BYTE,		-- send one byte
-	WRITE_BLOCK_WAIT		-- wait until not busy
+	WRITE_BLOCK_WAIT,		-- wait until not busy
+	RX_IDLE
 );
 
 type ctrl_states is (
@@ -62,10 +64,6 @@ type ctrl_states is (
 -- one start byte, plus 512 bytes of data, plus two FF end bytes (CRC)
 constant WRITE_DATA_SIZE : integer := 515;
 
--- internal I/O buffer RAM
-type ram_type is array (0 to WRITE_DATA_SIZE) of std_logic_vector(7 downto 0);
-signal tmp_ram: ram_type;
-
 signal ctrl_state					: ctrl_states;
 
 signal rd							: std_logic;
@@ -73,8 +71,9 @@ signal wr 							: std_logic;
 signal din	 						: std_logic_vector(7 downto 0);
 signal dout 						: std_logic_vector(7 downto 0);
 signal ram_addr					: std_logic_vector(8 downto 0);
+signal tmp_ram_addr				: std_logic_vector(8 downto 0);
 
-signal tmp_address 					: std_logic_vector(31 downto 0);
+signal tmp_address 				: std_logic_vector(31 downto 0);
 
 signal state, return_state		: states;
 signal sclk_sig 					: std_logic := '0';
@@ -101,18 +100,20 @@ begin
 						when "100" => rd <= '1'; ctrl_state <= MOD_RST;
 						when "101" => wr <= '1'; ctrl_state <= MOD_RST;
 						when "110" => null;
-						when "111" => tmp_ram(conv_integer(ram_addr)) <= data_in; ctrl_state <= RAM_INCA;
+						when "111" => din <= data_in; ctrl_state <= RAM_INCA;
 					end case;
 				else
 					if (addr = "110") then
 						if (state = IDLE) then
 							data_out <= x"FF";
 							ctrl_state <= RAM_RSTA;
+						elsif (state = READ_BLOCK_DATA) then
+							data_out <= x"80";
 						else
 							data_out <= x"00";
 						end if;
-					elsif (addr = "111") then
-						data_out <= tmp_ram(conv_integer(ram_addr)); ctrl_state <= RAM_INCA;
+					elsif (addr = "111" and state = READ_BLOCK_DATA) then
+						data_out <= dout; ctrl_state <= RAM_INCA;
 					else
 						data_out <= x"FF";
 					end if;
@@ -190,9 +191,11 @@ begin
 					if (rd = '1') then
 						state <= READ_BLOCK;
 						address <= tmp_address;
+						tmp_ram_addr <= (others => '0');
 					elsif (wr = '1') then
 						state <= WRITE_BLOCK_CMD;
 						address <= tmp_address;
+						tmp_ram_addr <= (others => '0');
 					else
 						state <= IDLE;
 					end if;
@@ -214,6 +217,8 @@ begin
 					sclk_sig <= not sclk_sig;
 
 				when READ_BLOCK_DATA =>
+					if (ram_addr /= tmp_ram_addr) then
+					tmp_ram_addr <= ram_addr;	
 					if (byte_counter = 0) then
 						bit_counter := 7;
 						return_state <= READ_BLOCK_CRC;
@@ -223,6 +228,7 @@ begin
 						return_state <= READ_BLOCK_DATA;
 						bit_counter := 7;
 						state <= RECEIVE_BYTE;
+					end if;
 					end if;
 			
 				when READ_BLOCK_CRC =>
