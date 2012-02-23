@@ -1,3 +1,9 @@
+-- SD card controller
+-- 0..3 - w/o sector number (big endian)
+-- 4    - w/o operation (0x69('i') - reinit, 0x72('r') - read, 0x77('w') - write)
+-- 6    - r/o status (0x00 - busy, 0xff - ready/operation finished, 0x80 - ready for data i/o)
+-- 7    - r/w data input/output
+
 -- VHDL SD card interface
 -- by Steven J. Merrifield, June 2008
 
@@ -42,7 +48,6 @@ type states is (
 	READ_BLOCK_WAIT,
 	READ_BLOCK_DATA,
 	READ_BLOCK_CRC,
-	TX_IDLE,
 	SEND_CMD,
 	RECEIVE_BYTE_WAIT,
 	RECEIVE_BYTE,
@@ -51,14 +56,15 @@ type states is (
 	WRITE_BLOCK_DATA,		-- loop through all data bytes
 	WRITE_BLOCK_BYTE,		-- send one byte
 	WRITE_BLOCK_WAIT,		-- wait until not busy
-	RX_IDLE
+	WRITE_WAIT_BYTE		-- wait for data from port
 );
 
 type ctrl_states is (
 	CTRL_IDLE,
 	RAM_RSTA,
 	RAM_INCA,
-	MOD_RST
+	MOD_RST,
+	SOFT_RST
 );
 
 -- one start byte, plus 512 bytes of data, plus two FF end bytes (CRC)
@@ -66,8 +72,9 @@ constant WRITE_DATA_SIZE : integer := 515;
 
 signal ctrl_state					: ctrl_states;
 
-signal rd							: std_logic;
-signal wr 							: std_logic;
+signal rd							: std_logic := '0';
+signal wr 							: std_logic := '0';
+signal sr							: std_logic := '0';
 signal din	 						: std_logic_vector(7 downto 0);
 signal dout 						: std_logic_vector(7 downto 0);
 signal ram_addr					: std_logic_vector(8 downto 0);
@@ -97,8 +104,15 @@ begin
 						when "001" => tmp_address(23 downto 16) <= data_in; ctrl_state <= RAM_RSTA;
 						when "010" => tmp_address(15 downto  8) <= data_in; ctrl_state <= RAM_RSTA;
 						when "011" => tmp_address( 7 downto  0) <= data_in; ctrl_state <= RAM_RSTA;
-						when "100" => rd <= '1'; ctrl_state <= MOD_RST;
-						when "101" => wr <= '1'; ctrl_state <= MOD_RST;
+						when "100" => 
+							if (data_in = x"72") then
+								rd <= '1'; ctrl_state <= MOD_RST;
+							elsif (data_in = x"77") then
+								wr <= '1'; ctrl_state <= MOD_RST;
+							elsif (data_in = x"69") then
+								sr <= '1'; ctrl_state <= MOD_RST;
+							end if;
+						when "101" => null;
 						when "110" => null;
 						when "111" => din <= data_in; ctrl_state <= RAM_INCA;
 					end case;
@@ -107,7 +121,7 @@ begin
 						if (state = IDLE) then
 							data_out <= x"FF";
 							ctrl_state <= RAM_RSTA;
-						elsif (state = READ_BLOCK_DATA) then
+						elsif (state = READ_BLOCK_DATA or state = WRITE_WAIT_BYTE) then
 							data_out <= x"80";
 						else
 							data_out <= x"00";
@@ -122,7 +136,7 @@ begin
 				case ctrl_state is 
 					when RAM_RSTA => ram_addr <= (others => '0'); ctrl_state <= CTRL_IDLE;
 					when RAM_INCA => ram_addr <= ram_addr + 1; ctrl_state <= CTRL_IDLE;
-					when MOD_RST  => rd <= '0'; wr <= '0'; ctrl_state <= RAM_RSTA;
+					when MOD_RST  => rd <= '0'; wr <= '0'; sr <= '0'; ctrl_state <= RAM_RSTA;
 					when others   => null;
 				end case;
 			end if;
@@ -136,7 +150,7 @@ begin
 		data_mode <= '1'; -- data mode, 0 = write continuously, 1 = write single block
 
 		if rising_edge(clk) then
-			if (reset='1') then
+			if (reset = '1' or sr = '1') then
 				state <= RST;
 				sclk_sig <= '0';
 			else
@@ -218,17 +232,17 @@ begin
 
 				when READ_BLOCK_DATA =>
 					if (ram_addr /= tmp_ram_addr) then
-					tmp_ram_addr <= ram_addr;	
-					if (byte_counter = 0) then
-						bit_counter := 7;
-						return_state <= READ_BLOCK_CRC;
-						state <= RECEIVE_BYTE;
-					else
-						byte_counter := byte_counter - 1;
-						return_state <= READ_BLOCK_DATA;
-						bit_counter := 7;
-						state <= RECEIVE_BYTE;
-					end if;
+						tmp_ram_addr <= ram_addr;	
+						if (byte_counter = 0) then
+							bit_counter := 7;
+							return_state <= READ_BLOCK_CRC;
+							state <= RECEIVE_BYTE;
+						else
+							byte_counter := byte_counter - 1;
+							return_state <= READ_BLOCK_DATA;
+							bit_counter := 7;
+							state <= RECEIVE_BYTE;
+						end if;
 					end if;
 			
 				when READ_BLOCK_CRC =>
@@ -298,21 +312,30 @@ begin
 					else 	
 						if ((byte_counter = 2) or (byte_counter = 1)) then
 							data_sig <= x"FF"; -- two CRC bytes
+							state <= WRITE_BLOCK_BYTE;
 						elsif byte_counter = WRITE_DATA_SIZE then
 							if (data_mode='0') then
 								data_sig <= x"FC"; -- start byte, multiple blocks
 							else
 								data_sig <= x"FE"; -- start byte, single block
 							end if;
+							state <= WRITE_BLOCK_BYTE;
 						else
 							-- just a counter, get real data here
-							data_sig <= std_logic_vector(to_unsigned(byte_counter,8));
+							state <= WRITE_WAIT_BYTE;
+							return_state <= WRITE_BLOCK_BYTE;
 						end if;
 						bit_counter := 7;
-						state <= WRITE_BLOCK_BYTE;
 						byte_counter := byte_counter - 1;
 					end if;
-				
+
+				when WRITE_WAIT_BYTE =>
+					if (ram_addr /= tmp_ram_addr) then
+						tmp_ram_addr <= ram_addr;	
+						data_sig <= din;
+						state <= return_state;
+					end if;
+	
 				when WRITE_BLOCK_BYTE => 
 					if (sclk_sig = '1') then
 						if bit_counter=0 then
