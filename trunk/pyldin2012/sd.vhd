@@ -100,10 +100,10 @@ begin
 			if (cs = '1') then
 				if (rw = '0') then
 					case addr is
-						when "000" => tmp_address(31 downto 24) <= data_in; ctrl_state <= RAM_RSTA;
-						when "001" => tmp_address(23 downto 16) <= data_in; ctrl_state <= RAM_RSTA;
-						when "010" => tmp_address(15 downto  8) <= data_in; ctrl_state <= RAM_RSTA;
-						when "011" => tmp_address( 7 downto  0) <= data_in; ctrl_state <= RAM_RSTA;
+						when "000" => null; ctrl_state <= RAM_RSTA;
+						when "001" => tmp_address(31 downto 25) <= data_in(6 downto 0); ctrl_state <= RAM_RSTA;
+						when "010" => tmp_address(24 downto 17) <= data_in; ctrl_state <= RAM_RSTA;
+						when "011" => tmp_address(16 downto  9) <= data_in; tmp_address(8 downto 0) <= (others => '0'); ctrl_state <= RAM_RSTA;
 						when "100" => 
 							if (data_in = x"72") then
 								rd <= '1'; ctrl_state <= MOD_RST;
