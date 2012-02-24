@@ -1986,7 +1986,7 @@ fddtbl					; па░аме▓░и за ┤лопи
 bootparm	db	0,0,0,1,1,0	; па░аме▓░и за INT17 за boot
 
 mbrsec		db	0,0,0,0		; sector 0
-		dw	$f000
+		dw	$0100
 
 contbl					; па░аме▓░и за клави▓│░а▓а
 		db	$13		;pause
