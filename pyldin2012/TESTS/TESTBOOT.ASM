@@ -1,6 +1,7 @@
 	org	$100
-	ldx	#$abcd
-	stx	$e6a0
-	ldx	#$1234
-	stx	$e6a2
+	ldaa	#9
+	ldab	#79
+	db	$3d
+	staa	$e6a1
+	stab	$e6a0
 	rts

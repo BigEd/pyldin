@@ -88,6 +88,7 @@ signal vram_data_out		: std_logic_vector( 7 downto 0);
 -- ram mux
 signal mux_ram_cs			: std_logic;
 signal mux_ram_rw			: std_logic;
+signal mux_ram_page		: std_logic_vector(2 downto 0);
 signal mux_ram_addr		: std_logic_vector(15 downto 0);
 signal mux_ram_data_in	: std_logic_vector( 7 downto 0);
 signal mux_ram_data_out	: std_logic_vector( 7 downto 0);
@@ -248,6 +249,7 @@ begin
 		sram_lb_n 	=> sram_lb_n,
 		cs 			=> mux_ram_cs,
 		rw 			=> mux_ram_rw,
+		page			=> mux_ram_page,
 		addr 			=> mux_ram_addr,
 		data_in 		=> mux_ram_data_in,
 		data_out 	=> mux_ram_data_out
@@ -398,8 +400,15 @@ begin
 				mux_ram_rw <= '1'; -- vram_rw; -- read-only
 				mux_ram_addr <= vram_addr;
 			else
+				if ((cpu_addr(15 downto 13) = "110" and rampage_ctrl(3) = '1') and (not (rampage_lock = '1' and cpu_rw = '0'))) then
+					mux_ram_page <= rampage_ctrl(6 downto 4) + 1;
+					mux_ram_addr(15 downto 13) <= rampage_ctrl(2 downto 0);
+					mux_ram_addr(12 downto  0) <= cpu_addr(12 downto 0);
+				else
+					mux_ram_page <= "000";
+					mux_ram_addr <= cpu_addr;
+				end if;
 				mux_ram_cs <= ram_cs;
-				mux_ram_addr <= cpu_addr;
 				mux_ram_data_in <= cpu_data_out;
 				ram_data_out <= mux_ram_data_out;
 				case ram_state is
