@@ -75,7 +75,7 @@ begin
 					video_addr <= std_logic_vector("101000000"*v_cnt(8 downto 1) + h_cnt(9 downto 1));
 					vaddr_out <= vaddr_base + video_addr(16 downto 3);
 				else
-					video_addr <= std_logic_vector("00000101000"*v_cnt(9 downto 4) + h_cnt(9 downto 4));
+					video_addr <= std_logic_vector("00000101010"*v_cnt(9 downto 4) + h_cnt(9 downto 4));
 					vaddr_out <= vaddr_base + video_addr(15 downto 0);
 				end if;
 			end if;
