@@ -130,6 +130,11 @@ signal ds5_data_out		: std_logic_vector(7 downto 0);
 -- DS6 MMC/SD card controller
 signal ds6_data_out		: std_logic_vector(7 downto 0);
 
+-- DS7 ram/rom pages
+signal ds7_data_out		: std_logic_vector(7 downto 0);
+signal rampage_ctrl		: std_logic_vector(7 downto 0);
+signal rampage_lock		: std_logic;
+
 -- hardware debugger
 signal step_clk			: std_logic;
 signal step_display		: std_logic_vector(31 downto 0);
@@ -318,7 +323,8 @@ begin
 					  ds0_data_out,
 					  ds1_data_out,
 					  ds5_data_out,
-					  ds6_data_out
+					  ds6_data_out,
+					  ds7_data_out
 					  )
 	begin
       case cpu_addr(15 downto 12) is
@@ -358,7 +364,7 @@ begin
 						cpu_data_in <= ds6_data_out;
 					when "111" =>
 						ds0_cs <= '0'; ds1_cs <= '0'; ds2_cs <= '0'; ds3_cs <= '0'; ds4_cs <= '0'; ds5_cs <= '0'; ds6_cs <= '0'; ds7_cs <= cpu_vma;
-						cpu_data_in <= x"ff";
+						cpu_data_in <= ds7_data_out;
 					end case;
 
 					rombios_cs <= '0';
@@ -476,6 +482,28 @@ begin
 		end if;
 	end process;
 
+	rampageport: process(sys_clk)
+	begin
+		if (sys_clk'event and sys_clk = '1') then
+			if (ds7_cs = '1') then
+				if (cpu_addr(0) = '0') then
+					if (cpu_rw = '0') then
+						rampage_ctrl <= cpu_data_out;
+					else
+						ds7_data_out <= rampage_ctrl;
+					end if;
+				else
+					if (cpu_rw = '1') then
+						rampage_lock <= cpu_data_out(0);
+					else
+						ds7_data_out(7 downto 1) <= (others => '0');
+						ds7_data_out(0) <= rampage_lock;
+					end if;
+				end if;
+			end if;
+		end if;
+	end process;
+	
 	sys50hz: process(sys_clk, sys_rst)
 	begin
 		if (sys_clk'event and sys_clk = '1') then
