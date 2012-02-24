@@ -18,6 +18,7 @@ port(
 
 	cs							: in std_logic;
 	rw							: in std_logic;
+	page						: in std_logic_vector(2 downto 0);
 	addr        			: in std_logic_vector(15 downto 0);
 	data_in     			: in std_logic_vector(7 downto 0);
 	data_out   			 	: out std_logic_vector(7 downto 0)
@@ -27,7 +28,7 @@ end SRAM;
 architecture SRAM_arch of SRAM is
 signal ram_wr				: std_logic; -- memory write enable
 begin
-	process( clk, rst, addr, rw, data_in, cs, ram_wr, sram_dq )
+	process( clk, rst, page, addr, rw, data_in, cs, ram_wr, sram_dq )
 	begin
 		sram_ce_n <= '0'; -- not(cs and rst); -- put '0' to enable chip all time (no powersave mode)
 		sram_oe_n <= not(rw and cs and rst);
@@ -35,7 +36,7 @@ begin
 		sram_we_n <= ram_wr;
 		sram_lb_n <= not addr(0);
 		sram_ub_n <= addr(0);
-		sram_addr(17 downto 15) <= "000";
+		sram_addr(17 downto 15) <= page;
 		sram_addr(14 downto 0 ) <= addr(15 downto 1);
 
 		if (ram_wr = '0' and addr(0) = '0') then
