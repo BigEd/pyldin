@@ -35,7 +35,7 @@ port (
 	addr   	: in  std_logic_vector(11 downto 0);
 	data		: out std_logic_vector(7 downto 0)
 );
-end;
+end rombios_rom;
 
 architecture basic of rombios_rom is
 constant width   : integer := 8;
