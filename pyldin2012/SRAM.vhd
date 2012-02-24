@@ -35,8 +35,8 @@ begin
 		sram_we_n <= ram_wr;
 		sram_lb_n <= not addr(0);
 		sram_ub_n <= addr(0);
-		sram_addr(17 downto 16) <= "00";
-		sram_addr(15 downto 0 ) <= addr(15 downto 0);
+		sram_addr(17 downto 15) <= "000";
+		sram_addr(14 downto 0 ) <= addr(15 downto 1);
 
 		if (ram_wr = '0' and addr(0) = '0') then
 			sram_dq(15 downto 8) <= data_in;
