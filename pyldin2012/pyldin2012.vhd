@@ -469,6 +469,18 @@ begin
 	systemport: process (sys_clk)
 	begin
 		if (sys_clk'event and sys_clk = '1') then
+
+			if (div50Hz = 499999) then
+				div50Hz <= 0;
+				int50Hz <= '1';
+			else
+				if (sysport_crb(7) = '1') then
+					int50Hz <= '0';
+					sysport_crb(7) <= '0';
+				end if;
+				div50Hz <= div50Hz + 1;
+			end if;
+
 			if (sys_rst = '1') then
 				--sysport_dra <= "00000000";
 				sysport_drb <= "00000000";
@@ -541,22 +553,22 @@ begin
 		end if;
 	end process;
 		
-	sys50hz: process(sys_clk, sys_rst)
-	begin
-		if (sys_clk'event and sys_clk = '1') then
-			if (sys_rst = '1') then
-				div50Hz <= 0;
-				int50Hz <= '0';
-			elsif (div50Hz = 499999) then
-				div50Hz <= 0;
-				int50Hz <= '1';
-			else
-				if (sysport_crb(7) = '1') then
-					int50Hz <= '0';
-				end if;
-				div50Hz <= div50Hz + 1;
-			end if;
-		end if;
-	end process;
+--	sys50hz: process(sys_clk, sys_rst)
+--	begin
+--		if (sys_clk'event and sys_clk = '0') then
+--			if (sys_rst = '1') then
+--				div50Hz <= 0;
+--				int50Hz <= '0';
+--			elsif (div50Hz = 499999) then
+--				div50Hz <= 0;
+--				int50Hz <= '1';
+--			else
+--				if (sysport_crb(7) = '1') then
+--					int50Hz <= '0';
+--				end if;
+--				div50Hz <= div50Hz + 1;
+--			end if;
+--		end if;
+--	end process;
 	
 end pyldin_arch;
