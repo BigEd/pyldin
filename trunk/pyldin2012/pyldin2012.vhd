@@ -26,16 +26,19 @@ port(
 	led_latkir				: out   std_logic;
 	speaker_port			: out   std_logic;
 
-	mmc_cs					: out std_logic;
-	mmc_ck					: out std_logic;
-	mmc_di					: out std_logic;
-	mmc_do					: in  std_logic;
+	mmc_cs					: out   std_logic;
+	mmc_ck					: out   std_logic;
+	mmc_di					: out   std_logic;
+	mmc_do					: in    std_logic;
 	
-	swt						: in    std_logic;
-	step						: in    std_logic;
-	ledseg					: out   std_logic_vector(7 downto 0);
-	ledcom					: out   std_logic_vector(7 downto 0)
---	keys						: in std_logic_vector(2 downto 0)
+	ps2_kbd_clk				: in	  std_logic;
+	ps2_kbd_data			: in	  std_logic;
+	
+	swt						: in	  std_logic;
+	step						: in	  std_logic;
+	ledseg					: out	  std_logic_vector(7 downto 0);
+	ledcom					: out	  std_logic_vector(7 downto 0)
+--	keys						: in    std_logic_vector(2 downto 0)
 );
 end pyldin2012;
 
@@ -113,6 +116,11 @@ signal video_mode			: std_logic;
 
 -- hex display
 signal led_data			: std_logic_vector(31 downto 0);
+
+-- keyboard
+signal keyboard_irq		: std_logic;
+signal keyboard_ack		: std_logic;
+signal keyboard_data		: std_logic_vector(7 downto 0);
 
 -- DS0 Video controller
 signal ds0_data_out		: std_logic_vector(7 downto 0);
@@ -211,7 +219,7 @@ begin
 	interrupts : process(sys_rst, int50Hz, intKeyb)
 	begin
 		cpu_halt  <= '0';
-		cpu_irq   <= int50Hz; -- or intKeyb;	-- Interrupt is active high
+		cpu_irq   <= int50Hz or intKeyb;	-- Interrupt is active high
 		cpu_nmi   <= '0';
 		cpu_reset <= sys_rst; 				-- CPU reset is active high
 	end process;
@@ -286,6 +294,16 @@ begin
 		mmc_ck	=> mmc_ck,
 		mmc_di	=> mmc_di,
 		mmc_do	=> mmc_do
+	);
+	
+	keybrd: entity work.keyboard port map (
+		rst		=> sys_rst,
+		clk		=> sys_clk,
+		ps2_clk	=> ps2_kbd_clk,
+		ps2_data	=> ps2_kbd_data,
+		irq		=> keyboard_irq,
+		ack		=> keyboard_ack,
+		data		=> keyboard_data
 	);
 	
 	segdisplay : entity work.segleds port map(
@@ -445,11 +463,14 @@ begin
 --	led_data(15 downto 8 ) <= sysport_cra;
 --	led_data( 7 downto 0 ) <= sysport_crb;
 	
+	sysport_dra <= keyboard_data;
+	keyboard_ack <= intKeyb;
+	
 	systemport: process (sys_clk)
 	begin
 		if (sys_clk'event and sys_clk = '1') then
 			if (sys_rst = '1') then
-				sysport_dra <= "00000000";
+				--sysport_dra <= "00000000";
 				sysport_drb <= "00000000";
 				sysport_cra <= "00000000";
 				sysport_crb <= "00000000";
@@ -487,10 +508,17 @@ begin
 				end if;
 --			elsif ((ds1_cs = '1') and (cpu_addr(4) = '1')) then
 --			Printer/Covox port IO here
+			else
+				if (keyboard_irq = '1' and intKeyb = '0') then
+					intKeyb <= '1';
+				elsif (sysport_cra(7) = '1') then
+					intKeyb <= '0';
+					sysport_cra(7) <= '0';
+				end if;
 			end if;
 		end if;
 	end process;
-
+		
 	rampageport: process(sys_clk)
 	begin
 		if (sys_clk'event and sys_clk = '1') then
@@ -512,7 +540,7 @@ begin
 			end if;
 		end if;
 	end process;
-	
+		
 	sys50hz: process(sys_clk, sys_rst)
 	begin
 		if (sys_clk'event and sys_clk = '1') then
