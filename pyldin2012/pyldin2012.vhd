@@ -43,16 +43,13 @@ port(
 end pyldin2012;
 
 architecture pyldin_arch of pyldin2012 is
-signal clk_cnt				: std_logic_vector(3 downto 0);
 signal clk25				: std_logic;
-signal clk125				: std_logic;
-signal clk625				: std_logic;
 signal rst_cnt				: std_logic_vector(3 downto 0) := "1111";
 signal sys_rst				: std_logic := '1';
 signal sys_clk				: std_logic;
 signal vram_access		: std_logic;
 signal pixel_clk			: std_logic;
-signal div50Hz				: integer range 0 to 500010; -- 25MHz / 50Hz
+signal div50Hz				: integer range 0 to 10000000; -- 25MHz / 50Hz
 signal int50Hz				: std_logic;
 signal intKeyb				: std_logic;
 
@@ -159,10 +156,7 @@ begin
 				rst_cnt <= "0100";
 				sys_rst <= '1';
 			else
-				clk25 <= clk_cnt(0);
-				clk125 <= clk_cnt(1);
-				clk625 <= clk_cnt(2);
-				clk_cnt <= clk_cnt + 1;
+				clk25 <= not clk25;
 				if (sys_clk = '1') then
 					if (rst_cnt = "0000") then
 						sys_rst <= '0';
@@ -194,7 +188,7 @@ begin
 		end if;
 	end process;
 
-	debugmode: process(swt, ds5_data_in, step_display, step_clk, clk25, clk125, clk625, vram_access)
+	debugmode: process(swt, ds5_data_in, step_display, step_clk, clk25, vram_access)
 	begin
 		if (swt = '0') then
 			led_data <= ds5_data_in;
@@ -470,15 +464,15 @@ begin
 	begin
 		if (sys_clk'event and sys_clk = '1') then
 
-			if (div50Hz = 499999) then
+			if (div50Hz = 2500000) then
 				div50Hz <= 0;
 				int50Hz <= '1';
 			else
+				div50Hz <= div50Hz + 1;
 				if (sysport_crb(7) = '1') then
 					int50Hz <= '0';
 					sysport_crb(7) <= '0';
 				end if;
-				div50Hz <= div50Hz + 1;
 			end if;
 
 			if (sys_rst = '1') then
@@ -486,6 +480,7 @@ begin
 				sysport_drb <= "00000000";
 				sysport_cra <= "00000000";
 				sysport_crb <= "00000000";
+				intKeyb <= '0';
 			elsif ((ds1_cs = '1') and (cpu_addr(4) = '0')) then
 				if (cpu_rw = '0') then
 					case (cpu_addr(1 downto 0)) is
@@ -519,14 +514,14 @@ begin
 					end case;
 				end if;
 --			elsif ((ds1_cs = '1') and (cpu_addr(4) = '1')) then
---			Printer/Covox port IO here
-			else
-				if (keyboard_irq = '1' and intKeyb = '0') then
-					intKeyb <= '1';
-				elsif (sysport_cra(7) = '1') then
-					intKeyb <= '0';
-					sysport_cra(7) <= '0';
-				end if;
+--				Printer/Covox port IO here
+--			else
+--				if (keyboard_irq = '1' and intKeyb = '0') then
+--					intKeyb <= '1';
+--				elsif (sysport_cra(7) = '1') then
+--					intKeyb <= '0';
+--					sysport_cra(7) <= '0';
+--				end if;
 			end if;
 		end if;
 	end process;
