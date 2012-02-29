@@ -463,64 +463,65 @@ begin
 	systemport: process (sys_clk)
 	begin
 		if (sys_clk'event and sys_clk = '1') then
-
-			if (div50Hz = 2500000) then
-				div50Hz <= 0;
-				int50Hz <= '1';
-			else
-				div50Hz <= div50Hz + 1;
-				if (sysport_crb(7) = '1') then
-					int50Hz <= '0';
-					sysport_crb(7) <= '0';
-				end if;
-			end if;
-
 			if (sys_rst = '1') then
 				--sysport_dra <= "00000000";
 				sysport_drb <= "00000000";
 				sysport_cra <= "00000000";
 				sysport_crb <= "00000000";
 				intKeyb <= '0';
-			elsif ((ds1_cs = '1') and (cpu_addr(4) = '0')) then
-				if (cpu_rw = '0') then
-					case (cpu_addr(1 downto 0)) is
-						when "00" => null;
-						when "01" => sysport_drb(6 downto 0) <= cpu_data_out(6 downto 0);
-						when "10" => sysport_cra(6 downto 0) <= cpu_data_out(6 downto 0);
-						when "11" => sysport_crb(6 downto 0) <= cpu_data_out(6 downto 0);
-					end case;
-				else
-					case (cpu_addr(1 downto 0)) is
-						when "00" => ds1_data_out <= sysport_dra;
-						when "01" => ds1_data_out(6 downto 0) <= sysport_drb(6 downto 0);
-						when "10" =>
-							ds1_data_out(6 downto 0) <= sysport_cra(6 downto 0);
-							if (intKeyb = '1') then
-								ds1_data_out(7) <= '1';
-								sysport_cra(7)  <= '1';
-							else
-								ds1_data_out(7) <= '0';
-								sysport_cra(7)  <= '0';
-							end if;
-						when "11" => 
-							ds1_data_out(6 downto 0) <= sysport_crb(6 downto 0);
-							if (int50Hz = '1') then
-								ds1_data_out(7) <= '1';
-								sysport_crb(7)  <= '1';
-							else
-								ds1_data_out(7) <= '0';
-								sysport_crb(7)  <= '0';
-							end if;
-					end case;
-				end if;
---			elsif ((ds1_cs = '1') and (cpu_addr(4) = '1')) then
---				Printer/Covox port IO here
+				int50Hz <= '0';
+				div50Hz <= 0;
 			else
+				if (div50Hz = 2500000) then
+					div50Hz <= 0;
+					int50Hz <= '1';
+				else
+					div50Hz <= div50Hz + 1;
+					if (sysport_crb(7) = '1') then
+						int50Hz <= '0';
+						sysport_crb(7) <= '0';
+					end if;
+				end if;
+
 				if (keyboard_irq = '1' and intKeyb = '0') then
 					intKeyb <= '1';
 				elsif (sysport_cra(7) = '1') then
 					intKeyb <= '0';
 					sysport_cra(7) <= '0';
+				end if;
+
+				if ((ds1_cs = '1') and (cpu_addr(4) = '0')) then
+					if (cpu_rw = '0') then
+						case (cpu_addr(1 downto 0)) is
+							when "00" => null;
+							when "01" => sysport_drb(6 downto 0) <= cpu_data_out(6 downto 0);
+							when "10" => sysport_cra(6 downto 0) <= cpu_data_out(6 downto 0);
+							when "11" => sysport_crb(6 downto 0) <= cpu_data_out(6 downto 0);
+						end case;
+					else
+						case (cpu_addr(1 downto 0)) is
+							when "00" => ds1_data_out <= sysport_dra;
+							when "01" => ds1_data_out(6 downto 0) <= sysport_drb(6 downto 0);
+							when "10" =>
+								ds1_data_out(6 downto 0) <= sysport_cra(6 downto 0);
+								if (intKeyb = '1') then
+									ds1_data_out(7) <= '1';
+									sysport_cra(7)  <= '1';
+								else
+									ds1_data_out(7) <= '0';
+									sysport_cra(7)  <= '0';
+								end if;
+							when "11" => 
+								ds1_data_out(6 downto 0) <= sysport_crb(6 downto 0);
+								if (int50Hz = '1') then
+									ds1_data_out(7) <= '1';
+									sysport_crb(7)  <= '1';
+								else
+									ds1_data_out(7) <= '0';
+									sysport_crb(7)  <= '0';
+								end if;
+						end case;
+					end if;
 				end if;
 			end if;
 		end if;
@@ -547,23 +548,4 @@ begin
 			end if;
 		end if;
 	end process;
-		
---	sys50hz: process(sys_clk, sys_rst)
---	begin
---		if (sys_clk'event and sys_clk = '0') then
---			if (sys_rst = '1') then
---				div50Hz <= 0;
---				int50Hz <= '0';
---			elsif (div50Hz = 499999) then
---				div50Hz <= 0;
---				int50Hz <= '1';
---			else
---				if (sysport_crb(7) = '1') then
---					int50Hz <= '0';
---				end if;
---				div50Hz <= div50Hz + 1;
---			end if;
---		end if;
---	end process;
-	
 end pyldin_arch;
