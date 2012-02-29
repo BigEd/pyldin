@@ -515,13 +515,13 @@ begin
 				end if;
 --			elsif ((ds1_cs = '1') and (cpu_addr(4) = '1')) then
 --				Printer/Covox port IO here
---			else
---				if (keyboard_irq = '1' and intKeyb = '0') then
---					intKeyb <= '1';
---				elsif (sysport_cra(7) = '1') then
---					intKeyb <= '0';
---					sysport_cra(7) <= '0';
---				end if;
+			else
+				if (keyboard_irq = '1' and intKeyb = '0') then
+					intKeyb <= '1';
+				elsif (sysport_cra(7) = '1') then
+					intKeyb <= '0';
+					sysport_cra(7) <= '0';
+				end if;
 			end if;
 		end if;
 	end process;
