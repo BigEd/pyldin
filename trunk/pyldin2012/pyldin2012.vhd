@@ -117,6 +117,7 @@ signal led_data			: std_logic_vector(31 downto 0);
 -- keyboard
 signal keyboard_irq		: std_logic;
 signal keyboard_ack		: std_logic;
+signal keyboard_latkir	: std_logic;
 signal keyboard_data		: std_logic_vector(7 downto 0);
 
 -- DS0 Video controller
@@ -297,6 +298,7 @@ begin
 		ps2_data	=> ps2_kbd_data,
 		irq		=> keyboard_irq,
 		ack		=> keyboard_ack,
+		cyr		=> keyboard_latkir,
 		data		=> keyboard_data
 	);
 	
@@ -448,8 +450,9 @@ begin
 	end process;	
 
 	led_latkir <= not sysport_drb(0);
+	keyboard_latkir <= not sysport_drb(0);
 	video_mode <= sysport_drb(5);
-	led_capslock <= not sysport_cra(3);
+	led_capslock <= sysport_cra(3);
 	speaker_port <= not sysport_crb(3);
 
 --	led_data(31 downto 24) <= sysport_dra;
